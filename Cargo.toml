@@ -1,0 +1,11 @@
+[package]
+name = "pyrite"
+version = "0.1.0"
+authors = ["Adolph C. <adolph.celestin@gmail.com>"]
+
+[profile.dev]
+opt-level = 3
+
+[dependencies]
+docopt = "0.6"
+rustc-serialize = "0.3"  # if you're using `derive(RustcDecodable)`
