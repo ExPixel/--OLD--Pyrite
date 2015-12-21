@@ -1,3 +1,4 @@
+#[allow(warnings)]
 pub mod core;
 
 extern crate docopt;
@@ -40,19 +41,29 @@ Pyrite
 Usage:
 	pyrite <rom>
 	pyrite (-h | --help)
+	pyrite (-v | --version)
+
 Options:
-	-h --help	Show this screen.
+	-h --help    Show this screen.
+	-v --version    Prints the version and exits.
 ";
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
-	arg_rom: Option<String>
+	arg_rom: Option<String>,
+	flag_version: bool
 }
 
 fn main() {
 	let args: Args = Docopt::new(USAGE)
 							.and_then(|d| d.decode())
 							.unwrap_or_else(|e| e.exit());
+
+	if args.flag_version {
+		println!("pyrite version \"0.1.0\"");
+		return;
+	}
+
 	if let Some(rom_file) = args.arg_rom {
 		run_rom(rom_file);
 	}

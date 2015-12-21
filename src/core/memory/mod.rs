@@ -1,3 +1,7 @@
+pub mod ioreg;
+
+use self::ioreg::IORegisters;
+
 pub struct MemoryRegion {
 	pub start: u32,
 	pub end: u32,

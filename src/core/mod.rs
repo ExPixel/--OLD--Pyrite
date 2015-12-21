@@ -2,7 +2,6 @@ pub mod memory;
 pub mod cpu;
 pub mod lcd;
 pub mod registers;
-
 use self::memory::GbaMemory;
 
 pub struct Gba {

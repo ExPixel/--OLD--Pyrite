@@ -1,0 +1,30 @@
+#!/bin/bash
+
+CURRENT_COMPILE="0"
+
+# Increments the current compile counter,
+# then prints its new value.
+# Prints the date, and then runs cargo check.
+function checkCode() {
+	CURRENT_COMPILE=$(($CURRENT_COMPILE + 1))
+	clear
+	local DATE=`date +"%T"`
+	echo "[${DATE}] COMPILE #${CURRENT_COMPILE}"
+	cargo check
+}
+
+# Reads a line from stdin, and then
+# runs checkCode
+function readAndCheckCode() {
+	while read -d "" event;
+	do
+		checkCode
+	done
+}
+
+checkCode
+
+# Watches the src directory
+# and Cargo.toml for changes,
+# and pipes events through readAndCheckCode.
+fswatch -0 "src/" "Cargo.toml" | readAndCheckCode

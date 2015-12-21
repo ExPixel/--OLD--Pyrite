@@ -1,0 +1,13 @@
+Core:
+  CPU:
+    ☐ Complete the CPU's logic.
+      ☐ Complete the CPU's ALU
+      ☐ Complete the CPU's ARM instructions.
+      ☐ Complete the CPU's THUMB instructions.
+  MMU:
+    ☐ Figure out how I want to do ioregsiters
+        Right now I'm not sure if IO registers allow partial reads and writes.
+        After figuring that out, I can create a strategy for how I want to handle them.
+        For now there is no difference between them and all of the the GBA's other internal
+        memory.
+    ☐ Implement IO Registers.
