@@ -141,7 +141,7 @@ impl GbaMemory {
 		self.__write8__(address + 1, ((value >> 8) & 0xff) as u8);
 	}
 
-	pub fn read32(&mut self, address: u32) -> u32 {
+	pub fn read32(&self, address: u32) -> u32 {
 		self.__read8__(address) as u32 | 
 		((self.__read8__(address + 1) as u32) << 8) |
 		((self.__read8__(address + 2) as u32) << 16) |

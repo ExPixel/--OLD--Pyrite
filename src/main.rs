@@ -1,5 +1,6 @@
 #[allow(warnings)]
 pub mod core;
+pub mod debug;
 
 extern crate docopt;
 extern crate rustc_serialize;

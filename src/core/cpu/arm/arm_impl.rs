@@ -2,9 +2,6 @@ use super::super::ArmCpu;
 use super::super::super::memory::GbaMemory;
 use super::functions::*;
 
-const ARM_REG_MASK: u32 = 0xf;
-
-
 /// Generates a function for a dataprocessing instruction.
 /// 
 /// Pass in the name of the instruction to generate,
@@ -12,21 +9,45 @@ const ARM_REG_MASK: u32 = 0xf;
 /// of the instruction, and a function to be applied
 /// to both operands.
 macro_rules! gen_dproc {
-    (
-    	$instr_name:ident, 
-    	$operand2_function:ident,
-    	$function:ident
-    ) => (
-    	pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-    		let rn = (instr >> 16) & ARM_REG_MASK;
-    		let rn_value = cpu.rget(rn);
-    		let operand2 = $operand2_function(cpu, instr);
-    		let result = $function(cpu, rn_value, operand2);
-    		let rd = (instr >> 12) & ARM_REG_MASK;
-    		cpu.rset(rd, result);
-    	}
-    )
+	(
+		$instr_name:ident, 
+		$operand2_function:ident,
+		$function:ident
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let rn = (instr >> 16) & 0xf;
+			let rn_value = cpu.rget(rn);
+			let operand2 = $operand2_function(cpu, instr);
+			let result = $function(cpu, rn_value, operand2);
+			let rd = (instr >> 12) & 0xf;
+			cpu.rset(rd, result);
+		}
+	)
 }
+
+/// Generates a function for a dataprocessing instruction
+/// That does not write back to Rd.
+/// 
+/// Pass in the name of the instruction to generate,
+/// The function used to retrieve the second operand
+/// of the instruction, and a function to be applied
+/// to both operands.
+macro_rules! gen_dproc_nw {
+	(
+		$instr_name:ident, 
+		$operand2_function:ident,
+		$function:ident
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let rn = (instr >> 16) & 0xf;
+			let rn_value = cpu.rget(rn);
+			let operand2 = $operand2_function(cpu, instr);
+			$function(cpu, rn_value, operand2);
+		}
+	)
+}
+
+
 
 /// AND lli
 /// Logical And
@@ -881,42 +902,42 @@ pub fn arm_strh_ofrm(cpu: &mut ArmCpu, instr: u32) {
 /// TSTS lli
 /// Test bits in register (Logical And), setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_tsts_lli, arm_fn_op2_lli_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_lli, arm_fn_op2_lli_s, arm_fn_tst_s);
 
 /// TSTS llr
 /// Test bits in register (Logical And), setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_tsts_llr, arm_fn_op2_llr_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_llr, arm_fn_op2_llr_s, arm_fn_tst_s);
 
 /// TSTS lri
 /// Test bits in register (Logical And), setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_tsts_lri, arm_fn_op2_lri_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_lri, arm_fn_op2_lri_s, arm_fn_tst_s);
 
 /// TSTS lrr
 /// Test bits in register (Logical And), setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_tsts_lrr, arm_fn_op2_lrr_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_lrr, arm_fn_op2_lrr_s, arm_fn_tst_s);
 
 /// TSTS ari
 /// Test bits in register (Logical And), setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_tsts_ari, arm_fn_op2_ari_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_ari, arm_fn_op2_ari_s, arm_fn_tst_s);
 
 /// TSTS arr
 /// Test bits in register (Logical And), setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_tsts_arr, arm_fn_op2_arr_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_arr, arm_fn_op2_arr_s, arm_fn_tst_s);
 
 /// TSTS rri
 /// Test bits in register (Logical And), setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_tsts_rri, arm_fn_op2_rri_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_rri, arm_fn_op2_rri_s, arm_fn_tst_s);
 
 /// TSTS rrr
 /// Test bits in register (Logical And), setting flags
 /// Rotate right by register
-gen_dproc!(arm_tsts_rrr, arm_fn_op2_rrr_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_rrr, arm_fn_op2_rrr_s, arm_fn_tst_s);
 
 /// LDRH ofrm
 /// Load halfword
@@ -962,42 +983,42 @@ pub fn arm_strh_prrm(cpu: &mut ArmCpu, instr: u32) {
 /// TEQS lli
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_teqs_lli, arm_fn_op2_lli_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_lli, arm_fn_op2_lli_s, arm_fn_teq_s);
 
 /// TEQS llr
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_teqs_llr, arm_fn_op2_llr_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_llr, arm_fn_op2_llr_s, arm_fn_teq_s);
 
 /// TEQS lri
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_teqs_lri, arm_fn_op2_lri_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_lri, arm_fn_op2_lri_s, arm_fn_teq_s);
 
 /// TEQS lrr
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_teqs_lrr, arm_fn_op2_lrr_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_lrr, arm_fn_op2_lrr_s, arm_fn_teq_s);
 
 /// TEQS ari
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_teqs_ari, arm_fn_op2_ari_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_ari, arm_fn_op2_ari_s, arm_fn_teq_s);
 
 /// TEQS arr
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_teqs_arr, arm_fn_op2_arr_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_arr, arm_fn_op2_arr_s, arm_fn_teq_s);
 
 /// TEQS rri
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_teqs_rri, arm_fn_op2_rri_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_rri, arm_fn_op2_rri_s, arm_fn_teq_s);
 
 /// TEQS rrr
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Rotate right by register
-gen_dproc!(arm_teqs_rrr, arm_fn_op2_rrr_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_rrr, arm_fn_op2_rrr_s, arm_fn_teq_s);
 
 /// LDRH prrm
 /// Load halfword
@@ -1043,42 +1064,42 @@ pub fn arm_strh_ofim(cpu: &mut ArmCpu, instr: u32) {
 /// CMPS lli
 /// Compare register to value (Subtract), setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_cmps_lli, arm_fn_op2_lli_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_lli, arm_fn_op2_lli_s, arm_fn_cmp_s);
 
 /// CMPS llr
 /// Compare register to value (Subtract), setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_cmps_llr, arm_fn_op2_llr_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_llr, arm_fn_op2_llr_s, arm_fn_cmp_s);
 
 /// CMPS lri
 /// Compare register to value (Subtract), setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_cmps_lri, arm_fn_op2_lri_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_lri, arm_fn_op2_lri_s, arm_fn_cmp_s);
 
 /// CMPS lrr
 /// Compare register to value (Subtract), setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_cmps_lrr, arm_fn_op2_lrr_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_lrr, arm_fn_op2_lrr_s, arm_fn_cmp_s);
 
 /// CMPS ari
 /// Compare register to value (Subtract), setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_cmps_ari, arm_fn_op2_ari_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_ari, arm_fn_op2_ari_s, arm_fn_cmp_s);
 
 /// CMPS arr
 /// Compare register to value (Subtract), setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_cmps_arr, arm_fn_op2_arr_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_arr, arm_fn_op2_arr_s, arm_fn_cmp_s);
 
 /// CMPS rri
 /// Compare register to value (Subtract), setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_cmps_rri, arm_fn_op2_rri_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_rri, arm_fn_op2_rri_s, arm_fn_cmp_s);
 
 /// CMPS rrr
 /// Compare register to value (Subtract), setting flags
 /// Rotate right by register
-gen_dproc!(arm_cmps_rrr, arm_fn_op2_rrr_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_rrr, arm_fn_op2_rrr_s, arm_fn_cmp_s);
 
 /// LDRH ofim
 /// Load halfword
@@ -1118,42 +1139,42 @@ pub fn arm_strh_prim(cpu: &mut ArmCpu, instr: u32) {
 /// CMNS lli
 /// Compare register to negation of value (Add), setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_cmns_lli, arm_fn_op2_lli_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_lli, arm_fn_op2_lli_s, arm_fn_cmn_s);
 
 /// CMNS llr
 /// Compare register to negation of value (Add), setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_cmns_llr, arm_fn_op2_llr_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_llr, arm_fn_op2_llr_s, arm_fn_cmn_s);
 
 /// CMNS lri
 /// Compare register to negation of value (Add), setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_cmns_lri, arm_fn_op2_lri_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_lri, arm_fn_op2_lri_s, arm_fn_cmn_s);
 
 /// CMNS lrr
 /// Compare register to negation of value (Add), setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_cmns_lrr, arm_fn_op2_lrr_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_lrr, arm_fn_op2_lrr_s, arm_fn_cmn_s);
 
 /// CMNS ari
 /// Compare register to negation of value (Add), setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_cmns_ari, arm_fn_op2_ari_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_ari, arm_fn_op2_ari_s, arm_fn_cmn_s);
 
 /// CMNS arr
 /// Compare register to negation of value (Add), setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_cmns_arr, arm_fn_op2_arr_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_arr, arm_fn_op2_arr_s, arm_fn_cmn_s);
 
 /// CMNS rri
 /// Compare register to negation of value (Add), setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_cmns_rri, arm_fn_op2_rri_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_rri, arm_fn_op2_rri_s, arm_fn_cmn_s);
 
 /// CMNS rrr
 /// Compare register to negation of value (Add), setting flags
 /// Rotate right by register
-gen_dproc!(arm_cmns_rrr, arm_fn_op2_rrr_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_rrr, arm_fn_op2_rrr_s, arm_fn_cmn_s);
 
 /// LDRH prim
 /// Load halfword
@@ -1691,7 +1712,7 @@ gen_dproc!(arm_rscs_imm, arm_fn_op2_imm_s, arm_fn_rsc_s);
 /// TSTS imm
 /// Test bits in register (Logical And), setting flags
 /// Immediate value
-gen_dproc!(arm_tsts_imm, arm_fn_op2_imm_s, arm_fn_tst_s);
+gen_dproc_nw!(arm_tsts_imm, arm_fn_op2_imm_s, arm_fn_tst_s);
 
 /// MSR ic
 /// Move value to status word
@@ -1703,12 +1724,12 @@ pub fn arm_msr_ic(cpu: &mut ArmCpu, instr: u32) {
 /// TEQS imm
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
 /// Immediate value
-gen_dproc!(arm_teqs_imm, arm_fn_op2_imm_s, arm_fn_teq_s);
+gen_dproc_nw!(arm_teqs_imm, arm_fn_op2_imm_s, arm_fn_teq_s);
 
 /// CMPS imm
 /// Compare register to value (Subtract), setting flags
 /// Immediate value
-gen_dproc!(arm_cmps_imm, arm_fn_op2_imm_s, arm_fn_cmp_s);
+gen_dproc_nw!(arm_cmps_imm, arm_fn_op2_imm_s, arm_fn_cmp_s);
 
 /// MSR is
 /// Move value to status word
@@ -1720,7 +1741,7 @@ pub fn arm_msr_is(cpu: &mut ArmCpu, instr: u32) {
 /// CMNS imm
 /// Compare register to negation of value (Add), setting flags
 /// Immediate value
-gen_dproc!(arm_cmns_imm, arm_fn_op2_imm_s, arm_fn_cmn_s);
+gen_dproc_nw!(arm_cmns_imm, arm_fn_op2_imm_s, arm_fn_cmn_s);
 
 /// ORR imm
 /// Logical Or

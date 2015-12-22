@@ -1,5 +1,6 @@
 pub mod arm;
 pub mod thumb;
+pub mod alu;
 
 use super::memory::GbaMemory;
 use super::registers::*;
@@ -32,8 +33,8 @@ impl<T : Copy> Pipeline<T> {
 pub struct ArmCpu {
 	thumb_pipeline: Pipeline<u16>,
 	arm_pipeline: Pipeline<u32>,
-	registers: ArmRegisters,
-	memory: GbaMemory
+	pub registers: ArmRegisters,
+	pub memory: GbaMemory
 }
 
 impl ArmCpu {
