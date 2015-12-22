@@ -136,6 +136,13 @@ impl ArmRegisters {
 		self.set_cpsr(spsr);
 	}
 
+	/// Integer version of get_flag.
+	/// Returns 0 or 1 instead.
+	#[inline]
+	pub fn get_flagi(&self, flag: u32) -> u32 {
+		return self.get_flag(flag) as u32
+	}
+
 	/// Returns the current value of a specified flag.
 	pub fn get_flag(&self, flag: u32) -> bool {
 		(self.cpsr & flag) != 0
@@ -149,6 +156,11 @@ impl ArmRegisters {
 	/// Clears the given flag.
 	pub fn clear_flag(&mut self, flag: u32) {
 		self.cpsr &= !flag;
+	}
+
+	pub fn put_flagi(&mut self, flag: u32, value: u32) {
+		if value != 0 { self.set_flag(flag); }
+		else { self.clear_flag(flag); }
 	}
 
 	/// Sets or clears the specified flag.
