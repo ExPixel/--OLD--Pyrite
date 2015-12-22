@@ -48,6 +48,11 @@ pub fn arm_alu_ands(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
 #[inline]
 pub fn arm_alu_orrs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
 
+pub fn set_nz_flags(cpu: &mut ArmCpu, res: u32) {
+	cpu.registers.put_flag(REG_FLAG_N, (res as i32) < 0);
+	cpu.registers.put_flag(REG_FLAG_Z, res == 0);
+}
+
 #[inline]
 pub fn set_add_flags(cpu: &mut ArmCpu, lhs: u32, rhs: u32, res: u32) {
 	cpu.registers.put_flag(REG_FLAG_N, (res as i32) < 0);
