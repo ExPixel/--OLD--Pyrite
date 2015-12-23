@@ -44,6 +44,15 @@ pub struct ArmRegisters {
 }
 
 impl ArmRegisters {
+	pub fn new() -> ArmRegisters {
+		ArmRegisters {
+			internal_registers: [0u32; 31],
+			mode: 0,
+			cpsr: 0,
+			spsr: [0u32; 5]
+		}
+	}
+
 	/// Returns the value of the specified register for the current mode.
 	pub fn get(&self, register: u32) -> u32 {
 		let reg_index = self.get_register_index(register);

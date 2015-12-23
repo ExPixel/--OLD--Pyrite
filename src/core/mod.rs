@@ -4,18 +4,20 @@ pub mod lcd;
 pub mod registers;
 use self::memory::GbaMemory;
 
+use self::cpu::ArmCpu;
+
 pub struct Gba {
-	memory: GbaMemory
+	pub cpu: ArmCpu
 }
 
 impl Gba {
 	pub fn new() -> Gba {
 		Gba {
-			memory: GbaMemory::new()
+			cpu: ArmCpu::new()
 		}
 	}
 
 	pub fn load_cartridge(&mut self, data: Vec<u8>) {
-		self.memory.rom = data;
+		self.cpu.memory.rom = data;
 	}
 }

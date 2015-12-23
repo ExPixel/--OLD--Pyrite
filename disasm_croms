@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "Disassembling Custom Roms..."
+
+echo "Deleting Old Files..."
+rm "roms/custom/disasm-arm.s" >> /dev/null
+rm "roms/custom/disasm-thumb.s" >> /dev/null
+
+echo "Disassembling ARM..."
+cargo run -- -d "roms/custom/custom_mb.gba" >> "roms/custom/disasm-arm.s"
+
+echo "Disassembling THUMB..."
+cargo run -- -d -t "roms/custom/custom_mb.gba" >> "roms/custom/disasm-thumb.s"
+
+echo "Finished."

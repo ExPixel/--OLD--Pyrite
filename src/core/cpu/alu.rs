@@ -25,28 +25,74 @@ pub fn arm_alu_rsc(cpu: &ArmCpu, lhs: u32, rhs: u32) -> u32 {
 }
 
 #[inline]
-pub fn arm_alu_adcs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_adcs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = arm_alu_adc(cpu, lhs, rhs);
+	set_add_flags(cpu, lhs, rhs, res); // #FIXME this might not be right.
+	res
+}
 
 #[inline]
-pub fn arm_alu_sbcs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_sbcs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = arm_alu_sbc(cpu, lhs, rhs);
+	set_sub_flags(cpu, lhs, rhs, res); // #FIXME this might not be right.
+	res
+}
 
 #[inline]
-pub fn arm_alu_rscs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_rscs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = arm_alu_rsc(cpu, lhs, rhs);
+	set_sub_flags(cpu, lhs, rhs, res); // #FIXME this might not be right.
+	res
+}
 
 #[inline]
-pub fn arm_alu_adds(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_adds(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = lhs + rhs;
+	set_add_flags(cpu, lhs, rhs, res);
+	res
+}
 
 #[inline]
-pub fn arm_alu_subs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_subs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = lhs - rhs;
+	set_sub_flags(cpu, lhs, rhs, res);
+	res
+}
 
 #[inline]
-pub fn arm_alu_rsbs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_rsbs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = rhs - lhs;
+	set_sub_flags(cpu, lhs, rhs, res);
+	res
+}
 
 #[inline]
-pub fn arm_alu_ands(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_ands(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = lhs & rhs;
+	set_nz_flags(cpu, res);
+	res
+}
 
 #[inline]
-pub fn arm_alu_orrs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {0}
+pub fn arm_alu_orrs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = lhs | rhs;
+	set_nz_flags(cpu, res);
+	res
+}
+
+#[inline]
+pub fn arm_alu_eors(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = lhs ^ rhs;
+	set_nz_flags(cpu, res);
+	res
+}
+
+#[inline]
+pub fn arm_alu_bics(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let res = lhs & !rhs;
+	set_nz_flags(cpu, res);
+	res
+}
 
 pub fn set_nz_flags(cpu: &mut ArmCpu, res: u32) {
 	cpu.registers.put_flag(REG_FLAG_N, (res as i32) < 0);

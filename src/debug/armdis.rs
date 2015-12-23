@@ -9,13 +9,13 @@ pub struct Opcodes {
 	pub mnemonic: &'static str
 }
 
-const DIS_WRITE_ADDRESS: u32 = 0b00000001;
-const DIS_WRITE_CODE: u32 = 0b00000010;
-const DIS_WRITE_GBA_SWI: u32 = 0b00000100;
+pub const DIS_WRITE_ADDRESS: u32 = 0b00000001;
+pub const DIS_WRITE_CODE: u32 = 0b00000010;
+pub const DIS_WRITE_GBA_SWI: u32 = 0b00000100;
 #[allow(dead_code)] 
-const DIS_WRITE_NONE: u32 = 0b00000000;
+pub const DIS_WRITE_NONE: u32 = 0b00000000;
 #[allow(dead_code)] 
-const DIS_WRITE_ALL: u32 = DIS_WRITE_ADDRESS
+pub const DIS_WRITE_ALL: u32 = DIS_WRITE_ADDRESS
 							| DIS_WRITE_CODE
 							| DIS_WRITE_GBA_SWI;
 

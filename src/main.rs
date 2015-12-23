@@ -20,7 +20,7 @@ macro_rules! println_err {
     )
 }
 
-pub fn run_rom(rom_path: String) {
+pub fn load_rom(rom_path: String) -> Gba {
 	let mut gba = Gba::new();
 	let filepath = rom_path;
 	let mut f = match File::open(filepath.clone()) {
@@ -34,6 +34,15 @@ pub fn run_rom(rom_path: String) {
 		Err(error) => panic!("Error while reading file `{}`: {}", filepath, error)
 	}
 	gba.load_cartridge(buffer);
+	return gba
+}
+
+#[allow(unused_variables)]
+pub fn run_gba(gba: &mut Gba) {
+}
+
+pub fn disasm_gba_rom(gba: &mut Gba, thumb_mode: bool) {
+	debug::print_gba_rom_disasm(gba, thumb_mode);
 }
 
 const USAGE: &'static str = "
@@ -41,18 +50,23 @@ Pyrite
 
 Usage:
 	pyrite <rom>
+	pyrite (-d | --disasm) [(-t | --thumb)] <rom>
 	pyrite (-h | --help)
 	pyrite (-v | --version)
 
 Options:
-	-h --help    Show this screen.
+	-d --disasm     Disassembles the ROM.
+	-t --thumb      Will disassemble in thumb mode.
+	-h --help       Show this screen.
 	-v --version    Prints the version and exits.
 ";
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
 	arg_rom: Option<String>,
-	flag_version: bool
+	flag_version: bool,
+	flag_disasm: bool,
+	flag_thumb: bool
 }
 
 fn main() {
@@ -66,6 +80,11 @@ fn main() {
 	}
 
 	if let Some(rom_file) = args.arg_rom {
-		run_rom(rom_file);
+		let mut gba = load_rom(rom_file);
+		if args.flag_disasm {
+			disasm_gba_rom(&mut gba, args.flag_thumb);
+		} else {
+			run_gba(&mut gba);
+		}
 	}
 }

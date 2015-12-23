@@ -14,6 +14,14 @@ struct Pipeline<T : Copy> {
 }
 
 impl<T : Copy> Pipeline<T> {
+	pub fn new(initTo: T) -> Pipeline<T> {
+		Pipeline {
+			fetched: initTo,
+			decoded: initTo,
+			count: 0u8
+		}
+	}
+
 	pub fn flush(&mut self) {
 		self.count = 0;
 	}
@@ -38,6 +46,15 @@ pub struct ArmCpu {
 }
 
 impl ArmCpu {
+	pub fn new() -> ArmCpu {
+		ArmCpu {
+			thumb_pipeline: Pipeline::new(0u16),
+			arm_pipeline: Pipeline::new(0u32),
+			registers: ArmRegisters::new(),
+			memory: GbaMemory::new()
+		}
+	}
+
 	/// Advances the ARM pipeline.
 	/// executes, decodes, and then fetches the next instruction.
 	pub fn tick(&mut self) {
