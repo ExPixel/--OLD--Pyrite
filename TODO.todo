@@ -2,6 +2,18 @@ Core:
   CPU:
     ☐ Complete the CPU's logic.
       ☐ Complete the CPU's ALU
+        ✔ Data processing instructions @done (15-12-24 23:41)
+        ☐ PSR transfer instructions
+        ☐ Multiply instructions
+        ☐ Multiply long instructions
+        ☐ Single data swap instruction
+        ☐ Branch instructions
+        ☐ Branch and exchange instruction
+        ☐ Halfword data transfer: register offset instructions
+        ☐ Halfword data transfer: immediate offset instructions
+        ☐ Single data transfer instructions
+        ☐ Block data transfer instructions
+        ☐ Software interrupt instructions
         ☐ Consider just inlining all of the stuff inside of the ALU.
            A lot of the things in the ALU, I was just going to write
            at their call sites anyways. None of them are very large
