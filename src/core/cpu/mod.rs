@@ -60,7 +60,7 @@ impl ArmCpu {
 	/// Advances the ARM pipeline.
 	/// executes, decodes, and then fetches the next instruction.
 	pub fn tick(&mut self) {
-		let thumb_mode = self.registers.get_flag(REG_FLAG_T);
+		let thumb_mode = self.registers.getf_t();
 		if thumb_mode { self.thumb_tick(); }
 		else { self.arm_tick(); } 
 	}

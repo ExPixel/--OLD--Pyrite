@@ -2,6 +2,12 @@ Core:
   CPU:
     ☐ Complete the CPU's logic.
       ☐ Complete the CPU's ALU
+        ☐ Consider just inlining all of the stuff inside of the ALU.
+           A lot of the things in the ALU, I was just going to write
+           at their call sites anyways. None of them are very large
+           so it might be worth forcing them to be inlined. Until I build more
+           of this and get a chance to look though, I'm just going to assume that
+           LLVM is already inlining them.
       ☐ Complete the CPU's ARM instructions.
       ☐ Complete the CPU's THUMB instructions.
       Accuracy+:

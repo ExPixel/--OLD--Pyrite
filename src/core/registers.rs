@@ -1,9 +1,35 @@
+/// This is the default mode.
 pub const MODE_USR: u32 = 0b10000;
+
+/// This is intended to be a priveleged user mode for the operating system.
 pub const MODE_SYS: u32 = 0b11111;
+
+// This mode is entered when a Fast Interrupt Request is triggered.
+// Since all of the hardware interrupts on the GBA generate IRQs, this mode goes unused by default,
+// though it would be possible to switch to this mode manually using the "msr" instruction.
+// Banked registers: r8_fiq, r9_fiq, r10_fiq, r11_fiq, r12_fiq, r13_fiq, r14_fiq, and SPSR_fiq.
 pub const MODE_FIQ: u32 = 0b10001;
+
+
+// This mode is entered when an Interrupt Request is triggered.
+// Any interrupt handler on the GBA will be called in IRQ mode.
+// Banked registers: The ARM7tdmi has several sets of banked registers that get swapped in place of normal
+// user mode registers when a priveleged mode is entered, to be swapped back out again once the
+// mode is exited. In IRQ mode, r13_irq and r14_irq will be swapped in to replace r13 and r14.
+// The current CPSR contents gets saved in the SPSR_irq register.
 pub const MODE_IRQ: u32 = 0b10010;
+
+// Supervisor mode. Entered when a SWI (software interrupt) call is executed.
+// The GBA enters this state when calling the BIOS via SWI instructions.
+// Banked registers: r13_svc, r14_svc, SPSR_svc.
 pub const MODE_SVC: u32 = 0b10011;
+
+// Abort mode. Entered after data or instruction prefetch abort.
+// Banked registers: r13_abt, r14_abt, SPSR_abt.
 pub const MODE_ABT: u32 = 0b10111;
+
+// Undefined mode. Entered when an undefined instruction is executed.
+// Banked registers: r13_und, r14_und, SPSR_und.
 pub const MODE_UND: u32 = 0b11011;
 
 /// Negative Flag
@@ -158,37 +184,165 @@ impl ArmRegisters {
 		let spsr = self.get_spsr();
 		self.set_cpsr(spsr);
 	}
+	// clearly generated flags code:
+	/// Sets the n flag
+	pub fn setf_n(&mut self) { self.cpsr |= 1 << 31; }
 
-	/// Integer version of get_flag.
-	/// Returns 0 or 1 instead.
-	#[inline]
-	pub fn get_flagi(&self, flag: u32) -> u32 {
-		return self.get_flag(flag) as u32
+	/// Clears the n flag
+	pub fn clearf_n(&mut self) { self.cpsr &= !(1 << 31); }
+
+	/// Sets the n flag to a given boolean value.
+	pub fn putf_n(&mut self, v: bool) {
+		if v { self.setf_n() }
+		else { self.clearf_n() }
 	}
 
-	/// Returns the current value of a specified flag.
-	pub fn get_flag(&self, flag: u32) -> bool {
-		(self.cpsr & flag) != 0
+	/// Sets the n flag to a given integer value.
+	pub fn putfi_n(&mut self, v: u32) {
+		self.putf_n(v != 0);
 	}
 
-	/// Sets the given flag.
-	pub fn set_flag(&mut self, flag: u32) {
-		self.cpsr |= flag;
+	/// Returns the n flag as an integer value.
+	pub fn getfi_n(&self) -> u32 { (self.cpsr >> 31) & 1 }
+
+	/// Returns the n flag as a boolean value.
+	pub fn getf_n(&self) -> bool { self.getfi_n() != 0 }
+
+	/// Sets the z flag
+	pub fn setf_z(&mut self) { self.cpsr |= 1 << 30; }
+
+	/// Clears the z flag
+	pub fn clearf_z(&mut self) { self.cpsr &= !(1 << 30); }
+
+	/// Sets the z flag to a given boolean value.
+	pub fn putf_z(&mut self, v: bool) {
+		if v { self.setf_z() }
+		else { self.clearf_z() }
 	}
 
-	/// Clears the given flag.
-	pub fn clear_flag(&mut self, flag: u32) {
-		self.cpsr &= !flag;
+	/// Sets the z flag to a given integer value.
+	pub fn putfi_z(&mut self, v: u32) {
+		self.putf_z(v != 0);
 	}
 
-	pub fn put_flagi(&mut self, flag: u32, value: u32) {
-		if value != 0 { self.set_flag(flag); }
-		else { self.clear_flag(flag); }
+	/// Returns the z flag as an integer value.
+	pub fn getfi_z(&self) -> u32 { (self.cpsr >> 30) & 1 }
+
+	/// Returns the z flag as a boolean value.
+	pub fn getf_z(&self) -> bool { self.getfi_z() != 0 }
+
+	/// Sets the c flag
+	pub fn setf_c(&mut self) { self.cpsr |= 1 << 29; }
+
+	/// Clears the c flag
+	pub fn clearf_c(&mut self) { self.cpsr &= !(1 << 29); }
+
+	/// Sets the c flag to a given boolean value.
+	pub fn putf_c(&mut self, v: bool) {
+		if v { self.setf_c() }
+		else { self.clearf_c() }
 	}
 
-	/// Sets or clears the specified flag.
-	pub fn put_flag(&mut self, flag: u32, value: bool) {
-		if value { self.set_flag(flag); }
-		else { self.clear_flag(flag); }
+	/// Sets the c flag to a given integer value.
+	pub fn putfi_c(&mut self, v: u32) {
+		self.putf_c(v != 0);
 	}
+
+	/// Returns the c flag as an integer value.
+	pub fn getfi_c(&self) -> u32 { (self.cpsr >> 29) & 1 }
+
+	/// Returns the c flag as a boolean value.
+	pub fn getf_c(&self) -> bool { self.getfi_c() != 0 }
+
+	/// Sets the v flag
+	pub fn setf_v(&mut self) { self.cpsr |= 1 << 28; }
+
+	/// Clears the v flag
+	pub fn clearf_v(&mut self) { self.cpsr &= !(1 << 28); }
+
+	/// Sets the v flag to a given boolean value.
+	pub fn putf_v(&mut self, v: bool) {
+		if v { self.setf_v() }
+		else { self.clearf_v() }
+	}
+
+	/// Sets the v flag to a given integer value.
+	pub fn putfi_v(&mut self, v: u32) {
+		self.putf_v(v != 0);
+	}
+
+	/// Returns the v flag as an integer value.
+	pub fn getfi_v(&self) -> u32 { (self.cpsr >> 28) & 1 }
+
+	/// Returns the v flag as a boolean value.
+	pub fn getf_v(&self) -> bool { self.getfi_v() != 0 }
+
+	/// Sets the i flag
+	pub fn setf_i(&mut self) { self.cpsr |= 1 << 7; }
+
+	/// Clears the i flag
+	pub fn clearf_i(&mut self) { self.cpsr &= !(1 << 7); }
+
+	/// Sets the i flag to a given boolean value.
+	pub fn putf_i(&mut self, v: bool) {
+		if v { self.setf_i() }
+		else { self.clearf_i() }
+	}
+
+	/// Sets the i flag to a given integer value.
+	pub fn putfi_i(&mut self, v: u32) {
+		self.putf_i(v != 0);
+	}
+
+	/// Returns the i flag as an integer value.
+	pub fn getfi_i(&self) -> u32 { (self.cpsr >> 7) & 1 }
+
+	/// Returns the i flag as a boolean value.
+	pub fn getf_i(&self) -> bool { self.getfi_i() != 0 }
+
+	/// Sets the f flag
+	pub fn setf_f(&mut self) { self.cpsr |= 1 << 6; }
+
+	/// Clears the f flag
+	pub fn clearf_f(&mut self) { self.cpsr &= !(1 << 6); }
+
+	/// Sets the f flag to a given boolean value.
+	pub fn putf_f(&mut self, v: bool) {
+		if v { self.setf_f() }
+		else { self.clearf_f() }
+	}
+
+	/// Sets the f flag to a given integer value.
+	pub fn putfi_f(&mut self, v: u32) {
+		self.putf_f(v != 0);
+	}
+
+	/// Returns the f flag as an integer value.
+	pub fn getfi_f(&self) -> u32 { (self.cpsr >> 6) & 1 }
+
+	/// Returns the f flag as a boolean value.
+	pub fn getf_f(&self) -> bool { self.getfi_f() != 0 }
+
+	/// Sets the t flag
+	pub fn setf_t(&mut self) { self.cpsr |= 1 << 5; }
+
+	/// Clears the t flag
+	pub fn clearf_t(&mut self) { self.cpsr &= !(1 << 5); }
+
+	/// Sets the t flag to a given boolean value.
+	pub fn putf_t(&mut self, v: bool) {
+		if v { self.setf_t() }
+		else { self.clearf_t() }
+	}
+
+	/// Sets the t flag to a given integer value.
+	pub fn putfi_t(&mut self, v: u32) {
+		self.putf_t(v != 0);
+	}
+
+	/// Returns the t flag as an integer value.
+	pub fn getfi_t(&self) -> u32 { (self.cpsr >> 5) & 1 }
+
+	/// Returns the t flag as a boolean value.
+	pub fn getf_t(&self) -> bool { self.getfi_t() != 0 }
 }
