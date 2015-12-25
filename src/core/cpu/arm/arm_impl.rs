@@ -62,13 +62,23 @@ const STR: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_str;
 const STRB: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_strb;
 
 // Functions for calculating the offset of a single data transfer.
-const SDT_OFF: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_off;
 const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
-const SDT_NIM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_nim;
 const SDT_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsl;
 const SDT_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsr;
 const SDT_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_asr;
 const SDT_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_ror;
+
+const SDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_imm;
+const SDT_NEG_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsl;
+const SDT_NEG_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsr;
+const SDT_NEG_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_asr;
+const SDT_NEG_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_ror;
+
+const SDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_imm;
+const SDT_POS_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsl;
+const SDT_POS_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsr;
+const SDT_POS_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_asr;
+const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
 
 /// Generates a single data transfer instruction.
 macro_rules! gen_sdt {
@@ -78,6 +88,7 @@ macro_rules! gen_sdt {
 		$index_pre: expr,
 		$index_inc: expr,
 		$offset_fn: ident,
+		$writeback: expr,
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
@@ -91,8 +102,8 @@ macro_rules! gen_sdt {
 			} else { _rn };
 			let data = $function(cpu, address, rd);
 			cpu.rset(rd, data);
-			if !($index_pre) || $user {
-				cpu.rset(rn, 
+			if $writeback || $user || !($index_pre) {
+				cpu.rset(rn,
 					if !($index_pre) {
 						if $index_inc { _rn + offset }
 						else { _rn - offset }
@@ -144,7 +155,7 @@ gen_dproc!(arm_and_rri, arm_fn_op2_rri, arm_fn_and);
 /// Rotate right by register
 gen_dproc!(arm_and_rrr, arm_fn_op2_rrr, arm_fn_and);
 
-/// MUL 
+/// MUL
 /// Multiply registers
 pub fn arm_mul(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -204,7 +215,7 @@ gen_dproc!(arm_ands_rri, arm_fn_op2_rri_s, arm_fn_and_s);
 /// Rotate right by register
 gen_dproc!(arm_ands_rrr, arm_fn_op2_rrr_s, arm_fn_and_s);
 
-/// MULS 
+/// MULS
 /// Multiply registers, setting flags
 pub fn arm_muls(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -271,7 +282,7 @@ gen_dproc!(arm_eor_rri, arm_fn_op2_rri, arm_fn_eor);
 /// Rotate right by register
 gen_dproc!(arm_eor_rrr, arm_fn_op2_rrr, arm_fn_eor);
 
-/// MLA 
+/// MLA
 /// Multiply and accumulate registers
 pub fn arm_mla(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -317,7 +328,7 @@ gen_dproc!(arm_eors_rri, arm_fn_op2_rri_s, arm_fn_eor_s);
 /// Rotate right by register
 gen_dproc!(arm_eors_rrr, arm_fn_op2_rrr_s, arm_fn_eor_s);
 
-/// MLAS 
+/// MLAS
 /// Multiply and accumulate registers, setting flags
 pub fn arm_mlas(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -551,7 +562,7 @@ gen_dproc!(arm_add_rri, arm_fn_op2_rri, arm_fn_add);
 /// Rotate right by register
 gen_dproc!(arm_add_rrr, arm_fn_op2_rrr, arm_fn_add);
 
-/// UMULL 
+/// UMULL
 /// Unsigned long multiply (32x32 to 64)
 pub fn arm_umull(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -604,7 +615,7 @@ gen_dproc!(arm_adds_rri, arm_fn_op2_rri_s, arm_fn_add_s);
 /// Rotate right by register
 gen_dproc!(arm_adds_rrr, arm_fn_op2_rrr_s, arm_fn_add_s);
 
-/// UMULLS 
+/// UMULLS
 /// Unsigned long multiply, setting flags
 pub fn arm_umulls(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -671,7 +682,7 @@ gen_dproc!(arm_adc_rri, arm_fn_op2_rri, arm_fn_adc);
 /// Rotate right by register
 gen_dproc!(arm_adc_rrr, arm_fn_op2_rrr, arm_fn_adc);
 
-/// UMLAL 
+/// UMLAL
 /// Unsigned long multiply and accumulate
 pub fn arm_umlal(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -717,7 +728,7 @@ gen_dproc!(arm_adcs_rri, arm_fn_op2_rri_s, arm_fn_adc_s);
 /// Rotate right by register
 gen_dproc!(arm_adcs_rrr, arm_fn_op2_rrr_s, arm_fn_adc_s);
 
-/// UMLALS 
+/// UMLALS
 /// Unsigned long multiply and accumulate, setting flags
 pub fn arm_umlals(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -763,7 +774,7 @@ gen_dproc!(arm_sbc_rri, arm_fn_op2_rri, arm_fn_sbc);
 /// Rotate right by register
 gen_dproc!(arm_sbc_rrr, arm_fn_op2_rrr, arm_fn_sbc);
 
-/// SMULL 
+/// SMULL
 /// Signed long multiply (32x32 to 64)
 pub fn arm_smull(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -816,7 +827,7 @@ gen_dproc!(arm_sbcs_rri, arm_fn_op2_rri_s, arm_fn_sbc_s);
 /// Rotate right by register
 gen_dproc!(arm_sbcs_rrr, arm_fn_op2_rrr_s, arm_fn_sbc_s);
 
-/// SMULLS 
+/// SMULLS
 /// Signed long multiply, setting flags
 pub fn arm_smulls(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -883,7 +894,7 @@ gen_dproc!(arm_rsc_rri, arm_fn_op2_rri, arm_fn_rsc);
 /// Rotate right by register
 gen_dproc!(arm_rsc_rrr, arm_fn_op2_rrr, arm_fn_rsc);
 
-/// SMLAL 
+/// SMLAL
 /// Signed long multiply and accumulate
 pub fn arm_smlal(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -929,7 +940,7 @@ gen_dproc!(arm_rscs_rri, arm_fn_op2_rri_s, arm_fn_rsc_s);
 /// Rotate right by register
 gen_dproc!(arm_rscs_rrr, arm_fn_op2_rrr_s, arm_fn_rsc_s);
 
-/// SMLALS 
+/// SMLALS
 /// Signed long multiply and accumulate, setting flags
 pub fn arm_smlals(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -942,7 +953,7 @@ pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
 }
 
-/// SWP 
+/// SWP
 /// Swap registers with memory word
 pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -1023,7 +1034,7 @@ pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
 }
 
-/// BX 
+/// BX
 /// Branch and switch execution modes
 pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -1104,7 +1115,7 @@ pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
 }
 
-/// SWPB 
+/// SWPB
 /// Swap registers with memory byte
 pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
@@ -1840,1124 +1851,484 @@ gen_dproc!(arm_mvn_imm, arm_fn_op2_imm, arm_fn_mvn);
 gen_dproc!(arm_mvns_imm, arm_fn_op2_imm_s, arm_fn_mvn_s);
 
 /// STR ptim
-/// Store word
-/// Immediate offset, post-decrement
-pub fn arm_str_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptim, STR, POST, DEC, SDT_IMM, false, false);
 
 /// LDR ptim
-/// Load word
-/// Immediate offset, post-decrement
-pub fn arm_ldr_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptim, LDR, POST, DEC, SDT_IMM, false, false);
 
 /// STRT ptim
-/// Store word from user-mode register
-/// Immediate offset, post-decrement
-pub fn arm_strt_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptim, STR, POST, DEC, SDT_IMM, false, true);
 
 /// LDRT ptim
-/// Load word into user-mode register
-/// Immediate offset, post-decrement
-pub fn arm_ldrt_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptim, LDR, POST, DEC, SDT_IMM, false, true);
 
 /// STRB ptim
-/// Store byte
-/// Immediate offset, post-decrement
-pub fn arm_strb_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptim, STRB, POST, DEC, SDT_IMM, false, false);
 
 /// LDRB ptim
-/// Load byte
-/// Immediate offset, post-decrement
-pub fn arm_ldrb_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptim, LDRB, POST, DEC, SDT_IMM, false, false);
 
 /// STRBT ptim
-/// Store byte from user-mode register
-/// Immediate offset, post-decrement
-pub fn arm_strbt_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptim, STRB, POST, DEC, SDT_IMM, false, true);
 
 /// LDRBT ptim
-/// Load byte into user-mode register
-/// Immediate offset, post-decrement
-pub fn arm_ldrbt_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptim, LDRB, POST, DEC, SDT_IMM, false, true);
 
 /// STR ptip
-/// Store word
-/// Immediate offset, post-increment
-pub fn arm_str_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptip, STR, POST, INC, SDT_IMM, false, false);
 
 /// LDR ptip
-/// Load word
-/// Immediate offset, post-increment
-pub fn arm_ldr_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptip, LDR, POST, INC, SDT_IMM, false, false);
 
 /// STRT ptip
-/// Store word from user-mode register
-/// Immediate offset, post-increment
-pub fn arm_strt_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptip, STR, POST, INC, SDT_IMM, false, true);
 
 /// LDRT ptip
-/// Load word into user-mode register
-/// Immediate offset, post-increment
-pub fn arm_ldrt_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptip, LDR, POST, INC, SDT_IMM, false, true);
 
 /// STRB ptip
-/// Store byte
-/// Immediate offset, post-increment
-pub fn arm_strb_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptip, STRB, POST, INC, SDT_IMM, false, false);
 
 /// LDRB ptip
-/// Load byte
-/// Immediate offset, post-increment
-pub fn arm_ldrb_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptip, LDRB, POST, INC, SDT_IMM, false, false);
 
 /// STRBT ptip
-/// Store byte from user-mode register
-/// Immediate offset, post-increment
-pub fn arm_strbt_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptip, STRB, POST, INC, SDT_IMM, false, true);
 
 /// LDRBT ptip
-/// Load byte into user-mode register
-/// Immediate offset, post-increment
-pub fn arm_ldrbt_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptip, LDRB, POST, INC, SDT_IMM, false, true);
 
 /// STR ofim
-/// Store word
-/// Negative immediate offset
-pub fn arm_str_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO negative imm offset
-}
+gen_sdt!(arm_str_ofim, STR, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// LDR ofim
-/// Load word
-/// Negative immediate offset
-pub fn arm_ldr_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO negative imm offset
-}
+gen_sdt!(arm_ldr_ofim, LDR, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// STR prim
-/// Store word
-/// Immediate offset, pre-decrement
-pub fn arm_str_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prim, STR, PRE, DEC, SDT_IMM, true, false);
 
 /// LDR prim
-/// Load word
-/// Immediate offset, pre-decrement
-pub fn arm_ldr_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prim, LDR, PRE, DEC, SDT_IMM, true, false);
 
 /// STRB ofim
-/// Store byte
-/// Negative immediate offset
-pub fn arm_strb_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO negative imm offset
-}
+gen_sdt!(arm_strb_ofim, STRB, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// LDRB ofim
-/// Load byte
-/// Negative immediate offset
-pub fn arm_ldrb_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO negative imm offest
-}
+gen_sdt!(arm_ldrb_ofim, LDRB, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// STRB prim
-/// Store byte
-/// Immediate offset, pre-decrement
-pub fn arm_strb_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prim, STRB, PRE, DEC, SDT_IMM, true, false);
 
 /// LDRB prim
-/// Load byte
-/// Immediate offset, pre-decrement
-pub fn arm_ldrb_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prim, LDRB, PRE, DEC, SDT_IMM, true, false);
 
 /// STR ofip
-/// Store word
-/// Positive immediate offset
-pub fn arm_str_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO positive imm offset
-}
+gen_sdt!(arm_str_ofip, STR, PRE, INC, SDT_POS_IMM, false, false);
 
 /// LDR ofip
-/// Load word
-/// Positive immediate offset
-pub fn arm_ldr_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO positive imm offset
-}
+gen_sdt!(arm_ldr_ofip, LDR, PRE, INC, SDT_POS_IMM, false, false);
 
 /// STR prip
-/// Store word
-/// Immediate offset, pre-increment
-pub fn arm_str_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prip, STR, PRE, INC, SDT_IMM, true, false);
 
 /// LDR prip
-/// Load word
-/// Immediate offset, pre-increment
-pub fn arm_ldr_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prip, LDR, PRE, INC, SDT_IMM, true, false);
 
 /// STRB ofip
-/// Store byte
-/// Positive immediate offset
-pub fn arm_strb_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO positive imm offset
-}
+gen_sdt!(arm_strb_ofip, STRB, PRE, INC, SDT_POS_IMM, false, false);
 
 /// LDRB ofip
-/// Load byte
-/// Positive immediate offset
-pub fn arm_ldrb_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO positive imm offset
-}
+gen_sdt!(arm_ldrb_ofip, LDRB, PRE, INC, SDT_POS_IMM, false, false);
 
 /// STRB prip
-/// Store byte
-/// Immediate offset, pre-increment
-pub fn arm_strb_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prip, STRB, PRE, INC, SDT_IMM, true, false);
 
 /// LDRB prip
-/// Load byte
-/// Immediate offset, pre-increment
-pub fn arm_ldrb_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prip, LDRB, PRE, INC, SDT_IMM, true, false);
 
 /// STR ptrmll
-/// Store word
-/// Left-shifted register offset, post-decrement
-pub fn arm_str_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrmll, STR, POST, DEC, SDT_LSL, false, false);
 
 /// STR ptrmlr
-/// Store word
-/// Right-shifted register offset, post-decrement
-pub fn arm_str_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrmlr, STR, POST, DEC, SDT_LSR, false, false);
 
 /// STR ptrmar
-/// Store word
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_str_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrmar, STR, POST, DEC, SDT_ASR, false, false);
 
 /// STR ptrmrr
-/// Store word
-/// Right-rotated register offset, post-decrement
-pub fn arm_str_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrmrr, STR, POST, DEC, SDT_ROR, false, false);
 
 /// LDR ptrmll
-/// Load word
-/// Left-shifted register offset, post-decrement
-pub fn arm_ldr_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrmll, LDR, POST, DEC, SDT_LSL, false, false);
 
 /// LDR ptrmlr
-/// Load word
-/// Right-shifted register offset, post-decrement
-pub fn arm_ldr_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrmlr, LDR, POST, DEC, SDT_LSR, false, false);
 
 /// LDR ptrmar
-/// Load word
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_ldr_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrmar, LDR, POST, DEC, SDT_ASR, false, false);
 
 /// LDR ptrmrr
-/// Load word
-/// Right-rotated register offset, post-decrement
-pub fn arm_ldr_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrmrr, LDR, POST, DEC, SDT_ROR, false, false);
 
 /// STRT ptrmll
-/// Store word from user-mode register
-/// Left-shifted register offset, post-decrement
-pub fn arm_strt_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrmll, STR, POST, DEC, SDT_LSL, false, true);
 
 /// STRT ptrmlr
-/// Store word from user-mode register
-/// Right-shifted register offset, post-decrement
-pub fn arm_strt_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrmlr, STR, POST, DEC, SDT_LSR, false, true);
 
 /// STRT ptrmar
-/// Store word from user-mode register
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_strt_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrmar, STR, POST, DEC, SDT_ASR, false, true);
 
 /// STRT ptrmrr
-/// Store word from user-mode register
-/// Right-rotated register offset, post-decrement
-pub fn arm_strt_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrmrr, STR, POST, DEC, SDT_ROR, false, true);
 
 /// LDRT ptrmll
-/// Load word into user-mode register
-/// Left-shifted register offset, post-decrement
-pub fn arm_ldrt_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrmll, LDR, POST, DEC, SDT_LSL, false, true);
 
 /// LDRT ptrmlr
-/// Load word into user-mode register
-/// Right-shifted register offset, post-decrement
-pub fn arm_ldrt_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrmlr, LDR, POST, DEC, SDT_LSR, false, true);
 
 /// LDRT ptrmar
-/// Load word into user-mode register
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_ldrt_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrmar, LDR, POST, DEC, SDT_ASR, false, true);
 
 /// LDRT ptrmrr
-/// Load word into user-mode register
-/// Right-rotated register offset, post-decrement
-pub fn arm_ldrt_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrmrr, LDR, POST, DEC, SDT_ROR, false, true);
 
 /// STRB ptrmll
-/// Store byte
-/// Left-shifted register offset, post-decrement
-pub fn arm_strb_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrmll, STRB, POST, DEC, SDT_LSL, false, false);
 
 /// STRB ptrmlr
-/// Store byte
-/// Right-shifted register offset, post-decrement
-pub fn arm_strb_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrmlr, STRB, POST, DEC, SDT_LSR, false, false);
 
 /// STRB ptrmar
-/// Store byte
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_strb_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrmar, STRB, POST, DEC, SDT_ASR, false, false);
 
 /// STRB ptrmrr
-/// Store byte
-/// Right-rotated register offset, post-decrement
-pub fn arm_strb_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrmrr, STRB, POST, DEC, SDT_ROR, false, false);
 
 /// LDRB ptrmll
-/// Load byte
-/// Left-shifted register offset, post-decrement
-pub fn arm_ldrb_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrmll, LDRB, POST, DEC, SDT_LSL, false, false);
 
 /// LDRB ptrmlr
-/// Load byte
-/// Right-shifted register offset, post-decrement
-pub fn arm_ldrb_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrmlr, LDRB, POST, DEC, SDT_LSR, false, false);
 
 /// LDRB ptrmar
-/// Load byte
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_ldrb_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrmar, LDRB, POST, DEC, SDT_ASR, false, false);
 
 /// LDRB ptrmrr
-/// Load byte
-/// Right-rotated register offset, post-decrement
-pub fn arm_ldrb_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrmrr, LDRB, POST, DEC, SDT_ROR, false, false);
 
 /// STRBT ptrmll
-/// Store byte from user-mode register
-/// Left-shifted register offset, post-decrement
-pub fn arm_strbt_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrmll, STRB, POST, DEC, SDT_LSL, false, true);
 
 /// STRBT ptrmlr
-/// Store byte from user-mode register
-/// Right-shifted register offset, post-decrement
-pub fn arm_strbt_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrmlr, STRB, POST, DEC, SDT_LSR, false, true);
 
 /// STRBT ptrmar
-/// Store byte from user-mode register
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_strbt_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrmar, STRB, POST, DEC, SDT_ASR, false, true);
 
 /// STRBT ptrmrr
-/// Store byte from user-mode register
-/// Right-rotated register offset, post-decrement
-pub fn arm_strbt_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrmrr, STRB, POST, DEC, SDT_ROR, false, true);
 
 /// LDRBT ptrmll
-/// Load byte into user-mode register
-/// Left-shifted register offset, post-decrement
-pub fn arm_ldrbt_ptrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrmll, LDRB, POST, DEC, SDT_LSL, false, true);
 
 /// LDRBT ptrmlr
-/// Load byte into user-mode register
-/// Right-shifted register offset, post-decrement
-pub fn arm_ldrbt_ptrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrmlr, LDRB, POST, DEC, SDT_LSR, false, true);
 
 /// LDRBT ptrmar
-/// Load byte into user-mode register
-/// Arithmetic-right-shifted register offset, post-decrement
-pub fn arm_ldrbt_ptrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrmar, LDRB, POST, DEC, SDT_ASR, false, true);
 
 /// LDRBT ptrmrr
-/// Load byte into user-mode register
-/// Right-rotated register offset, post-decrement
-pub fn arm_ldrbt_ptrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrmrr, LDRB, POST, DEC, SDT_ROR, false, true);
 
 /// STR ptrpll
-/// Store word
-/// Left-shifted register offset, post-increment
-pub fn arm_str_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrpll, STR, POST, INC, SDT_LSL, false, false);
 
 /// STR ptrplr
-/// Store word
-/// Right-shifted register offset, post-increment
-pub fn arm_str_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrplr, STR, POST, INC, SDT_LSR, false, false);
 
 /// STR ptrpar
-/// Store word
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_str_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrpar, STR, POST, INC, SDT_ASR, false, false);
 
 /// STR ptrprr
-/// Store word
-/// Right-rotated register offset, post-increment
-pub fn arm_str_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptrprr, STR, POST, INC, SDT_ROR, false, false);
 
 /// LDR ptrpll
-/// Load word
-/// Left-shifted register offset, post-increment
-pub fn arm_ldr_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrpll, LDR, POST, INC, SDT_LSL, false, false);
 
 /// LDR ptrplr
-/// Load word
-/// Right-shifted register offset, post-increment
-pub fn arm_ldr_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrplr, LDR, POST, INC, SDT_LSR, false, false);
 
 /// LDR ptrpar
-/// Load word
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_ldr_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrpar, LDR, POST, INC, SDT_ASR, false, false);
 
 /// LDR ptrprr
-/// Load word
-/// Right-rotated register offset, post-increment
-pub fn arm_ldr_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptrprr, LDR, POST, INC, SDT_ROR, false, false);
 
 /// STRT ptrpll
-/// Store word from user-mode register
-/// Left-shifted register offset, post-increment
-pub fn arm_strt_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrpll, STR, POST, INC, SDT_LSL, false, true);
 
 /// STRT ptrplr
-/// Store word from user-mode register
-/// Right-shifted register offset, post-increment
-pub fn arm_strt_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrplr, STR, POST, INC, SDT_LSR, false, true);
 
 /// STRT ptrpar
-/// Store word from user-mode register
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_strt_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrpar, STR, POST, INC, SDT_ASR, false, true);
 
 /// STRT ptrprr
-/// Store word from user-mode register
-/// Right-rotated register offset, post-increment
-pub fn arm_strt_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptrprr, STR, POST, INC, SDT_ROR, false, true);
 
 /// LDRT ptrpll
-/// Load word into user-mode register
-/// Left-shifted register offset, post-increment
-pub fn arm_ldrt_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrpll, LDR, POST, INC, SDT_LSL, false, true);
 
 /// LDRT ptrplr
-/// Load word into user-mode register
-/// Right-shifted register offset, post-increment
-pub fn arm_ldrt_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrplr, LDR, POST, INC, SDT_LSR, false, true);
 
 /// LDRT ptrpar
-/// Load word into user-mode register
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_ldrt_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrpar, LDR, POST, INC, SDT_ASR, false, true);
 
 /// LDRT ptrprr
-/// Load word into user-mode register
-/// Right-rotated register offset, post-increment
-pub fn arm_ldrt_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptrprr, LDR, POST, INC, SDT_ROR, false, true);
 
 /// STRB ptrpll
-/// Store byte
-/// Left-shifted register offset, post-increment
-pub fn arm_strb_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrpll, STRB, POST, INC, SDT_LSL, false, false);
 
 /// STRB ptrplr
-/// Store byte
-/// Right-shifted register offset, post-increment
-pub fn arm_strb_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrplr, STRB, POST, INC, SDT_LSR, false, false);
 
 /// STRB ptrpar
-/// Store byte
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_strb_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrpar, STRB, POST, INC, SDT_ASR, false, false);
 
 /// STRB ptrprr
-/// Store byte
-/// Right-rotated register offset, post-increment
-pub fn arm_strb_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ptrprr, STRB, POST, INC, SDT_ROR, false, false);
 
 /// LDRB ptrpll
-/// Load byte
-/// Left-shifted register offset, post-increment
-pub fn arm_ldrb_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrpll, LDRB, POST, INC, SDT_LSL, false, false);
 
 /// LDRB ptrplr
-/// Load byte
-/// Right-shifted register offset, post-increment
-pub fn arm_ldrb_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrplr, LDRB, POST, INC, SDT_LSR, false, false);
 
 /// LDRB ptrpar
-/// Load byte
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_ldrb_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrpar, LDRB, POST, INC, SDT_ASR, false, false);
 
 /// LDRB ptrprr
-/// Load byte
-/// Right-rotated register offset, post-increment
-pub fn arm_ldrb_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ptrprr, LDRB, POST, INC, SDT_ROR, false, false);
 
 /// STRBT ptrpll
-/// Store byte from user-mode register
-/// Left-shifted register offset, post-increment
-pub fn arm_strbt_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrpll, STRB, POST, INC, SDT_LSL, false, true);
 
 /// STRBT ptrplr
-/// Store byte from user-mode register
-/// Right-shifted register offset, post-increment
-pub fn arm_strbt_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrplr, STRB, POST, INC, SDT_LSR, false, true);
 
 /// STRBT ptrpar
-/// Store byte from user-mode register
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_strbt_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrpar, STRB, POST, INC, SDT_ASR, false, true);
 
 /// STRBT ptrprr
-/// Store byte from user-mode register
-/// Right-rotated register offset, post-increment
-pub fn arm_strbt_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strbt_ptrprr, STRB, POST, INC, SDT_ROR, false, true);
 
 /// LDRBT ptrpll
-/// Load byte into user-mode register
-/// Left-shifted register offset, post-increment
-pub fn arm_ldrbt_ptrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrpll, LDRB, POST, INC, SDT_LSL, false, true);
 
 /// LDRBT ptrplr
-/// Load byte into user-mode register
-/// Right-shifted register offset, post-increment
-pub fn arm_ldrbt_ptrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrplr, LDRB, POST, INC, SDT_LSR, false, true);
 
 /// LDRBT ptrpar
-/// Load byte into user-mode register
-/// Arithmetic-right-shifted register offset, post-increment
-pub fn arm_ldrbt_ptrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrpar, LDRB, POST, INC, SDT_ASR, false, true);
 
 /// LDRBT ptrprr
-/// Load byte into user-mode register
-/// Right-rotated register offset, post-increment
-pub fn arm_ldrbt_ptrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrbt_ptrprr, LDRB, POST, INC, SDT_ROR, false, true);
 
 /// STR ofrmll
-/// Store word
-/// Negative left-shifted register offset
-pub fn arm_str_ofrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrmll, STR, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// STR ofrmlr
-/// Store word
-/// Negative right-shifted register offset
-pub fn arm_str_ofrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrmlr, STR, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// STR ofrmar
-/// Store word
-/// Negative arithmetic-right-shifted register offset
-pub fn arm_str_ofrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrmar, STR, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// STR ofrmrr
-/// Store word
-/// Negative right-rotated register offset
-pub fn arm_str_ofrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrmrr, STR, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// LDR ofrmll
-/// Load word
-/// Negative left-shifted register offset
-pub fn arm_ldr_ofrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrmll, LDR, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// LDR ofrmlr
-/// Load word
-/// Negative right-shifted register offset
-pub fn arm_ldr_ofrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrmlr, LDR, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// LDR ofrmar
-/// Load word
-/// Negative arithmetic-right-shifted register offset
-pub fn arm_ldr_ofrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrmar, LDR, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// LDR ofrmrr
-/// Load word
-/// Negative right-rotated register offset
-pub fn arm_ldr_ofrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrmrr, LDR, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// STR prrmll
-/// Store word
-/// Left-shifted register offset, pre-decrement
-pub fn arm_str_prrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrmll, STR, PRE, DEC, SDT_LSL, true, false);
 
 /// STR prrmlr
-/// Store word
-/// Right-shifted register offset, pre-decrement
-pub fn arm_str_prrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrmlr, STR, PRE, DEC, SDT_LSR, true, false);
 
 /// STR prrmar
-/// Store word
-/// Arithmetic-right-shifted register offset, pre-decrement
-pub fn arm_str_prrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrmar, STR, PRE, DEC, SDT_ASR, true, false);
 
 /// STR prrmrr
-/// Store word
-/// Right-rotated register offset, pre-decrement
-pub fn arm_str_prrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrmrr, STR, PRE, DEC, SDT_ROR, true, false);
 
 /// LDR prrmll
-/// Load word
-/// Left-shifted register offset, pre-decrement
-pub fn arm_ldr_prrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrmll, LDR, PRE, DEC, SDT_LSL, true, false);
 
 /// LDR prrmlr
-/// Load word
-/// Right-shifted register offset, pre-decrement
-pub fn arm_ldr_prrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrmlr, LDR, PRE, DEC, SDT_LSR, true, false);
 
 /// LDR prrmar
-/// Load word
-/// Arithmetic-right-shifted register offset, pre-decrement
-pub fn arm_ldr_prrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrmar, LDR, PRE, DEC, SDT_ASR, true, false);
 
 /// LDR prrmrr
-/// Load word
-/// Right-rotated register offset, pre-decrement
-pub fn arm_ldr_prrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrmrr, LDR, PRE, DEC, SDT_ROR, true, false);
 
 /// STRB ofrmll
-/// Store byte
-/// Negative left-shifted register offset
-pub fn arm_strb_ofrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrmll, STRB, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// STRB ofrmlr
-/// Store byte
-/// Negative right-shifted register offset
-pub fn arm_strb_ofrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrmlr, STRB, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// STRB ofrmar
-/// Store byte
-/// Negative arithmetic-right-shifted register offset
-pub fn arm_strb_ofrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrmar, STRB, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// STRB ofrmrr
-/// Store byte
-/// Negative right-rotated register offset
-pub fn arm_strb_ofrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrmrr, STRB, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// LDRB ofrmll
-/// Load byte
-/// Negative left-shifted register offset
-pub fn arm_ldrb_ofrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrmll, LDRB, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// LDRB ofrmlr
-/// Load byte
-/// Negative right-shifted register offset
-pub fn arm_ldrb_ofrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrmlr, LDRB, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// LDRB ofrmar
-/// Load byte
-/// Negative arithmetic-right-shifted register offset
-pub fn arm_ldrb_ofrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrmar, LDRB, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// LDRB ofrmrr
-/// Load byte
-/// Negative right-rotated register offset
-pub fn arm_ldrb_ofrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrmrr, LDRB, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// STRB prrmll
-/// Store byte
-/// Left-shifted register offset, pre-decrement
-pub fn arm_strb_prrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrmll, STRB, PRE, DEC, SDT_LSL, true, false);
 
 /// STRB prrmlr
-/// Store byte
-/// Right-shifted register offset, pre-decrement
-pub fn arm_strb_prrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrmlr, STRB, PRE, DEC, SDT_LSR, true, false);
 
 /// STRB prrmar
-/// Store byte
-/// Arithmetic-right-shifted register offset, pre-decrement
-pub fn arm_strb_prrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrmar, STRB, PRE, DEC, SDT_ASR, true, false);
 
 /// STRB prrmrr
-/// Store byte
-/// Right-rotated register offset, pre-decrement
-pub fn arm_strb_prrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrmrr, STRB, PRE, DEC, SDT_ROR, true, false);
 
 /// LDRB prrmll
-/// Load byte
-/// Left-shifted register offset, pre-decrement
-pub fn arm_ldrb_prrmll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrmll, LDRB, PRE, DEC, SDT_LSL, true, false);
 
 /// LDRB prrmlr
-/// Load byte
-/// Right-shifted register offset, pre-decrement
-pub fn arm_ldrb_prrmlr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrmlr, LDRB, PRE, DEC, SDT_LSR, true, false);
 
 /// LDRB prrmar
-/// Load byte
-/// Arithmetic-right-shifted register offset, pre-decrement
-pub fn arm_ldrb_prrmar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrmar, LDRB, PRE, DEC, SDT_ASR, true, false);
 
 /// LDRB prrmrr
-/// Load byte
-/// Right-rotated register offset, pre-decrement
-pub fn arm_ldrb_prrmrr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrmrr, LDRB, PRE, DEC, SDT_ROR, true, false);
 
 /// STR ofrpll
-/// Store word
-/// Positive left-shifted register offset
-pub fn arm_str_ofrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrpll, STR, PRE, INC, SDT_POS_LSL, false, false);
 
 /// STR ofrplr
-/// Store word
-/// Positive right-shifted register offset
-pub fn arm_str_ofrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrplr, STR, PRE, INC, SDT_POS_LSR, false, false);
 
 /// STR ofrpar
-/// Store word
-/// Positive arithmetic-right-shifted register offset
-pub fn arm_str_ofrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrpar, STR, PRE, INC, SDT_POS_ASR, false, false);
 
 /// STR ofrprr
-/// Store word
-/// Positive right-rotated register offset
-pub fn arm_str_ofrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ofrprr, STR, PRE, INC, SDT_POS_ROR, false, false);
 
 /// LDR ofrpll
-/// Load word
-/// Positive left-shifted register offset
-pub fn arm_ldr_ofrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrpll, LDR, PRE, INC, SDT_POS_LSL, false, false);
 
 /// LDR ofrplr
-/// Load word
-/// Positive right-shifted register offset
-pub fn arm_ldr_ofrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrplr, LDR, PRE, INC, SDT_POS_LSR, false, false);
 
 /// LDR ofrpar
-/// Load word
-/// Positive arithmetic-right-shifted register offset
-pub fn arm_ldr_ofrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrpar, LDR, PRE, INC, SDT_POS_ASR, false, false);
 
 /// LDR ofrprr
-/// Load word
-/// Positive right-rotated register offset
-pub fn arm_ldr_ofrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ofrprr, LDR, PRE, INC, SDT_POS_ROR, false, false);
 
 /// STR prrpll
-/// Store word
-/// Left-shifted register offset, pre-increment
-pub fn arm_str_prrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrpll, STR, PRE, INC, SDT_LSL, true, false);
 
 /// STR prrplr
-/// Store word
-/// Right-shifted register offset, pre-increment
-pub fn arm_str_prrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrplr, STR, PRE, INC, SDT_LSR, true, false);
 
 /// STR prrpar
-/// Store word
-/// Arithmetic-right-shifted register offset, pre-increment
-pub fn arm_str_prrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrpar, STR, PRE, INC, SDT_ASR, true, false);
 
 /// STR prrprr
-/// Store word
-/// Right-rotated register offset, pre-increment
-pub fn arm_str_prrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_prrprr, STR, PRE, INC, SDT_ROR, true, false);
 
 /// LDR prrpll
-/// Load word
-/// Left-shifted register offset, pre-increment
-pub fn arm_ldr_prrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrpll, LDR, PRE, INC, SDT_LSL, true, false);
 
 /// LDR prrplr
-/// Load word
-/// Right-shifted register offset, pre-increment
-pub fn arm_ldr_prrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrplr, LDR, PRE, INC, SDT_LSR, true, false);
 
 /// LDR prrpar
-/// Load word
-/// Arithmetic-right-shifted register offset, pre-increment
-pub fn arm_ldr_prrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrpar, LDR, PRE, INC, SDT_ASR, true, false);
 
 /// LDR prrprr
-/// Load word
-/// Right-rotated register offset, pre-increment
-pub fn arm_ldr_prrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_prrprr, LDR, PRE, INC, SDT_ROR, true, false);
 
 /// STRB ofrpll
-/// Store byte
-/// Positive left-shifted register offset
-pub fn arm_strb_ofrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrpll, STRB, PRE, INC, SDT_POS_LSL, false, false);
 
 /// STRB ofrplr
-/// Store byte
-/// Positive right-shifted register offset
-pub fn arm_strb_ofrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrplr, STRB, PRE, INC, SDT_POS_LSR, false, false);
 
 /// STRB ofrpar
-/// Store byte
-/// Positive arithmetic-right-shifted register offset
-pub fn arm_strb_ofrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrpar, STRB, PRE, INC, SDT_POS_ASR, false, false);
 
 /// STRB ofrprr
-/// Store byte
-/// Positive right-rotated register offset
-pub fn arm_strb_ofrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_ofrprr, STRB, PRE, INC, SDT_POS_ROR, false, false);
 
 /// LDRB ofrpll
-/// Load byte
-/// Positive left-shifted register offset
-pub fn arm_ldrb_ofrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrpll, LDRB, PRE, INC, SDT_POS_LSL, false, false);
 
 /// LDRB ofrplr
-/// Load byte
-/// Positive right-shifted register offset
-pub fn arm_ldrb_ofrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrplr, LDRB, PRE, INC, SDT_POS_LSR, false, false);
 
 /// LDRB ofrpar
-/// Load byte
-/// Positive arithmetic-right-shifted register offset
-pub fn arm_ldrb_ofrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrpar, LDRB, PRE, INC, SDT_POS_ASR, false, false);
 
 /// LDRB ofrprr
-/// Load byte
-/// Positive right-rotated register offset
-pub fn arm_ldrb_ofrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_ofrprr, LDRB, PRE, INC, SDT_POS_ROR, false, false);
 
 /// STRB prrpll
-/// Store byte
-/// Left-shifted register offset, pre-increment
-pub fn arm_strb_prrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrpll, STRB, PRE, INC, SDT_LSL, true, false);
 
 /// STRB prrplr
-/// Store byte
-/// Right-shifted register offset, pre-increment
-pub fn arm_strb_prrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrplr, STRB, PRE, INC, SDT_LSR, true, false);
 
 /// STRB prrpar
-/// Store byte
-/// Arithmetic-right-shifted register offset, pre-increment
-pub fn arm_strb_prrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrpar, STRB, PRE, INC, SDT_ASR, true, false);
 
 /// STRB prrprr
-/// Store byte
-/// Right-rotated register offset, pre-increment
-pub fn arm_strb_prrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strb_prrprr, STRB, PRE, INC, SDT_ROR, true, false);
 
 /// LDRB prrpll
-/// Load byte
-/// Left-shifted register offset, pre-increment
-pub fn arm_ldrb_prrpll(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrpll, LDRB, PRE, INC, SDT_LSL, true, false);
 
 /// LDRB prrplr
-/// Load byte
-/// Right-shifted register offset, pre-increment
-pub fn arm_ldrb_prrplr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrplr, LDRB, PRE, INC, SDT_LSR, true, false);
 
 /// LDRB prrpar
-/// Load byte
-/// Arithmetic-right-shifted register offset, pre-increment
-pub fn arm_ldrb_prrpar(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrpar, LDRB, PRE, INC, SDT_ASR, true, false);
 
 /// LDRB prrprr
-/// Load byte
-/// Right-rotated register offset, pre-increment
-pub fn arm_ldrb_prrprr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrb_prrprr, LDRB, PRE, INC, SDT_ROR, true, false);
 
 /// STMDA 
 /// Store multiple words, decrement after
