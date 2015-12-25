@@ -20,6 +20,14 @@ pub fn arm_fn_sdt_imm(cpu: &ArmCpu, instr: u32) -> u32 {
 	0
 }
 
+pub fn arm_fn_sdt_off(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_nim(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
 pub fn arm_fn_sdt_lsl(cpu: &ArmCpu, instr: u32) -> u32 {
 	0
 }

@@ -62,7 +62,9 @@ const STR: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_str;
 const STRB: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_strb;
 
 // Functions for calculating the offset of a single data transfer.
+const SDT_OFF: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_off;
 const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
+const SDT_NIM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_nim;
 const SDT_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsl;
 const SDT_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsr;
 const SDT_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_asr;
@@ -76,7 +78,6 @@ macro_rules! gen_sdt {
 		$index_pre: expr,
 		$index_inc: expr,
 		$offset_fn: ident,
-		$writeback: expr,
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
@@ -90,7 +91,7 @@ macro_rules! gen_sdt {
 			} else { _rn };
 			let data = $function(cpu, address, rd);
 			cpu.rset(rd, data);
-			if $writeback || !($index_pre) {
+			if !($index_pre) || $user {
 				cpu.rset(rn, 
 					if !($index_pre) {
 						if $index_inc { _rn + offset }
@@ -1841,22 +1842,30 @@ gen_dproc!(arm_mvns_imm, arm_fn_op2_imm_s, arm_fn_mvn_s);
 /// STR ptim
 /// Store word
 /// Immediate offset, post-decrement
-gen_sdt!(arm_str_ptim, STR, POST, DEC, SDT_IMM, false, false);
+pub fn arm_str_ptim(cpu: &mut ArmCpu, instr: u32) {
+	// #TODO
+}
 
 /// LDR ptim
 /// Load word
 /// Immediate offset, post-decrement
-gen_sdt!(arm_ldr_ptim, LDR, POST, DEC, SDT_IMM, false, false);
+pub fn arm_ldr_ptim(cpu: &mut ArmCpu, instr: u32) {
+	// #TODO
+}
 
 /// STRT ptim
 /// Store word from user-mode register
 /// Immediate offset, post-decrement
-gen_sdt!(arm_strt_ptim, STR, POST, INC, SDT_IMM, false, true);
+pub fn arm_strt_ptim(cpu: &mut ArmCpu, instr: u32) {
+	// #TODO
+}
 
 /// LDRT ptim
 /// Load word into user-mode register
 /// Immediate offset, post-decrement
-gen_sdt!(arm_ldrt_ptim, LDR, POST, DEC, SDT_IMM, false, true);
+pub fn arm_ldrt_ptim(cpu: &mut ArmCpu, instr: u32) {
+	// #TODO
+}
 
 /// STRB ptim
 /// Store byte
@@ -1946,14 +1955,14 @@ pub fn arm_ldrbt_ptip(cpu: &mut ArmCpu, instr: u32) {
 /// Store word
 /// Negative immediate offset
 pub fn arm_str_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO negative imm offset
 }
 
 /// LDR ofim
 /// Load word
 /// Negative immediate offset
 pub fn arm_ldr_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO negative imm offset
 }
 
 /// STR prim
@@ -1974,14 +1983,14 @@ pub fn arm_ldr_prim(cpu: &mut ArmCpu, instr: u32) {
 /// Store byte
 /// Negative immediate offset
 pub fn arm_strb_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO negative imm offset
 }
 
 /// LDRB ofim
 /// Load byte
 /// Negative immediate offset
 pub fn arm_ldrb_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO negative imm offest
 }
 
 /// STRB prim
@@ -2002,14 +2011,14 @@ pub fn arm_ldrb_prim(cpu: &mut ArmCpu, instr: u32) {
 /// Store word
 /// Positive immediate offset
 pub fn arm_str_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO positive imm offset
 }
 
 /// LDR ofip
 /// Load word
 /// Positive immediate offset
 pub fn arm_ldr_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO positive imm offset
 }
 
 /// STR prip
@@ -2030,14 +2039,14 @@ pub fn arm_ldr_prip(cpu: &mut ArmCpu, instr: u32) {
 /// Store byte
 /// Positive immediate offset
 pub fn arm_strb_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO positive imm offset
 }
 
 /// LDRB ofip
 /// Load byte
 /// Positive immediate offset
 pub fn arm_ldrb_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	// #TODO positive imm offset
 }
 
 /// STRB prip

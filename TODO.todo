@@ -12,6 +12,13 @@ Core:
         ☐ Halfword data transfer: register offset instructions
         ☐ Halfword data transfer: immediate offset instructions
         ☐ Single data transfer instructions
+          ☐ Find out what the Negative/Positive Immediate Offsets are
+             They don't have any information about post/pre indexing
+             or incrementing or decrementing. This is not in line with the
+             other single data transfer instructions. They might not even be part
+             of these instructions but they are in the same area in the table, so...
+             FOUND VIA #TODO negative imm offset
+             or #TODO positive imm offset
         ☐ Block data transfer instructions
         ☐ Software interrupt instructions
         ☐ Consider just inlining all of the stuff inside of the ALU.
