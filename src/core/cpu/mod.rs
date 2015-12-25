@@ -35,7 +35,7 @@ impl<T : Copy> Pipeline<T> {
 	}
 
 	/// Returns true if this pipeline is ready to execute.
-	pub fn ready(&self) -> bool { self.count > 0 }
+	pub fn ready(&self) -> bool { self.count > 1 }
 }
 
 
@@ -80,6 +80,12 @@ impl ArmCpu {
 			let saved_pc = self.registers.get(REG_PC);
 			let decoded = self.arm_pipeline.decoded;
 			let condition = (decoded >> 28) & 0xf;
+
+			{
+				let __pc = self.registers.get(REG_PC) - 8;
+				println!("executing {}", super::super::debug::armdis::disasm_arm(__pc, &self.memory, 0b11111111));
+			}
+
 			if self.check_condition(condition) {
 				execute_arm(self, decoded);
 			} /* #TODO increase the clock by 1S cycle. */

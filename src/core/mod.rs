@@ -24,8 +24,11 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.cpu.registers.set(registers::REG_PC, 0x8000000);
+		let mut x = 0;
 		while self.cpu.executable() {
 			self.cpu.tick();
+			x += 1;
+			if(x > 20) { break; }
 		}
 	}
 }
