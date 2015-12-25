@@ -47,6 +47,60 @@ macro_rules! gen_dproc_nw {
 	)
 }
 
+// Used to decide whether IO indexing should be pre/post function.
+const PRE: bool = true;
+const POST: bool = false;
+
+// Used to decide whether IO indexing should increment or decrement.
+const DEC: bool = true;
+const INC: bool = false;
+
+// Functions for loading/storing
+const LDR: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_ldr;
+const LDRB: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_ldrb;
+const STR: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_str;
+const STRB: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_strb;
+
+// Functions for calculating the offset of a single data transfer.
+const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
+const SDT_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsl;
+const SDT_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsr;
+const SDT_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_asr;
+const SDT_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_ror;
+
+/// Generates a single data transfer instruction.
+macro_rules! gen_sdt {
+	(
+		$instr_name:ident,
+		$function: ident,
+		$index_pre: expr,
+		$index_inc: expr,
+		$offset_fn: ident,
+		$writeback: expr,
+		$user: expr
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let rn = (instr >> 16) & 0xf;
+			let rd = (instr >> 12) & 0xf;
+			let _rn = cpu.rget(rn); // base
+			let offset = $offset_fn(cpu, instr);
+			let address = if $index_pre {
+				if $index_inc { _rn + offset }
+				else { _rn - offset }
+			} else { _rn };
+			let data = $function(cpu, address, rd);
+			cpu.rset(rd, data);
+			if $writeback || !($index_pre) {
+				cpu.rset(rn, 
+					if !($index_pre) {
+						if $index_inc { _rn + offset }
+						else { _rn - offset }
+					} else { _rn }
+				);
+			}
+		}
+	)
+}
 
 
 /// AND lli
@@ -101,6 +155,7 @@ pub fn arm_mul(cpu: &mut ArmCpu, instr: u32) {
 pub fn arm_strh_ptrm(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
 }
+
 
 /// UNDEFINED
 /// just increments the clock
@@ -1786,30 +1841,22 @@ gen_dproc!(arm_mvns_imm, arm_fn_op2_imm_s, arm_fn_mvn_s);
 /// STR ptim
 /// Store word
 /// Immediate offset, post-decrement
-pub fn arm_str_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_str_ptim, STR, POST, DEC, SDT_IMM, false, false);
 
 /// LDR ptim
 /// Load word
 /// Immediate offset, post-decrement
-pub fn arm_ldr_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldr_ptim, LDR, POST, DEC, SDT_IMM, false, false);
 
 /// STRT ptim
 /// Store word from user-mode register
 /// Immediate offset, post-decrement
-pub fn arm_strt_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_strt_ptim, STR, POST, INC, SDT_IMM, false, true);
 
 /// LDRT ptim
 /// Load word into user-mode register
 /// Immediate offset, post-decrement
-pub fn arm_ldrt_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_sdt!(arm_ldrt_ptim, LDR, POST, DEC, SDT_IMM, false, true);
 
 /// STRB ptim
 /// Store byte
