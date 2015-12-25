@@ -79,7 +79,10 @@ impl ArmCpu {
 		if self.arm_pipeline.ready() {
 			let saved_pc = self.registers.get(REG_PC);
 			let decoded = self.arm_pipeline.decoded;
-			execute_arm(self, decoded);
+			let condition = (decoded >> 28) & 0xf;
+			if self.check_condition(condition) {
+				execute_arm(self, decoded);
+			} /* #TODO increase the clock by 1S cycle. */
 			branched = saved_pc != self.registers.get(REG_PC);
 		} else {
 			branched = false;
@@ -140,7 +143,24 @@ impl ArmCpu {
 	///   F:   NV     -             never (ARMv1,v2 only) (Reserved ARMv3 and up)
 	/// Execution Time: If condition=false: 1S cycle. Otherwise: as specified for the respective opcode.
 	fn check_condition(&self, condition: u32) -> bool {
-		true // #TODO
+		match self.registers.get_cpsr() {
+			0x0 => self.registers.getf_z(),		// EQ
+			0x1 => !self.registers.getf_z(),	// NE
+			0x2 => self.registers.getf_c(),		// CS / HS
+			0x3 => !self.registers.getf_c(),	// CC / LO
+			0x4 => self.registers.getf_n(),		// MI
+			0x5 => !self.registers.getf_n(),	// PL
+			0x6 => self.registers.getf_v(),		// VS
+			0x7 => !self.registers.getf_v(),	// VC
+			0x8 => self.registers.getf_c() & !self.registers.getf_z(),	// HI
+			0x9 => !self.registers.getf_c() || self.registers.getf_z(),	// LS
+			0xA => self.registers.getf_n() == self.registers.getf_v(),	// GE
+			0xB => self.registers.getf_n() != self.registers.getf_v(),	// LT
+			0xC => !self.registers.getf_z() && (self.registers.getf_n() == self.registers.getf_v()), // GT
+			0xD => self.registers.getf_z() && (self.registers.getf_n() != self.registers.getf_v()), // LE
+			0xE => true, // AL
+			0xF | _ => false // NV
+		}
 	}
 
 	/// Returns true if the program counter is at an executable
