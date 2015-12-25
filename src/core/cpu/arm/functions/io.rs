@@ -20,11 +20,15 @@ pub fn arm_fn_sdt_imm(cpu: &ArmCpu, instr: u32) -> u32 {
 	0
 }
 
-pub fn arm_fn_sdt_off(cpu: &ArmCpu, instr: u32) -> u32 {
+pub fn arm_fn_sdt_neg_imm(cpu: &ArmCpu, instr: u32) -> u32 {
 	0
 }
 
-pub fn arm_fn_sdt_nim(cpu: &ArmCpu, instr: u32) -> u32 {
+pub fn arm_fn_sdt_pos_imm(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_off(cpu: &ArmCpu, instr: u32) -> u32 {
 	0
 }
 
@@ -41,5 +45,37 @@ pub fn arm_fn_sdt_asr(cpu: &ArmCpu, instr: u32) -> u32 {
 }
 
 pub fn arm_fn_sdt_ror(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_pos_lsl(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_pos_lsr(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_pos_asr(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_pos_ror(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_neg_lsl(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_neg_lsr(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_neg_asr(cpu: &ArmCpu, instr: u32) -> u32 {
+	0
+}
+
+pub fn arm_fn_sdt_neg_ror(cpu: &ArmCpu, instr: u32) -> u32 {
 	0
 }
