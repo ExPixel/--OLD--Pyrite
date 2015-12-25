@@ -37,8 +37,8 @@ pub fn load_rom(rom_path: String) -> Gba {
 	return gba
 }
 
-#[allow(unused_variables)]
 pub fn run_gba(gba: &mut Gba) {
+	gba.run();
 }
 
 pub fn disasm_gba_rom(gba: &mut Gba, thumb_mode: bool) {
@@ -80,7 +80,7 @@ fn main() {
 	}
 
 	if let Some(rom_file) = args.arg_rom {
-		let mut gba = load_rom(rom_file);
+		let mut gba = Box::new(load_rom(rom_file));
 		if args.flag_disasm {
 			disasm_gba_rom(&mut gba, args.flag_thumb);
 		} else {

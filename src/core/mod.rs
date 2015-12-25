@@ -4,6 +4,7 @@ pub mod lcd;
 pub mod registers;
 use self::memory::GbaMemory;
 
+// use self::registers;
 use self::cpu::ArmCpu;
 
 pub struct Gba {
@@ -19,5 +20,12 @@ impl Gba {
 
 	pub fn load_cartridge(&mut self, data: Vec<u8>) {
 		self.cpu.memory.rom = data;
+	}
+
+	pub fn run(&mut self) {
+		self.cpu.registers.set(registers::REG_PC, 0x8000000);
+		while self.cpu.executable() {
+			self.cpu.tick();
+		}
 	}
 }

@@ -4,6 +4,8 @@ Core:
       ☐ Complete the CPU's ALU
       ☐ Complete the CPU's ARM instructions.
       ☐ Complete the CPU's THUMB instructions.
+      Accuracy+:
+       ☐ Implement Gamepak Prefetch for the CPU
   MMU:
     ☐ Figure out how I want to do ioregsiters
         Right now I'm not sure if IO registers allow partial reads and writes.

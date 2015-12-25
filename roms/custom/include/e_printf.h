@@ -1,5 +1,5 @@
-#ifndef E_PRINTFH
-#define E_PRINTFH
+#ifndef E_PRINTF_H
+#define E_PRINTF_H
 
 #include <stdlib.h>
 #include <stdarg.h>
