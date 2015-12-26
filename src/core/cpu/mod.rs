@@ -73,6 +73,30 @@ impl ArmCpu {
 		return self.registers.set(register, value);
 	}
 
+	pub fn mread8(&self, address: u32) -> u8 {
+		self.memory.read8(address)
+	}
+
+	pub fn mread16(&self, address: u32) -> u16 {
+		self.memory.read16(address)
+	}
+
+	pub fn mread32(&self, address: u32) -> u32 {
+		self.memory.read32(address)
+	}
+
+	pub fn mwrite8(&mut self, address: u32, value: u8) {
+		self.memory.write8(address, value);
+	}
+
+	pub fn mwrite16(&mut self, address: u32, value: u16) {
+		self.memory.write16(address, value);
+	}
+
+	pub fn mwrite32(&mut self, address: u32, value: u32) {
+		self.memory.write32(address, value);
+	}
+
 	fn arm_tick(&mut self) {
 		let branched;
 

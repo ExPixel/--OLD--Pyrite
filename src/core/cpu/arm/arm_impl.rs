@@ -56,10 +56,10 @@ const DEC: bool = true;
 const INC: bool = false;
 
 // Functions for loading/storing
-const LDR: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_ldr;
-const LDRB: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_ldrb;
-const STR: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_str;
-const STRB: fn(&mut ArmCpu, u32, u32) -> u32 = arm_fn_strb;
+const LDR: fn(&mut ArmCpu, u32, u32) = arm_fn_ldr;
+const LDRB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrb;
+const STR: fn(&mut ArmCpu, u32, u32) = arm_fn_str;
+const STRB: fn(&mut ArmCpu, u32, u32) = arm_fn_strb;
 
 // Functions for calculating the offset of a single data transfer.
 const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
@@ -100,8 +100,7 @@ macro_rules! gen_sdt {
 				if $index_inc { _rn + offset }
 				else { _rn - offset }
 			} else { _rn };
-			let data = $function(cpu, address, rd);
-			cpu.rset(rd, data);
+			$function(cpu, address, rd);
 			if $writeback || $user || !($index_pre) {
 				cpu.rset(rn,
 					if !($index_pre) {
