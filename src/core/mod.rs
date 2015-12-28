@@ -24,11 +24,16 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.cpu.registers.set(registers::REG_PC, 0x8000000);
-		let mut x = 0;
+		// let mut x = 0;
 		while self.cpu.executable() {
 			self.cpu.tick();
-			x += 1;
-			if(x > 20) { break; }
+			// let addr = self.cpu.rget(15);
+			// let data = self.cpu.mread32(addr);
+			// if(data == 0x0) {
+			// 	println!("r11 = {:08x}", self.cpu.rget(11));
+			// }
+			// x += 1;
+			// if(x > 20) { break; }
 		}
 	}
 }

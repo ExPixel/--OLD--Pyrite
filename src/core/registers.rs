@@ -64,7 +64,7 @@ pub const REG_PC: u32 = 15;
 
 pub struct ArmRegisters {
 	internal_registers: [u32; 31],
-	mode: u32,
+	pub mode: u32,
 
 	/// Current Program Status Register (CPSR)
 	///   Bit   Expl.

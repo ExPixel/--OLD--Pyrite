@@ -1,4 +1,5 @@
 use super::super::ArmCpu;
+use super::super::super::registers;
 use super::super::super::memory::GbaMemory;
 use super::functions::*;
 
@@ -83,15 +84,20 @@ const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
 /// Generates a single data transfer instruction.
 macro_rules! gen_sdt {
 	(
-		$instr_name:ident,
-		$function: ident,
-		$index_pre: expr,
-		$index_inc: expr,
-		$offset_fn: ident,
-		$writeback: expr,
-		$user: expr
+		$instr_name:ident,	// the name of the instruction
+		$function: ident,	// the function being used by the instruction.
+		$index_pre: expr,	// boolean - true if this is pre-indexed, false otherwise
+		$index_inc: expr,	// boolean - true if this is incrementing, false if decrementing
+		$offset_fn: ident,	// the function used to generate an offset.
+		$writeback: expr,	// boolean - true if this should writeback (still writes back if post indexed or user mode)
+		$user: expr			// boolean - true if this should force user mode registers.
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let last_mode = cpu.registers.mode;
+			if $user {
+				cpu.registers.mode = registers::MODE_USR;
+			}
+
 			let rn = (instr >> 16) & 0xf;
 			let rd = (instr >> 12) & 0xf;
 			let _rn = cpu.rget(rn); // base
@@ -108,6 +114,10 @@ macro_rules! gen_sdt {
 						else { _rn - offset }
 					} else { _rn }
 				);
+			}
+
+			if $user {
+				cpu.registers.mode = last_mode;
 			}
 		}
 	)
