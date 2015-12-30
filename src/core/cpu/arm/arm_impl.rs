@@ -56,7 +56,7 @@ const POST: bool = false;
 const DEC: bool = true;
 const INC: bool = false;
 
-// Functions for loading/storing
+// SDT Functions
 const LDR: fn(&mut ArmCpu, u32, u32) = arm_fn_ldr;
 const LDRB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrb;
 const STR: fn(&mut ArmCpu, u32, u32) = arm_fn_str;
