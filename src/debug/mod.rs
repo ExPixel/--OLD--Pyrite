@@ -1,4 +1,8 @@
 pub mod armdis;
+
+// not ready.
+// pub mod armasm;
+
 pub use ::core::Gba;
 
 use self::armdis::*;
