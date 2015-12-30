@@ -12,7 +12,7 @@ Core:
         ☐ Halfword data transfer: register offset instructions
         ☐ Halfword data transfer: immediate offset instructions
         ☐ Single data transfer instructions
-          ☐ Find out what the Negative/Positive Immediate Offsets are
+          ✔ Find out what the Negative/Positive Immediate Offsets are @done (15-12-30 15:56)
              They don't have any information about post/pre indexing
              or incrementing or decrementing. This is not in line with the
              other single data transfer instructions. They might not even be part
