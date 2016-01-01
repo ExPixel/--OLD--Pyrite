@@ -1070,7 +1070,9 @@ gen_mull!(arm_smlals, arm_fn_smlal, true);
 /// Move status word to register
 /// Register, CPSR
 pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rd = (instr >> 12) & 0xf;
+	let cpsr = cpu.registers.get_cpsr();
+	cpu.rset(rd, cpsr);
 }
 
 /// SWP
@@ -1143,7 +1145,16 @@ gen_hdt!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
 /// Move value to status word
 /// Register, CPSR
 pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rm = (instr & 0xf);
+	let _rm = cpu.rget(rm);
+
+	// #FIXME this might be wrong but this is what the documentation looks like
+	// The ARM Opcode Map I'm using doesn't match up however.
+	if ((instr >> 16) & 1) == 1 {
+		cpu.registers.set_cpsr_safe(_rm);
+	} else {
+		cpu.registers.set_cpsr_flags(_rm);
+	}
 }
 
 /// BX
@@ -1216,7 +1227,9 @@ gen_hdt!(arm_ldrsh_prrm, LDRSH, PRE, DEC, HDT_REG, true);
 /// Move status word to register
 /// Register, SPSR
 pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rd = (instr >> 12) & 0xf;
+	let spsr = cpu.registers.get_spsr();
+	cpu.rset(rd, spsr);
 }
 
 /// SWPB
@@ -1289,7 +1302,15 @@ gen_hdt!(arm_ldrsh_ofim, LDRSH, PRE, DEC, HDT_IMM, false);
 /// Move value to status word
 /// Register, SPSR
 pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rm = instr & 0xf;
+	let _rm = cpu.rget(rm);
+	// #FIXME this might be wrong but this is what the documentation looks like
+	// The ARM Opcode Map I'm using doesn't match up however.
+	if ((instr >> 16) & 1) == 1 {
+		cpu.registers.set_spsr_safe(_rm);
+	} else {
+		cpu.registers.set_spsr_flags(_rm);
+	}
 }
 
 /// STRH prim
@@ -1841,7 +1862,8 @@ gen_dproc_nw!(arm_tsts_imm, arm_fn_op2_imm_s, arm_fn_tst_s);
 /// Move value to status word
 /// Immediate, CPSR
 pub fn arm_msr_ic(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let immediate = arm_fn_op2_imm(cpu, instr);
+	cpu.registers.set_cpsr_flags(immediate);
 }
 
 /// TEQS imm
@@ -1858,7 +1880,8 @@ gen_dproc_nw!(arm_cmps_imm, arm_fn_op2_imm_s, arm_fn_cmp_s);
 /// Move value to status word
 /// Immediate, SPSR
 pub fn arm_msr_is(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let immediate = arm_fn_op2_imm(cpu, instr);
+	cpu.registers.set_spsr_flags(immediate);
 }
 
 /// CMNS imm

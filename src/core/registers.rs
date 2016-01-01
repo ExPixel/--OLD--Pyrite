@@ -83,6 +83,10 @@ pub struct ArmRegisters {
 	spsr: [u32; 5]
 }
 
+fn is_priveleged_mode(mode: u32) -> bool {
+	mode != MODE_USR
+}
+
 impl ArmRegisters {
 	pub fn new() -> ArmRegisters {
 		ArmRegisters {
@@ -130,7 +134,7 @@ impl ArmRegisters {
 
 	/// Writes a value to the cpsr
 	/// to only the flag bits
-	pub fn write_cpsr_flags(&mut self, value: u32) {
+	pub fn set_cpsr_flags(&mut self, value: u32) {
 		self.cpsr &= 0x0fffffff;
 		self.cpsr |= value & 0xf0000000;
 	}
@@ -171,6 +175,24 @@ impl ArmRegisters {
 	pub fn set_spsr(&mut self, value: u32) {
 		let spsr_index = self.get_spsr_index();
 		self.spsr[spsr_index] = value;
+	}
+
+	/// Only writes to flag bits in unpriveldged modes.
+	pub fn set_spsr_safe(&mut self, value: u32) {
+		if is_priveleged_mode(self.mode) {
+			self.set_spsr_flags(value);
+		} else {
+			self.set_spsr(value);
+		}
+	}
+
+	/// Only writes to flag bits in unpriveldged modes.
+	pub fn set_cpsr_safe(&mut self, value: u32) {
+		if is_priveleged_mode(self.mode) {
+			self.set_cpsr_flags(value);
+		} else {
+			self.set_cpsr(value);
+		}
 	}
 
 	/// Saves the CPSR into the current mode's SPSR.

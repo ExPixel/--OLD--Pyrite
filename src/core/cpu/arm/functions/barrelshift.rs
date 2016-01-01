@@ -21,7 +21,7 @@ fn dataproc_reg_operands(cpu: &ArmCpu, instr: u32) -> (u32, u32) {
 /// operation on the 8 bit immediate value. This value is zero extended to 32 bits, and then
 /// subject to a rotate right by twice the value in the rotate field. This enables many
 /// common constants to be generated, for example all powers of 2.
-pub fn arm_fn_op2_imm(cpu: &mut ArmCpu, instr: u32) -> u32 {
+pub fn arm_fn_op2_imm(_: &mut ArmCpu, instr: u32) -> u32 {
 	let imm = ((instr & 0xff) << 24) >> 24; // 8 bit imm value, sign extended to 32 bits
 	let rotate = ((instr >> 8) & 0xf) * 2; // twice the rotate field as specified in documentation.
 	imm.rotate_right(rotate)
