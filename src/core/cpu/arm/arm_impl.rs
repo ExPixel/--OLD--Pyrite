@@ -13,13 +13,13 @@ macro_rules! gen_dproc {
 	(
 		$instr_name:ident,
 		$operand2_function:ident,
-		$function:ident
+		$operation:ident
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
 			let rn = (instr >> 16) & 0xf;
 			let rn_value = cpu.rget(rn);
 			let operand2 = $operand2_function(cpu, instr);
-			let result = $function(cpu, rn_value, operand2);
+			let result = $operation(cpu, rn_value, operand2);
 			let rd = (instr >> 12) & 0xf;
 			cpu.rset(rd, result);
 		}
@@ -37,13 +37,13 @@ macro_rules! gen_dproc_nw {
 	(
 		$instr_name:ident,
 		$operand2_function:ident,
-		$function:ident
+		$operation:ident
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
 			let rn = (instr >> 16) & 0xf;
 			let rn_value = cpu.rget(rn);
 			let operand2 = $operand2_function(cpu, instr);
-			$function(cpu, rn_value, operand2);
+			$operation(cpu, rn_value, operand2);
 		}
 	)
 }
@@ -97,13 +97,17 @@ const SDT_POS_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsr;
 const SDT_POS_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_asr;
 const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
 
-/// #TODO complete the remaining work on corner cases and the like,
+// Block Data Transfer Functions
+const LDM: fn(&mut ArmCpu, u32, u32) = arm_fn_ldm_single;
+const STM: fn(&mut ArmCpu, u32, u32) = arm_fn_stm_single;
+
+// #TODO complete the remaining work on corner cases and the like,
 /// such as the use of r15 in SDT instructions.
 /// Generates a single data transfer instruction.
 macro_rules! gen_sdt {
 	(
 		$instr_name:ident,	// the name of the instruction
-		$function: ident,	// the function being used by the instruction.
+		$transfer: ident,	// the function being used by the instruction to transfer data.
 		$index_pre: expr,	// boolean - true if this is pre-indexed, false otherwise
 		$index_inc: expr,	// boolean - true if this is incrementing, false if decrementing
 		$offset_fn: ident,	// the function used to generate an offset.
@@ -124,7 +128,7 @@ macro_rules! gen_sdt {
 				if $index_inc { _rn + offset }
 				else { _rn - offset }
 			} else { _rn };
-			$function(cpu, address, rd);
+			$transfer(cpu, address, rd);
 			if $writeback || $user || !($index_pre) {
 				cpu.rset(rn,
 					if !($index_pre) {
@@ -141,19 +145,37 @@ macro_rules! gen_sdt {
 	)
 }
 
+// #TODO Work on corner cases.
+/// Generates a Half Word Data Transfer instruction
 macro_rules! gen_hdt {
 	(
 		$instr_name:ident,	// the name of the instruction
-		$function: ident,	// the function being used by the instruction.
+		$transfer: ident,	// the function being used by the instruction to transfer data.
 		$index_pre: expr,	// boolean - true if this is pre-indexed, false otherwise
 		$index_inc: expr,	// boolean - true if this is incrementing, false if decrementing
 		$offset_fn: ident,	// the function used to generate an offset.
 		$writeback: expr	// boolean - true if this should writeback (still writes back if post indexed)
 	) => (
-		gen_sdt!($instr_name, $function, $index_pre, $index_inc, $offset_fn, $writeback, false);
+		gen_sdt!($instr_name, $transfer, $index_pre, $index_inc, $offset_fn, $writeback, false);
 	)
 }
 
+// #TODO Work on corner cases.
+/// Generates a Block Data Transfer instruction
+macro_rules! gen_bdt {
+	(
+		$instr_name:ident,
+		$transfer:ident,
+		$index_pre: expr,
+		$index_inc: expr,
+		$writeback: expr,
+		$user: expr
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			// #TODO
+		}
+	)
+}
 
 /// AND lli
 /// Logical And
@@ -2276,219 +2298,155 @@ gen_sdt!(arm_ldrb_prrprr, LDRB, PRE, INC, SDT_ROR, true, false);
 
 /// STMDA 
 /// Store multiple words, decrement after
-pub fn arm_stmda(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmda, STM, POST, DEC, false, false);
 
 /// LDMDA 
 /// Load multiple words, decrement after
-pub fn arm_ldmda(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmda, LDM, POST, DEC, false, false);
 
 /// STMDA w
 /// Store multiple words, decrement after
 /// Write back
-pub fn arm_stmda_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmda_w, STM, POST, DEC, true, false);
 
 /// LDMDA w
 /// Load multiple words, decrement after
 /// Write back
-pub fn arm_ldmda_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmda_w, LDM, POST, DEC, true, false);
 
 /// STMDA u
 /// Store multiple words, decrement after
 /// Use user-mode registers
-pub fn arm_stmda_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmda_u, STM, POST, DEC, false, true);
 
 /// LDMDA u
 /// Load multiple words, decrement after
 /// Use user-mode registers
-pub fn arm_ldmda_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmda_u, LDM, POST, DEC, false, true);
 
 /// STMDA uw
 /// Store multiple words, decrement after
 /// Use user-mode registers, with write back
-pub fn arm_stmda_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmda_uw, STM, POST, DEC, true, true);
 
 /// LDMDA uw
 /// Load multiple words, decrement after
 /// Use user-mode registers, with write back
-pub fn arm_ldmda_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmda_uw, LDM, POST, DEC, true, true);
 
 /// STMIA 
 /// Store multiple words, increment after
-pub fn arm_stmia(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmia, STM, POST, INC, false, false);
 
 /// LDMIA 
 /// Load multiple words, increment after
-pub fn arm_ldmia(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmia, LDM, POST, INC, false, false);
 
 /// STMIA w
 /// Store multiple words, increment after
 /// Write back
-pub fn arm_stmia_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmia_w, STM, POST, INC, true, false);
 
 /// LDMIA w
 /// Load multiple words, increment after
 /// Write back
-pub fn arm_ldmia_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmia_w, LDM, POST, INC, true, false);
 
 /// STMIA u
 /// Store multiple words, increment after
 /// Use user-mode registers
-pub fn arm_stmia_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmia_u, STM, POST, INC, false, true);
 
 /// LDMIA u
 /// Load multiple words, increment after
 /// Use user-mode registers
-pub fn arm_ldmia_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmia_u, LDM, POST, INC, false, true);
 
 /// STMIA uw
 /// Store multiple words, increment after
 /// Use user-mode registers, with write back
-pub fn arm_stmia_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmia_uw, STM, POST, INC, true, true);
 
 /// LDMIA uw
 /// Load multiple words, increment after
 /// Use user-mode registers, with write back
-pub fn arm_ldmia_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmia_uw, LDM, INC, INC, true, true);
 
 /// STMDB 
 /// Store multiple words, decrement before
-pub fn arm_stmdb(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmdb, STM, PRE, DEC, false, false);
 
 /// LDMDB 
 /// Load multiple words, decrement before
-pub fn arm_ldmdb(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmdb, LDM, PRE, DEC, false, false);
 
 /// STMDB w
 /// Store multiple words, decrement before
 /// Write back
-pub fn arm_stmdb_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmdb_w, STM, PRE, DEC, true, false);
 
 /// LDMDB w
 /// Load multiple words, decrement before
 /// Write back
-pub fn arm_ldmdb_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmdb_w, LDM, PRE, DEC, true, false);
 
 /// STMDB u
 /// Store multiple words, decrement before
 /// Use user-mode registers
-pub fn arm_stmdb_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmdb_u, STM, PRE, DEC, false, true);
 
 /// LDMDB u
 /// Load multiple words, decrement before
 /// Use user-mode registers
-pub fn arm_ldmdb_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmdb_u, LDM, PRE, DEC, false, true);
 
 /// STMDB uw
 /// Store multiple words, decrement before
 /// Use user-mode registers, with write back
-pub fn arm_stmdb_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmdb_uw, STM, PRE, DEC, true, true);
 
 /// LDMDB uw
 /// Load multiple words, decrement before
 /// Use user-mode registers, with write back
-pub fn arm_ldmdb_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmdb_uw, LDM, PRE, DEC, true, true);
 
 /// STMIB 
 /// Store multiple words, increment before
-pub fn arm_stmib(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmib, STM, PRE, INC, false, false);
 
 /// LDMIB 
 /// Load multiple words, increment before
-pub fn arm_ldmib(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmib, LDM, PRE, INC, false, false);
 
 /// STMIB w
 /// Store multiple words, increment before
 /// Write back
-pub fn arm_stmib_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmib_w, STM, PRE, INC, true, false);
 
 /// LDMIB w
 /// Load multiple words, increment before
 /// Write back
-pub fn arm_ldmib_w(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmib_w, LDM, PRE, INC, true, false);
 
 /// STMIB u
 /// Store multiple words, increment before
 /// Use user-mode registers
-pub fn arm_stmib_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmib_u, STM, PRE, INC, false, true);
 
 /// LDMIB u
 /// Load multiple words, increment before
 /// Use user-mode registers
-pub fn arm_ldmib_u(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmib_u, LDM, PRE, INC, false, true);
 
 /// STMIB uw
 /// Store multiple words, increment before
 /// Use user-mode registers, with write back
-pub fn arm_stmib_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_stmib_uw, STM, PRE, INC, true, true);
 
 /// LDMIB uw
 /// Load multiple words, increment before
 /// Use user-mode registers, with write back
-pub fn arm_ldmib_uw(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_bdt!(arm_ldmib_uw, LDM, PRE, INC, true, true);
 
 /// B 
 /// Branch

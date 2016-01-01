@@ -73,6 +73,9 @@ pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	cpu.rset(rd, data);
 }
 
+pub fn arm_fn_ldm_single(cpu: &mut ArmCpu, address: u32, dest_reg: u32) {}
+pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {}
+
 // the neg/pos versions of these functions
 // are just used for the instructions that do not write back
 // There is still some confusion so I'm keeping them for now
