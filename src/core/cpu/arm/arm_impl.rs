@@ -1078,7 +1078,14 @@ pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
 /// SWP
 /// Swap registers with memory word
 pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rm = instr & 0xf;
+	let rd = (instr >> 12) & 0xf;
+	let rn = (instr >> 16) & 0xf;
+	let source = cpu.rget(rm);
+	let address = cpu.rget(rn);
+	let temp = cpu.mread32(address);
+	cpu.mwrite32(address, source);
+	cpu.rset(rd, temp);
 }
 
 /// STRH ofrm
@@ -1235,7 +1242,14 @@ pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
 /// SWPB
 /// Swap registers with memory byte
 pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rm = instr & 0xf;
+	let rd = (instr >> 12) & 0xf;
+	let rn = (instr >> 16) & 0xf;
+	let source = cpu.rget(rm);
+	let address = cpu.rget(rn);
+	let temp = cpu.mread8(address);
+	cpu.mwrite8(address, (source & 0xff) as u8);
+	cpu.rset(rd, temp as u32);
 }
 
 /// STRH ofim

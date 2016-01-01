@@ -3,10 +3,10 @@ Core:
     ☐ Complete the CPU's logic.
       ☐ Complete the CPU's ALU
         ✔ Data processing instructions @done (15-12-24 23:41)
-        ☐ PSR transfer instructions
+        ✔ PSR transfer instructions @done (16-01-01 18:33)
         ☐ Multiply instructions
         ☐ Multiply long instructions
-        ☐ Single data swap instruction
+        ✔ Single data swap instruction @done (16-01-01 18:45)
         ☐ Branch instructions
         ☐ Branch and exchange instruction
         ☐ Alignment on all data transfer instructions
