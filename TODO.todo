@@ -26,7 +26,7 @@ Core:
              of these instructions but they are in the same area in the table, so...
              FOUND VIA #TODO negative imm offset
              or #TODO positive imm offset
-        ☐ Block data transfer instructions
+        ✔ Block data transfer instructions @done (16-01-01 15:24)
         ☐ Software interrupt instructions
         ☐ Consider just inlining all of the stuff inside of the ALU.
            A lot of the things in the ALU, I was just going to write
