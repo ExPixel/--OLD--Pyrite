@@ -4,14 +4,14 @@ use super::super::super::memory::GbaMemory;
 use super::functions::*;
 
 /// Generates a function for a dataprocessing instruction.
-/// 
+///
 /// Pass in the name of the instruction to generate,
 /// The function used to retrieve the second operand
 /// of the instruction, and a function to be applied
 /// to both operands.
 macro_rules! gen_dproc {
 	(
-		$instr_name:ident, 
+		$instr_name:ident,
 		$operand2_function:ident,
 		$function:ident
 	) => (
@@ -28,14 +28,14 @@ macro_rules! gen_dproc {
 
 /// Generates a function for a dataprocessing instruction
 /// That does not write back to Rd.
-/// 
+///
 /// Pass in the name of the instruction to generate,
 /// The function used to retrieve the second operand
 /// of the instruction, and a function to be applied
 /// to both operands.
 macro_rules! gen_dproc_nw {
 	(
-		$instr_name:ident, 
+		$instr_name:ident,
 		$operand2_function:ident,
 		$function:ident
 	) => (
@@ -62,6 +62,19 @@ const LDRB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrb;
 const STR: fn(&mut ArmCpu, u32, u32) = arm_fn_str;
 const STRB: fn(&mut ArmCpu, u32, u32) = arm_fn_strb;
 
+// // HDT Functions
+const LDRH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrh;
+const STRH: fn(&mut ArmCpu, u32, u32) = arm_fn_strh;
+const LDRSB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsb;
+const LDRSH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsh;
+
+const HDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_imm;
+const HDT_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_reg;
+const HDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_imm;
+const HDT_NEG_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_reg;
+const HDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_imm;
+const HDT_POS_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_reg;
+
 // Functions for calculating the offset of a single data transfer.
 const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
 const SDT_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsl;
@@ -69,6 +82,9 @@ const SDT_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsr;
 const SDT_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_asr;
 const SDT_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_ror;
 
+// NEG & POS functions
+// are pre indexed and don't write back.
+// I'm separating them anyways for now though.
 const SDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_imm;
 const SDT_NEG_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsl;
 const SDT_NEG_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsr;
@@ -81,6 +97,8 @@ const SDT_POS_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsr;
 const SDT_POS_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_asr;
 const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
 
+/// #TODO complete the remaining work on corner cases and the like,
+/// such as the use of r15 in SDT instructions.
 /// Generates a single data transfer instruction.
 macro_rules! gen_sdt {
 	(
@@ -120,6 +138,19 @@ macro_rules! gen_sdt {
 				cpu.registers.mode = last_mode;
 			}
 		}
+	)
+}
+
+macro_rules! gen_hdt {
+	(
+		$instr_name:ident,	// the name of the instruction
+		$function: ident,	// the function being used by the instruction.
+		$index_pre: expr,	// boolean - true if this is pre-indexed, false otherwise
+		$index_inc: expr,	// boolean - true if this is incrementing, false if decrementing
+		$offset_fn: ident,	// the function used to generate an offset.
+		$writeback: expr	// boolean - true if this should writeback (still writes back if post indexed)
+	) => (
+		gen_sdt!($instr_name, $function, $index_pre, $index_inc, $offset_fn, $writeback, false);
 	)
 }
 
@@ -173,9 +204,7 @@ pub fn arm_mul(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ptrm
 /// Store halfword
 /// Register offset, post-decrement
-pub fn arm_strh_ptrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
 
 
 /// UNDEFINED
@@ -233,23 +262,17 @@ pub fn arm_muls(cpu: &mut ArmCpu, instr: u32) {
 /// LDRH ptrm
 /// Load halfword
 /// Register offset, post-decrement
-pub fn arm_ldrh_ptrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ptrm, LDRH, POST, DEC, HDT_REG, false);
 
 /// LDRSB ptrm
 /// Load signed byte
 /// Register offset, post-decrement
-pub fn arm_ldrsb_ptrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ptrm, LDRSB, POST, DEC, HDT_REG, false);
 
 /// LDRSH ptrm
 /// Load signed halfword
 /// Register offset, post-decrement
-pub fn arm_ldrsh_ptrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ptrm, LDRSH, POST, DEC, HDT_REG, false);
 
 /// EOR lli
 /// Logical Exclusive-or
@@ -386,9 +409,7 @@ gen_dproc!(arm_sub_rrr, arm_fn_op2_rrr, arm_fn_sub);
 /// STRH ptim
 /// Store halfword
 /// Immediate offset, post-decrement
-pub fn arm_strh_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ptim, STRH, POST, DEC, HDT_IMM, false);
 
 /// SUBS lli
 /// Subtract, setting flags
@@ -433,23 +454,17 @@ gen_dproc!(arm_subs_rrr, arm_fn_op2_rrr_s, arm_fn_sub_s);
 /// LDRH ptim
 /// Load halfword
 /// Immediate offset, post-decrement
-pub fn arm_ldrh_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ptim, LDRH, POST, DEC, HDT_IMM, false);
 
 /// LDRSB ptim
 /// Load signed byte
 /// Immediate offset, post-decrement
-pub fn arm_ldrsb_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ptim, LDRSB, POST, DEC, HDT_IMM, false);
 
 /// LDRSH ptim
 /// Load signed halfword
 /// Immediate offset, post-decrement
-pub fn arm_ldrsh_ptim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ptim, LDRSH, POST, DEC, HDT_IMM, false);
 
 /// RSB lli
 /// Subtract register from value
@@ -580,9 +595,7 @@ pub fn arm_umull(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ptrp
 /// Store halfword
 /// Register offset, post-increment
-pub fn arm_strh_ptrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ptrp, STRH, POST, INC, HDT_REG, false);
 
 /// ADDS lli
 /// Add to register, setting flags
@@ -633,23 +646,17 @@ pub fn arm_umulls(cpu: &mut ArmCpu, instr: u32) {
 /// LDRH ptrp
 /// Load halfword
 /// Register offset, post-increment
-pub fn arm_ldrh_ptrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ptrp, LDRH, POST, INC, HDT_REG, false);
 
 /// LDRSB ptrp
 /// Load signed byte
 /// Register offset, post-increment
-pub fn arm_ldrsb_ptrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ptrp, LDRSB, POST, INC, HDT_REG, false);
 
 /// LDRSH ptrp
 /// Load signed halfword
 /// Register offset, post-increment
-pub fn arm_ldrsh_ptrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ptrp, LDRSH, POST, INC, HDT_REG, false);
 
 /// ADC lli
 /// Add to register with carry
@@ -792,9 +799,7 @@ pub fn arm_smull(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ptip
 /// Store halfword
 /// Immediate offset, post-increment
-pub fn arm_strh_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ptip, STRH, POST, INC, HDT_IMM, false);
 
 /// SBCS lli
 /// Subtract from register with borrow, setting flags
@@ -845,23 +850,17 @@ pub fn arm_smulls(cpu: &mut ArmCpu, instr: u32) {
 /// LDRH ptip
 /// Load halfword
 /// Immediate offset, post-increment
-pub fn arm_ldrh_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ptip, LDRH, POST, INC, HDT_IMM, false);
 
 /// LDRSB ptip
 /// Load signed byte
 /// Immediate offset, post-increment
-pub fn arm_ldrsb_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ptip, LDRSB, POST, INC, HDT_IMM, false);
 
 /// LDRSH ptip
 /// Load signed halfword
 /// Immediate offset, post-increment
-pub fn arm_ldrsh_ptip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ptip, LDRSH, POST, INC, HDT_IMM, false);
 
 /// RSC lli
 /// Subtract register from value with borrow
@@ -971,9 +970,7 @@ pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ofrm
 /// Store halfword
 /// Negative register offset
-pub fn arm_strh_ofrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ofrm, STRH, PRE, DEC, HDT_REG, false);
 
 /// TSTS lli
 /// Test bits in register (Logical And), setting flags
@@ -1018,23 +1015,17 @@ gen_dproc_nw!(arm_tsts_rrr, arm_fn_op2_rrr_s, arm_fn_tst_s);
 /// LDRH ofrm
 /// Load halfword
 /// Negative register offset
-pub fn arm_ldrh_ofrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ofrm, LDRH, PRE, DEC, HDT_REG, false);
 
 /// LDRSB ofrm
 /// Load signed byte
 /// Negative register offset
-pub fn arm_ldrsb_ofrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ofrm, LDRSB, PRE, DEC, HDT_REG, false);
 
 /// LDRSH ofrm
 /// Load signed halfword
 /// Negative register offset
-pub fn arm_ldrsh_ofrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
 
 /// MSR rc
 /// Move value to status word
@@ -1052,9 +1043,7 @@ pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
 /// STRH prrm
 /// Store halfword
 /// Register offset, pre-decrement
-pub fn arm_strh_prrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_prrm, STRH, PRE, DEC, HDT_REG, true);
 
 /// TEQS lli
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
@@ -1099,23 +1088,17 @@ gen_dproc_nw!(arm_teqs_rrr, arm_fn_op2_rrr_s, arm_fn_teq_s);
 /// LDRH prrm
 /// Load halfword
 /// Register offset, pre-decrement
-pub fn arm_ldrh_prrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_prrm, LDRH, PRE, DEC, HDT_REG, true);
 
 /// LDRSB prrm
 /// Load signed byte
 /// Register offset, pre-decrement
-pub fn arm_ldrsb_prrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_prrm, LDRSB, PRE, DEC, HDT_REG, true);
 
 /// LDRSH prrm
 /// Load signed halfword
 /// Register offset, pre-decrement
-pub fn arm_ldrsh_prrm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_prrm, LDRSH, PRE, DEC, HDT_REG, true);
 
 /// MRS rs
 /// Move status word to register
@@ -1133,9 +1116,7 @@ pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ofim
 /// Store halfword
 /// Negative immediate offset
-pub fn arm_strh_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ofim, STRH, PRE, DEC, HDT_IMM, false);
 
 /// CMPS lli
 /// Compare register to value (Subtract), setting flags
@@ -1180,23 +1161,17 @@ gen_dproc_nw!(arm_cmps_rrr, arm_fn_op2_rrr_s, arm_fn_cmp_s);
 /// LDRH ofim
 /// Load halfword
 /// Negative immediate offset
-pub fn arm_ldrh_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ofim, LDRH, PRE, DEC, HDT_IMM, false);
 
 /// LDRSB ofim
 /// Load signed byte
 /// Negative immediate offset
-pub fn arm_ldrsb_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ofim, LDRSB, PRE, DEC, HDT_IMM, false);
 
 /// LDRSH ofim
 /// Load signed halfword
 /// Negative immediate offset
-pub fn arm_ldrsh_ofim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ofim, LDRSH, PRE, DEC, HDT_IMM, false);
 
 /// MSR rs
 /// Move value to status word
@@ -1208,9 +1183,7 @@ pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
 /// STRH prim
 /// Store halfword
 /// Immediate offset, pre-decrement
-pub fn arm_strh_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_prim, STRH, PRE, DEC, HDT_IMM, true);
 
 /// CMNS lli
 /// Compare register to negation of value (Add), setting flags
@@ -1255,23 +1228,17 @@ gen_dproc_nw!(arm_cmns_rrr, arm_fn_op2_rrr_s, arm_fn_cmn_s);
 /// LDRH prim
 /// Load halfword
 /// Immediate offset, pre-decrement
-pub fn arm_ldrh_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_prim, LDRH, PRE, DEC, HDT_IMM, true);
 
 /// LDRSB prim
 /// Load signed byte
 /// Immediate offset, pre-decrement
-pub fn arm_ldrsb_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_prim, LDRSB, PRE, DEC, HDT_IMM, true);
 
 /// LDRSH prim
 /// Load signed halfword
 /// Immediate offset, pre-decrement
-pub fn arm_ldrsh_prim(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_prim, LDRSH, PRE, DEC, HDT_IMM, true);
 
 /// ORR lli
 /// Logical Or
@@ -1316,9 +1283,7 @@ gen_dproc!(arm_orr_rrr, arm_fn_op2_rrr, arm_fn_orr);
 /// STRH ofrp
 /// Store halfword
 /// Positive register offset
-pub fn arm_strh_ofrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ofrp, STRH, PRE, INC, HDT_REG, false);
 
 /// ORRS lli
 /// Logical Or, setting flags
@@ -1363,23 +1328,17 @@ gen_dproc!(arm_orrs_rrr, arm_fn_op2_rrr_s, arm_fn_orr_s);
 /// LDRH ofrp
 /// Load halfword
 /// Positive register offset
-pub fn arm_ldrh_ofrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ofrp, LDRH, PRE, INC, HDT_REG, false);
 
 /// LDRSB ofrp
 /// Load signed byte
 /// Positive register offset
-pub fn arm_ldrsb_ofrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ofrp, LDRSB, PRE, INC, HDT_REG, false);
 
 /// LDRSH ofrp
 /// Load signed halfword
 /// Positive register offset
-pub fn arm_ldrsh_ofrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ofrp, LDRSH, PRE, INC, HDT_REG, false);
 
 /// MOV lli
 /// Move value to a register
@@ -1424,9 +1383,7 @@ gen_dproc!(arm_mov_rrr, arm_fn_op2_rrr, arm_fn_mov);
 /// STRH prrp
 /// Store halfword
 /// Register offset, pre-increment
-pub fn arm_strh_prrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_prrp, STRH, PRE, INC, HDT_REG, true);
 
 /// MOVS lli
 /// Move value to a register, setting flags
@@ -1471,23 +1428,17 @@ gen_dproc!(arm_movs_rrr, arm_fn_op2_rrr_s, arm_fn_mov_s);
 /// LDRH prrp
 /// Load halfword
 /// Register offset, pre-increment
-pub fn arm_ldrh_prrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_prrp, LDRH, PRE, INC, HDT_REG, true);
 
 /// LDRSB prrp
 /// Load signed byte
 /// Register offset, pre-increment
-pub fn arm_ldrsb_prrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_prrp, LDRSB, PRE, INC, HDT_REG, true);
 
 /// LDRSH prrp
 /// Load signed halfword
 /// Register offset, pre-increment
-pub fn arm_ldrsh_prrp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_prrp, LDRSH, PRE, INC, HDT_REG, true);
 
 /// BIC lli
 /// Clear bits in register (NAND)
@@ -1532,9 +1483,7 @@ gen_dproc!(arm_bic_rrr, arm_fn_op2_rrr, arm_fn_bic);
 /// STRH ofip
 /// Store halfword
 /// Positive immediate offset
-pub fn arm_strh_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_ofip, STRH, PRE, INC, HDT_IMM, false);
 
 /// BICS lli
 /// Clear bits in register (NAND), setting flags
@@ -1579,23 +1528,17 @@ gen_dproc!(arm_bics_rrr, arm_fn_op2_rrr_s, arm_fn_bic_s);
 /// LDRH ofip
 /// Load halfword
 /// Positive immediate offset
-pub fn arm_ldrh_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_ofip, LDRH, PRE, INC, HDT_IMM, false);
 
 /// LDRSB ofip
 /// Load signed byte
 /// Positive immediate offset
-pub fn arm_ldrsb_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_ofip, LDRSB, PRE, INC, HDT_IMM, false);
 
 /// LDRSH ofip
 /// Load signed halfword
 /// Positive immediate offset
-pub fn arm_ldrsh_ofip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_ofip, LDRSH, PRE, INC, HDT_IMM, false);
 
 /// MVN lli
 /// Move negation of value to a register
@@ -1640,9 +1583,7 @@ gen_dproc!(arm_mvn_rrr, arm_fn_op2_rrr, arm_fn_mvn);
 /// STRH prip
 /// Store halfword
 /// Immediate offset, pre-increment
-pub fn arm_strh_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_strh_prip, STRH, PRE, INC, HDT_IMM, true);
 
 /// MVNS lli
 /// Move negation of value to a register, setting flags
@@ -1687,23 +1628,17 @@ gen_dproc!(arm_mvns_rrr, arm_fn_op2_rrr_s, arm_fn_mvn_s);
 /// LDRH prip
 /// Load halfword
 /// Immediate offset, pre-increment
-pub fn arm_ldrh_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrh_prip, LDRH, PRE, INC, HDT_IMM, true);
 
 /// LDRSB prip
 /// Load signed byte
 /// Immediate offset, pre-increment
-pub fn arm_ldrsb_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsb_prip, LDRSB, PRE, INC, HDT_IMM, true);
 
 /// LDRSH prip
 /// Load signed halfword
 /// Immediate offset, pre-increment
-pub fn arm_ldrsh_prip(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_hdt!(arm_ldrsh_prip, LDRSH, PRE, INC, HDT_IMM, true);
 
 /// AND imm
 /// Logical And
