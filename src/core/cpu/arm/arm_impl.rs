@@ -172,7 +172,75 @@ macro_rules! gen_bdt {
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-			// #TODO
+			// #FIXME not sure if the base register should also be taken from
+			// a user mode register or if it should be taken from the current mode's
+			// registers. So the placement of this change might be wrong.
+			let last_mode = cpu.registers.mode;
+			if $user { cpu.registers.mode = registers::MODE_USR; }
+
+			let registerList = instr & 0xffff;
+			let rn = (instr >> 16) & 0xf;
+			let mut address = cpu.rget(rn);
+
+			for reg in 0..16 {
+				if (registerList & (1 << reg)) != 0 {
+					if $index_pre { address += 4; }
+					$transfer(cpu, address, reg);
+					if !$index_pre { address += 4; }
+
+					// #FIXME This should be happening here but I'm not sure so
+					// I'm putting a fixme here just in case.
+					if $writeback { cpu.rset(rn, address); }
+				}
+			}
+
+			if $user { cpu.registers.mode = last_mode; }
+		}
+	)
+}
+
+/// Special macro created for LDM instructions with the
+/// S bit on. These do something a little bit different in the case
+/// that R15 is included in the register list, and I don't feel the other
+/// BDT instructions need to be bogged down with this calculation.
+macro_rules! gen_ldm_u {
+    (
+		$instr_name:ident,
+		$transfer:ident,
+		$index_pre: expr,
+		$index_inc: expr,
+		$writeback: expr
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			// #FIXME not sure if the base register should also be taken from
+			// a user mode register or if it should be taken from the current mode's
+			// registers. So the placement of this change might be wrong.
+			let psr_transfer = ((instr >> 15) & 1) == 1; // r15 is in the transfer list.
+			let last_mode = cpu.registers.mode;
+			if !psr_transfer { cpu.registers.mode = registers::MODE_USR; }
+
+			let registerList = instr & 0xffff;
+			let rn = (instr >> 16) & 0xf;
+			let mut address = cpu.rget(rn);
+
+			for reg in 0..16 {
+				if (registerList & (1 << reg)) != 0 {
+					if $index_pre { address += 4; }
+					$transfer(cpu, address, reg);
+					// LDM with R15 in transfer list and S bit set (Mode changes)
+					// If the instruction is a LDM then SPSR_<mode> is transferred to 
+					// CPSR at the same time as R15 is loaded.
+					// -- Here we know that the S bit is definitely set.
+					cpu.registers.spsr_to_cpsr(); // this loads the spsr in to the cpsr.
+					if !$index_pre { address += 4; }
+					
+					// #FIXME This should be happening here but I'm not sure so
+					// I'm putting a fixme here just in case.
+					if $writeback { cpu.rset(rn, address); }
+				}
+			}
+
+			if !psr_transfer { cpu.registers.mode = last_mode; }
 		}
 	)
 }
@@ -2322,7 +2390,7 @@ gen_bdt!(arm_stmda_u, STM, POST, DEC, false, true);
 /// LDMDA u
 /// Load multiple words, decrement after
 /// Use user-mode registers
-gen_bdt!(arm_ldmda_u, LDM, POST, DEC, false, true);
+gen_ldm_u!(arm_ldmda_u, LDM, POST, DEC, false);
 
 /// STMDA uw
 /// Store multiple words, decrement after
@@ -2332,7 +2400,7 @@ gen_bdt!(arm_stmda_uw, STM, POST, DEC, true, true);
 /// LDMDA uw
 /// Load multiple words, decrement after
 /// Use user-mode registers, with write back
-gen_bdt!(arm_ldmda_uw, LDM, POST, DEC, true, true);
+gen_ldm_u!(arm_ldmda_uw, LDM, POST, DEC, true);
 
 /// STMIA 
 /// Store multiple words, increment after
@@ -2360,7 +2428,7 @@ gen_bdt!(arm_stmia_u, STM, POST, INC, false, true);
 /// LDMIA u
 /// Load multiple words, increment after
 /// Use user-mode registers
-gen_bdt!(arm_ldmia_u, LDM, POST, INC, false, true);
+gen_ldm_u!(arm_ldmia_u, LDM, POST, INC, false);
 
 /// STMIA uw
 /// Store multiple words, increment after
@@ -2370,7 +2438,7 @@ gen_bdt!(arm_stmia_uw, STM, POST, INC, true, true);
 /// LDMIA uw
 /// Load multiple words, increment after
 /// Use user-mode registers, with write back
-gen_bdt!(arm_ldmia_uw, LDM, INC, INC, true, true);
+gen_ldm_u!(arm_ldmia_uw, LDM, INC, INC, true);
 
 /// STMDB 
 /// Store multiple words, decrement before
@@ -2398,7 +2466,7 @@ gen_bdt!(arm_stmdb_u, STM, PRE, DEC, false, true);
 /// LDMDB u
 /// Load multiple words, decrement before
 /// Use user-mode registers
-gen_bdt!(arm_ldmdb_u, LDM, PRE, DEC, false, true);
+gen_ldm_u!(arm_ldmdb_u, LDM, PRE, DEC, false);
 
 /// STMDB uw
 /// Store multiple words, decrement before
@@ -2408,7 +2476,7 @@ gen_bdt!(arm_stmdb_uw, STM, PRE, DEC, true, true);
 /// LDMDB uw
 /// Load multiple words, decrement before
 /// Use user-mode registers, with write back
-gen_bdt!(arm_ldmdb_uw, LDM, PRE, DEC, true, true);
+gen_ldm_u!(arm_ldmdb_uw, LDM, PRE, DEC, true);
 
 /// STMIB 
 /// Store multiple words, increment before
@@ -2436,7 +2504,7 @@ gen_bdt!(arm_stmib_u, STM, PRE, INC, false, true);
 /// LDMIB u
 /// Load multiple words, increment before
 /// Use user-mode registers
-gen_bdt!(arm_ldmib_u, LDM, PRE, INC, false, true);
+gen_ldm_u!(arm_ldmib_u, LDM, PRE, INC, false);
 
 /// STMIB uw
 /// Store multiple words, increment before
@@ -2446,7 +2514,7 @@ gen_bdt!(arm_stmib_uw, STM, PRE, INC, true, true);
 /// LDMIB uw
 /// Load multiple words, increment before
 /// Use user-mode registers, with write back
-gen_bdt!(arm_ldmib_uw, LDM, PRE, INC, true, true);
+gen_ldm_u!(arm_ldmib_uw, LDM, PRE, INC, true);
 
 /// B 
 /// Branch

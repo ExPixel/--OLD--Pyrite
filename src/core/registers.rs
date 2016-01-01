@@ -174,13 +174,13 @@ impl ArmRegisters {
 	}
 
 	/// Saves the CPSR into the current mode's SPSR.
-	pub fn save_cpsr(&mut self) {
+	pub fn cpsr_to_spsr(&mut self) {
 		let cpsr = self.cpsr;
 		self.set_spsr(cpsr);
 	}
 
 	/// Loads the current mode's SPSR into the CPSR.
-	pub fn load_cpsr(&mut self) {
+	pub fn spsr_to_cpsr(&mut self) {
 		let spsr = self.get_spsr();
 		self.set_cpsr(spsr);
 	}

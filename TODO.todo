@@ -9,9 +9,16 @@ Core:
         ☐ Single data swap instruction
         ☐ Branch instructions
         ☐ Branch and exchange instruction
-        ☐ Halfword data transfer: register offset instructions
-        ☐ Halfword data transfer: immediate offset instructions
-        ☐ Single data transfer instructions
+        ☐ Alignment on all data transfer instructions
+           One thing that I saw VBA doing a lot was aligning addresses along word boundaries
+           for many of its data transfer functions. The ARM7TDMI documentation is very vague about where I'm suppose to align things, e.g. 
+               "The address should normally be a word aligned quantity and non-word aligned addresses do not affect the instruction. However, the bottom 2 bits of the address will appear on A[1:0] and might be interpreted by the memory system."
+           I'm not sure what that means exactly, but I should find out at some point. Thankfully
+           all of the ~208 data transfer instructions are done with 4 macros so changing 
+           all of them at the same time doesn't take much effort.
+        ✔ Halfword data transfer: register offset instructions @done (16-01-01 14:27)
+        ✔ Halfword data transfer: immediate offset instructions @done (16-01-01 14:27)
+        ✔ Single data transfer instructions @done (16-01-01 14:27)
           ✔ Find out what the Negative/Positive Immediate Offsets are @done (15-12-30 15:56)
              They don't have any information about post/pre indexing
              or incrementing or decrementing. This is not in line with the
