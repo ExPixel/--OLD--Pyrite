@@ -81,6 +81,11 @@ pub fn arm_alu_bics(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	res
 }
 
+pub fn set_nz_flags64(cpu: &mut ArmCpu, res: u64) {
+	cpu.registers.putf_n((res as i64) < 0);
+	cpu.registers.putf_z(res == 0);
+}
+
 pub fn set_nz_flags(cpu: &mut ArmCpu, res: u32) {
 	cpu.registers.putf_n((res as i32) < 0);
 	cpu.registers.putf_z(res == 0);

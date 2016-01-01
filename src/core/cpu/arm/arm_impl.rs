@@ -2,6 +2,7 @@ use super::super::ArmCpu;
 use super::super::super::registers;
 use super::super::super::memory::GbaMemory;
 use super::functions::*;
+use super::super::alu;
 
 /// Generates a function for a dataprocessing instruction.
 ///
@@ -44,6 +45,51 @@ macro_rules! gen_dproc_nw {
 			let rn_value = cpu.rget(rn);
 			let operand2 = $operand2_function(cpu, instr);
 			$operation(cpu, rn_value, operand2);
+		}
+	)
+}
+
+/// Generates a multiply instruction.
+macro_rules! gen_mul {
+	(
+		$instr_name: ident,
+		$operation: ident,
+		$set_condition: expr
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let rm = instr & 0xf;
+			let rs = (instr >> 8) & 0xf;
+			let rn = (instr >> 12) & 0xf;
+			let rd = (instr >> 16) & 0xf;
+			let result = $operation(cpu.rget(rm) ,cpu.rget(rs), cpu.rget(rn));
+			if $set_condition { alu::set_nz_flags(cpu, result); }
+			cpu.rset(rd, result);
+		}
+	)
+}
+
+
+/// Generates a multiply long instruction.
+macro_rules! gen_mull {
+	(
+		$instr_name: ident,
+		$operation: ident,
+		$set_condition: expr
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let rm = instr & 0xf;
+			let rs = (instr >> 8) & 0xf;
+			let rd_lo = (instr >> 12) & 0xf;
+			let rd_hi = (instr >> 16) & 0xf;
+			let result = $operation(
+				cpu.rget(rm),
+				cpu.rget(rs),
+				cpu.rget(rd_hi),
+				cpu.rget(rd_lo)
+			);
+			cpu.rset(rd_lo, (result & 0xffffffff) as u32);
+			cpu.rset(rd_hi, ((result >> 32) & 0xffffffff) as u32);
+			if $set_condition { alu::set_nz_flags64(cpu, result); }
 		}
 	)
 }
@@ -287,9 +333,7 @@ gen_dproc!(arm_and_rrr, arm_fn_op2_rrr, arm_fn_and);
 
 /// MUL
 /// Multiply registers
-pub fn arm_mul(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mul!(arm_mul, arm_fn_mul, false);
 
 /// STRH ptrm
 /// Store halfword
@@ -345,9 +389,7 @@ gen_dproc!(arm_ands_rrr, arm_fn_op2_rrr_s, arm_fn_and_s);
 
 /// MULS
 /// Multiply registers, setting flags
-pub fn arm_muls(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mul!(arm_muls, arm_fn_mul, true);
 
 /// LDRH ptrm
 /// Load halfword
@@ -406,9 +448,7 @@ gen_dproc!(arm_eor_rrr, arm_fn_op2_rrr, arm_fn_eor);
 
 /// MLA
 /// Multiply and accumulate registers
-pub fn arm_mla(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mul!(arm_mla, arm_fn_mla, false);
 
 /// EORS lli
 /// Logical Exclusive-or, setting flags
@@ -452,9 +492,7 @@ gen_dproc!(arm_eors_rrr, arm_fn_op2_rrr_s, arm_fn_eor_s);
 
 /// MLAS
 /// Multiply and accumulate registers, setting flags
-pub fn arm_mlas(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mul!(arm_mlas, arm_fn_mla, true);
 
 /// SUB lli
 /// Subtract from register
@@ -678,9 +716,7 @@ gen_dproc!(arm_add_rrr, arm_fn_op2_rrr, arm_fn_add);
 
 /// UMULL
 /// Unsigned long multiply (32x32 to 64)
-pub fn arm_umull(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_umull, arm_fn_umull, false);
 
 /// STRH ptrp
 /// Store halfword
@@ -729,9 +765,7 @@ gen_dproc!(arm_adds_rrr, arm_fn_op2_rrr_s, arm_fn_add_s);
 
 /// UMULLS
 /// Unsigned long multiply, setting flags
-pub fn arm_umulls(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_umulls, arm_fn_umull, true);
 
 /// LDRH ptrp
 /// Load halfword
@@ -790,9 +824,7 @@ gen_dproc!(arm_adc_rrr, arm_fn_op2_rrr, arm_fn_adc);
 
 /// UMLAL
 /// Unsigned long multiply and accumulate
-pub fn arm_umlal(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_umlal, arm_fn_umlal, false);
 
 /// ADCS lli
 /// Add to register with carry, setting flags
@@ -836,9 +868,7 @@ gen_dproc!(arm_adcs_rrr, arm_fn_op2_rrr_s, arm_fn_adc_s);
 
 /// UMLALS
 /// Unsigned long multiply and accumulate, setting flags
-pub fn arm_umlals(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_umlals, arm_fn_umlal, true);
 
 /// SBC lli
 /// Subtract from register with borrow
@@ -882,9 +912,7 @@ gen_dproc!(arm_sbc_rrr, arm_fn_op2_rrr, arm_fn_sbc);
 
 /// SMULL
 /// Signed long multiply (32x32 to 64)
-pub fn arm_smull(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_smull, arm_fn_smull, false);
 
 /// STRH ptip
 /// Store halfword
@@ -933,9 +961,7 @@ gen_dproc!(arm_sbcs_rrr, arm_fn_op2_rrr_s, arm_fn_sbc_s);
 
 /// SMULLS
 /// Signed long multiply, setting flags
-pub fn arm_smulls(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_smulls, arm_fn_smull, true);
 
 /// LDRH ptip
 /// Load halfword
@@ -994,9 +1020,7 @@ gen_dproc!(arm_rsc_rrr, arm_fn_op2_rrr, arm_fn_rsc);
 
 /// SMLAL
 /// Signed long multiply and accumulate
-pub fn arm_smlal(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_smlal, arm_fn_smlal, false);
 
 /// RSCS lli
 /// Subtract register from value with borrow, setting flags
@@ -1040,9 +1064,7 @@ gen_dproc!(arm_rscs_rrr, arm_fn_op2_rrr_s, arm_fn_rsc_s);
 
 /// SMLALS
 /// Signed long multiply and accumulate, setting flags
-pub fn arm_smlals(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-}
+gen_mull!(arm_smlals, arm_fn_smlal, true);
 
 /// MRS rc
 /// Move status word to register
@@ -2662,5 +2684,6 @@ pub fn arm_mrc(cpu: &mut ArmCpu, instr: u32) {
 /// Software interrupt (enter supervisor mode)
 pub fn arm_swi(cpu: &mut ArmCpu, instr: u32) {
 	// #TODO
+	unimplemented!();
 }
 
