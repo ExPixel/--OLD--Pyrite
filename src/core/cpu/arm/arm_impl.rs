@@ -2506,130 +2506,130 @@ pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
 /// Store coprocessor data to memory
 /// Negative offset
 pub fn arm_stc_ofm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ofm
 /// Load coprocessor data from memory
 /// Negative offset
 pub fn arm_ldc_ofm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC prm
 /// Store coprocessor data to memory
 /// Pre-decrement
 pub fn arm_stc_prm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC prm
 /// Load coprocessor data from memory
 /// Pre-decrement
 pub fn arm_ldc_prm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC ofp
 /// Store coprocessor data to memory
 /// Positive offset
 pub fn arm_stc_ofp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ofp
 /// Load coprocessor data from memory
 /// Positive offset
 pub fn arm_ldc_ofp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC prp
 /// Store coprocessor data to memory
 /// Pre-increment
 pub fn arm_stc_prp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC prp
 /// Load coprocessor data from memory
 /// Pre-increment
 pub fn arm_ldc_prp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC unm
 /// Store coprocessor data to memory
 /// Unindexed, bits 7-0 available for copro use
 pub fn arm_stc_unm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC unm
 /// Load coprocessor data from memory
 /// Unindexed, bits 7-0 available for copro use
 pub fn arm_ldc_unm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC ptm
 /// Store coprocessor data to memory
 /// Post-decrement
 pub fn arm_stc_ptm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ptm
 /// Load coprocessor data from memory
 /// Post-decrement
 pub fn arm_ldc_ptm(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC unp
 /// Store coprocessor data to memory
 /// Unindexed, bits 7-0 available for copro use
 pub fn arm_stc_unp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC unp
 /// Load coprocessor data from memory
 /// Unindexed, bits 7-0 available for copro use
 pub fn arm_ldc_unp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC ptp
 /// Store coprocessor data to memory
 /// Post-increment
 pub fn arm_stc_ptp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ptp
 /// Load coprocessor data from memory
 /// Post-increment
 pub fn arm_ldc_ptp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// CDP 
 /// Perform coprocessor data operation
 pub fn arm_cdp(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// MCR 
 /// Write coprocessor register from ARM register
 pub fn arm_mcr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// MRC 
 /// Read coprocessor register to ARM register
 pub fn arm_mrc(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// SWI 
