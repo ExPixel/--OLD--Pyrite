@@ -344,7 +344,7 @@ gen_hdt!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
 /// UNDEFINED
 /// just increments the clock
 pub fn arm_undefined(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	panic!("Not comfortable handling undefined instructions, yet");
 }
 
 /// ANDS lli
