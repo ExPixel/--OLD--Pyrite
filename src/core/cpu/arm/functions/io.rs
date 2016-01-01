@@ -58,13 +58,12 @@ pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
 // and removing them when I have more information.
 // They do the exact same thing as their non neg/pos counterparts though.
 
-// #TODO Halfword Data Transfer Addressing Functions
-pub fn arm_fn_hdt_imm(cpu: &ArmCpu, instr: u32) -> u32 {0}
-pub fn arm_fn_hdt_reg(cpu: &ArmCpu, instr: u32) -> u32 {0}
-pub fn arm_fn_hdt_neg_imm(cpu: &ArmCpu, instr: u32) -> u32 {0}
-pub fn arm_fn_hdt_neg_reg(cpu: &ArmCpu, instr: u32) -> u32 {0}
-pub fn arm_fn_hdt_pos_imm(cpu: &ArmCpu, instr: u32) -> u32 {0}
-pub fn arm_fn_hdt_pos_reg(cpu: &ArmCpu, instr: u32) -> u32 {0}
+pub fn arm_fn_hdt_imm(cpu: &ArmCpu, instr: u32) -> u32 { ((instr >> 4) & 0xf0) | (instr & 0xf) }
+pub fn arm_fn_hdt_reg(cpu: &ArmCpu, instr: u32) -> u32 { cpu.rget(instr & 0xf) }
+pub fn arm_fn_hdt_neg_imm(cpu: &ArmCpu, instr: u32) -> u32 { arm_fn_hdt_imm(cpu, instr) }
+pub fn arm_fn_hdt_neg_reg(cpu: &ArmCpu, instr: u32) -> u32 { arm_fn_hdt_reg(cpu, instr) }
+pub fn arm_fn_hdt_pos_imm(cpu: &ArmCpu, instr: u32) -> u32 { arm_fn_hdt_imm(cpu, instr) }
+pub fn arm_fn_hdt_pos_reg(cpu: &ArmCpu, instr: u32) -> u32 { arm_fn_hdt_reg(cpu, instr) }
 
 pub fn arm_fn_sdt_imm(cpu: &ArmCpu, instr: u32) -> u32 {
 	instr & 0xFFF
