@@ -11,46 +11,60 @@ fn sdt_reg_operands(cpu: &ArmCpu, instr: u32) -> (u32, u32) {
 	(_rm, _rs)
 }
 
-pub fn arm_fn_ldrb(cpu: &mut ArmCpu, address: u32, dest: u32) {
+pub fn arm_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread8(address) as u32;
-	cpu.rset(dest, data);
+	cpu.rset(rd, data);
 }
 
-pub fn arm_fn_ldr(cpu: &mut ArmCpu, address: u32, dest: u32) {
+pub fn arm_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread32(address);
-	cpu.rset(dest, data);
+	cpu.rset(rd, data);
 }
 
-pub fn arm_fn_strb(cpu: &mut ArmCpu, address: u32, src: u32) {
+pub fn arm_fn_strb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
-	let _src = if src == 15 {
-		cpu.rget(src) + 4
+	let _src = if rd == 15 {
+		cpu.rget(rd) + 4
 	} else {
-		cpu.rget(src)
+		cpu.rget(rd)
 	};
 	let data = (_src & 0xff) as u8;
 	cpu.mwrite8(address, data);
 
 }
 
-pub fn arm_fn_str(cpu: &mut ArmCpu, address: u32, src: u32) {
+pub fn arm_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
-	let _src = if src == 15 {
-		cpu.rget(src) + 4
+	let _src = if rd == 15 {
+		cpu.rget(rd) + 4
 	} else {
-		cpu.rget(src)
+		cpu.rget(rd)
 	};
 	let data = (_src & 0xff);
 	cpu.mwrite32(address, data);
 }
+
+// #TODO The Halfword Data Transfer Functions
+pub fn arm_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
+pub fn arm_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
+pub fn arm_fn_ldrsb(cpu: &mut ArmCpu, address: u32, rd: u32) {}
+pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
 
 // the neg/pos versions of these functions
 // are just used for the instructions that do not write back
 // There is still some confusion so I'm keeping them for now
 // and removing them when I have more information.
 // They do the exact same thing as their non neg/pos counterparts though.
+
+// #TODO Halfword Data Transfer Addressing Functions
+pub fn arm_fn_hdt_imm(cpu: &ArmCpu, instr: u32) -> u32 {0}
+pub fn arm_fn_hdt_reg(cpu: &ArmCpu, instr: u32) -> u32 {0}
+pub fn arm_fn_hdt_neg_imm(cpu: &ArmCpu, instr: u32) -> u32 {0}
+pub fn arm_fn_hdt_neg_reg(cpu: &ArmCpu, instr: u32) -> u32 {0}
+pub fn arm_fn_hdt_pos_imm(cpu: &ArmCpu, instr: u32) -> u32 {0}
+pub fn arm_fn_hdt_pos_reg(cpu: &ArmCpu, instr: u32) -> u32 {0}
 
 pub fn arm_fn_sdt_imm(cpu: &ArmCpu, instr: u32) -> u32 {
 	instr & 0xFFF

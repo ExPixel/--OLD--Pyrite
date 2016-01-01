@@ -1,3 +1,5 @@
+// Warnings are off right now because of a lot
+// of ununsed variables and dead code right now.
 #[allow(warnings)]
 pub mod core;
 pub mod debug;
