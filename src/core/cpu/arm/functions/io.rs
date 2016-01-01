@@ -46,7 +46,6 @@ pub fn arm_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	cpu.mwrite32(address, data);
 }
 
-// #TODO The Halfword Data Transfer Functions
 pub fn arm_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread16(address) as u32;
 	cpu.rset(rd, data);
