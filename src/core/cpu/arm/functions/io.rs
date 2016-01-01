@@ -25,7 +25,7 @@ pub fn arm_fn_strb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
 	let _src = if rd == 15 {
-		cpu.rget(rd) + 4
+		cpu.rget(15) + 4
 	} else {
 		cpu.rget(rd)
 	};
@@ -38,19 +38,41 @@ pub fn arm_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
 	let _src = if rd == 15 {
-		cpu.rget(rd) + 4
+		cpu.rget(15) + 4
 	} else {
 		cpu.rget(rd)
 	};
-	let data = (_src & 0xff);
+	let data = _src;
 	cpu.mwrite32(address, data);
 }
 
 // #TODO The Halfword Data Transfer Functions
-pub fn arm_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
-pub fn arm_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
-pub fn arm_fn_ldrsb(cpu: &mut ArmCpu, address: u32, rd: u32) {}
-pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {}
+pub fn arm_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {
+	let data = cpu.mread16(address) as u32;
+	cpu.rset(rd, data);
+}
+
+pub fn arm_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {
+	// When R15 is the source register (Rd) of a register store (STR) instruction, 
+	// the stored value will be address of the instruction plus 12
+	let _src = if rd == 15 {
+		cpu.rget(15) + 4
+	} else {
+		cpu.rget(rd)
+	};
+	let data = (_src & 0xffff) as u16;
+	cpu.mwrite16(address, data);
+}
+
+pub fn arm_fn_ldrsb(cpu: &mut ArmCpu, address: u32, rd: u32) {
+	let data = ((cpu.mread8(address) as i8) as i32) as u32; // This is just a sign extension.
+	cpu.rset(rd, data);
+}
+
+pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
+	let data = ((cpu.mread16(address) as i16) as i32) as u32; // This is just a sign extension.
+	cpu.rset(rd, data);
+}
 
 // the neg/pos versions of these functions
 // are just used for the instructions that do not write back
