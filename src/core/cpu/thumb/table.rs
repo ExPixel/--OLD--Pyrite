@@ -3,7 +3,7 @@ use super::super::super::memory::GbaMemory;
 use super::thumb_impl::*;
 use super::thumb_dp_impl::*;
 
-pub static THUMB_OPCODE_TABLE:[[fn(&mut ArmCpu, u16); 16]; 16] = [
+pub static THUMB_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 16]; 16] = [
 [thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm],
 [thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_add_reg, thumb_add_reg, thumb_sub_reg, thumb_sub_reg, thumb_add_imm3, thumb_add_imm3, thumb_sub_imm3, thumb_sub_imm3],
 [thumb_mov_i8r0, thumb_mov_i8r1, thumb_mov_i8r2, thumb_mov_i8r3, thumb_mov_i8r4, thumb_mov_i8r5, thumb_mov_i8r6, thumb_mov_i8r7, thumb_cmp_i8r0, thumb_cmp_i8r1, thumb_cmp_i8r2, thumb_cmp_i8r3, thumb_cmp_i8r4, thumb_cmp_i8r5, thumb_cmp_i8r6, thumb_cmp_i8r7],
@@ -22,7 +22,7 @@ pub static THUMB_OPCODE_TABLE:[[fn(&mut ArmCpu, u16); 16]; 16] = [
 [thumb_bl_setup, thumb_bl_setup, thumb_bl_setup, thumb_bl_setup, thumb_bl_setup, thumb_bl_setup, thumb_bl_setup, thumb_bl_setup, thumb_bl_off, thumb_bl_off, thumb_bl_off, thumb_bl_off, thumb_bl_off, thumb_bl_off, thumb_bl_off, thumb_bl_off]
 ];
 
-pub static THUMB_DP_OPCODE_TABLE:[[fn(&mut ArmCpu, u16); 4]; 4] = [
+pub static THUMB_DP_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 4]; 4] = [
 [thumb_dp_and, thumb_dp_eor, thumb_dp_lsl, thumb_dp_lsr],
 [thumb_dp_asr, thumb_dp_add, thumb_dp_sub, thumb_dp_ror],
 [thumb_dp_tst, thumb_dp_neg, thumb_dp_cmp, thumb_dp_cmn],

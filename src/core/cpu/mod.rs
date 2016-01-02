@@ -133,7 +133,7 @@ impl ArmCpu {
 
 		if self.thumb_pipeline.ready() {
 			let saved_pc = self.registers.get(REG_PC);
-			let decoded = self.thumb_pipeline.decoded;
+			let decoded = self.thumb_pipeline.decoded as u32;
 			execute_thumb(self, decoded);
 			branched = saved_pc != self.registers.get(REG_PC);
 		} else {
@@ -206,7 +206,7 @@ impl ArmCpu {
 	}
 
 	/// Software interrupt in thumb mode.
-	pub fn thumb_swi(&mut self, instr: u16) {
+	pub fn thumb_swi(&mut self, instr: u32) {
 
 	}
 

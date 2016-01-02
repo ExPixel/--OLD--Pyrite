@@ -1,7 +1,9 @@
 Core:
   CPU:
     ☐ Complete the CPU's logic.
-      ☐ Complete the CPU's ALU
+      ✔ Complete the CPU's ALU @done (16-01-01 22:36)
+        ☐ Quick Style Fix: Change the '_s' in alu shifts to just 's'
+      ☐ Complete the CPU's ARM instructions (minus swi).
         ✔ Data processing instructions @done (15-12-24 23:41)
         ✔ PSR transfer instructions @done (16-01-01 18:33)
         ✔ Multiply instructions @done (16-01-01 20:28)
@@ -34,7 +36,6 @@ Core:
            so it might be worth forcing them to be inlined. Until I build more
            of this and get a chance to look though, I'm just going to assume that
            LLVM is already inlining them.
-      ✔ Complete the CPU's ARM instructions (minus swi). @done (16-01-01 20:29)
       ☐ Complete the CPU's THUMB instructions.
       Accuracy+:
        ☐ Implement Gamepak Prefetch for the CPU
