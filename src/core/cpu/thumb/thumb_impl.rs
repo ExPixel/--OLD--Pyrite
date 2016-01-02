@@ -278,28 +278,32 @@ pub fn thumb_sub_i8r7(cpu: &mut ArmCpu, instr: u16) {
 /// Thumb data processing
 /// Instruction group 1
 pub fn thumb_dp_g1(cpu: &mut ArmCpu, instr: u16) {
-	// #TODO
+	let dp_instr = super::table::THUMB_DP_OPCODE_TABLE[0][((instr >> 6) & 0x3) as usize];
+	dp_instr(cpu, instr);
 }
 
 /// DP g2
 /// Thumb data processing
 /// Instruction group 2
 pub fn thumb_dp_g2(cpu: &mut ArmCpu, instr: u16) {
-	// #TODO
+	let dp_instr = super::table::THUMB_DP_OPCODE_TABLE[1][((instr >> 6) & 0x3) as usize];
+	dp_instr(cpu, instr);
 }
 
 /// DP g3
 /// Thumb data processing
 /// Instruction group 3
 pub fn thumb_dp_g3(cpu: &mut ArmCpu, instr: u16) {
-	// #TODO
+	let dp_instr = super::table::THUMB_DP_OPCODE_TABLE[2][((instr >> 6) & 0x3) as usize];
+	dp_instr(cpu, instr);
 }
 
 /// DP g4
 /// Thumb data processing
 /// Instruction group 4
 pub fn thumb_dp_g4(cpu: &mut ArmCpu, instr: u16) {
-	// #TODO
+	let dp_instr = super::table::THUMB_DP_OPCODE_TABLE[3][((instr >> 6) & 0x3) as usize];
+	dp_instr(cpu, instr);
 }
 
 /// ADDH 

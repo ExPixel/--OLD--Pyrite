@@ -1167,7 +1167,16 @@ pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
 /// BX
 /// Branch and switch execution modes
 pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let rn = instr & 0xf;
+	let address = cpu.rget(rn);
+	if (address & 1) == 1 {
+		// Branch into thumb mode.
+		cpu.registers.setf_t();
+		cpu.rset(15, address & 0xFFFFFFFE);
+	} else {
+		// Branch into arm mode.
+		cpu.rset(15, address & 0xFFFFFFFC);
+	}
 }
 
 /// STRH prrm

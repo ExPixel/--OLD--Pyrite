@@ -7,7 +7,7 @@ Core:
         ☐ Multiply instructions
         ☐ Multiply long instructions
         ✔ Single data swap instruction @done (16-01-01 18:45)
-        ☐ Branch instructions
+        ☐ Branch instructions (B, BL)
         ☐ Branch and exchange instruction
         ☐ Alignment on all data transfer instructions
            One thing that I saw VBA doing a lot was aligning addresses along word boundaries
