@@ -2587,13 +2587,26 @@ gen_ldm_u!(arm_ldmib_uw, LDM, PRE, INC, true);
 /// B 
 /// Branch
 pub fn arm_b(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let pc = cpu.rget(15);
+	let mut offset = instr & 0xffffff;
+	if (offset & 0x800000) == 1 {
+		offset |= 0xff000000;
+	}
+	offset <<= 2;
+	cpu.rset(15, pc + offset);
 }
 
 /// BL 
 /// Branch and link
 pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let pc = cpu.rget(15);
+	cpu.rset(14, (pc - 4) & 0xFFFFFFFC);
+	let mut offset = instr & 0xffffff;
+	if (offset & 0x800000) == 1 {
+		offset |= 0xff000000;
+	}
+	offset <<= 2;
+	cpu.rset(15, pc + offset);
 }
 
 /// STC ofm

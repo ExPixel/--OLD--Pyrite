@@ -112,7 +112,7 @@ impl ArmCpu {
 
 			if self.check_condition(condition) {
 				execute_arm(self, decoded);
-			} /* #TODO increase the clock by 1S cycle. */
+			} /* #TODO else increase the clock by 1S cycle. */
 			branched = saved_pc != self.registers.get(REG_PC);
 		} else {
 			branched = false;
@@ -173,7 +173,7 @@ impl ArmCpu {
 	///   F:   NV     -             never (ARMv1,v2 only) (Reserved ARMv3 and up)
 	/// Execution Time: If condition=false: 1S cycle. Otherwise: as specified for the respective opcode.
 	fn check_condition(&self, condition: u32) -> bool {
-		match self.registers.get_cpsr() {
+		match condition {
 			0x0 => self.registers.getf_z(),		// EQ
 			0x1 => !self.registers.getf_z(),	// NE
 			0x2 => self.registers.getf_c(),		// CS / HS
