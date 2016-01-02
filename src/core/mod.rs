@@ -28,7 +28,7 @@ impl Gba {
 		while self.cpu.executable() {
 			self.cpu.tick();
 			x += 1;
-			if(x > 20) { break; }
+			if(x > 64) { break; }
 		}
 	}
 }

@@ -8,3 +8,5 @@ Source Markup:
 - \#TODO comments are used to mark small tasks that are still not finished. They sometimes correspond to the tasks in the TODO.todo file.
 
 - \#FIXME comments are used to mark small sections of code that are possibly incorrect, but I couldn't find documentation on or didn't want to waste time so I put them off.
+
+- \#CLEANUP changes I should come back and make later to improve code quality.

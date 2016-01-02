@@ -5,8 +5,14 @@ use super::super::alu::*;
 use super::super::arm::functions::*;
 use std::convert::Into;
 
-// #TODO there is a lot of code duplication here.
+// #CLEANUP there is a lot of code duplication here.
 // I should clean it up in the future.
+
+// Not sure if this should be 7 or 13
+// the documentation actually writes both in the same section
+// I'm not kidding.
+// who wrote this D:?
+const SP: u32 = 13; 
 
 const ADDR_REG: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_reg;
 const ADDR_IMM5: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_imm5;
@@ -42,7 +48,8 @@ pub fn thumb_lsl_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
-	let result = arm_alu_lli_s(cpu, rs, offset5);
+	let _rs = cpu.rget(rs);
+	let result = arm_alu_lli_s(cpu, _rs, offset5);
 	cpu.rset(rd.into(), result);
 }
 
@@ -53,7 +60,8 @@ pub fn thumb_lsr_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
-	let result = arm_alu_lri_s(cpu, rs, offset5);
+	let _rs = cpu.rget(rs);
+	let result = arm_alu_lri_s(cpu, _rs, offset5);
 	cpu.rset(rd, result);
 }
 
@@ -64,7 +72,8 @@ pub fn thumb_asr_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
-	let result = arm_alu_ari_s(cpu, rs, offset5);
+	let _rs = cpu.rget(rs);
+	let result = arm_alu_ari_s(cpu, _rs, offset5);
 	cpu.rset(rd, result);
 }
 
@@ -75,8 +84,9 @@ pub fn thumb_add_reg(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let rn = (instr >> 6) & 0x7;
+	let _rs = cpu.rget(rs);
 	let _rn = cpu.rget(rn);
-	let result = arm_fn_add_s(cpu, rs, _rn);
+	let result = arm_fn_add_s(cpu, _rs, _rn);
 	cpu.rset(rd, result);
 }
 
@@ -87,8 +97,9 @@ pub fn thumb_sub_reg(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let rn = (instr >> 6) & 0x7;
+	let _rs = cpu.rget(rs);
 	let _rn = cpu.rget(rn);
-	let result = arm_fn_sub_s(cpu, rs, _rn);
+	let result = arm_fn_sub_s(cpu, _rs, _rn);
 	cpu.rset(rd, result);
 }
 
@@ -99,7 +110,8 @@ pub fn thumb_add_imm3(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset3 = (instr >> 6) & 0x7;
-	let result = arm_fn_add_s(cpu, rs, offset3);
+	let _rs = cpu.rget(rs);
+	let result = arm_fn_add_s(cpu, _rs, offset3);
 	cpu.rset(rd, result);
 }
 
@@ -110,7 +122,8 @@ pub fn thumb_sub_imm3(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset3 = (instr >> 6) & 0x7;
-	let result = arm_fn_sub_s(cpu, rs, offset3);
+	let _rs = cpu.rget(rs);
+	let result = arm_fn_sub_s(cpu, _rs, offset3);
 	cpu.rset(rd, result);
 }
 
@@ -463,7 +476,7 @@ pub fn thumb_dp_g4(cpu: &mut ArmCpu, instr: u32) {
 pub fn thumb_addh(cpu: &mut ArmCpu, instr: u32) {
 	let mut rd = instr & 0x7;
 	if (instr & 0x80) != 0 { rd += 8; }
-	let mut rs = instr & 0x7;
+	let mut rs = (instr >> 3) & 0x7;
 	if (instr & 0x40) != 0 { rs += 8; }
 	let lhs = cpu.rget(rd);
 	let rhs = cpu.rget(rs);
@@ -476,7 +489,7 @@ pub fn thumb_addh(cpu: &mut ArmCpu, instr: u32) {
 pub fn thumb_cmph(cpu: &mut ArmCpu, instr: u32) {
 	let mut rd = instr & 0x7;
 	if (instr & 0x80) != 0 { rd += 8; }
-	let mut rs = instr & 0x7;
+	let mut rs = (instr >> 3) & 0x7;
 	if (instr & 0x40) != 0 { rs += 8; }
 	let lhs = cpu.rget(rd);
 	let rhs = cpu.rget(rs);
@@ -488,7 +501,7 @@ pub fn thumb_cmph(cpu: &mut ArmCpu, instr: u32) {
 pub fn thumb_movh(cpu: &mut ArmCpu, instr: u32) {
 	let mut rd = instr & 0x7;
 	if (instr & 0x80) != 0 { rd += 8; }
-	let mut rs = instr & 0x7;
+	let mut rs = (instr >> 3) & 0x7;
 	if (instr & 0x40) != 0 { rs += 8; }
 	let lhs = cpu.rget(rd);
 	let rhs = cpu.rget(rs);
@@ -500,15 +513,15 @@ pub fn thumb_movh(cpu: &mut ArmCpu, instr: u32) {
 /// Branch and switch execution modes
 /// Register offset
 pub fn thumb_bx_reg(cpu: &mut ArmCpu, instr: u32) {
-	let mut rs = instr & 0x7;
+	let mut rs = (instr >> 3) & 0x7;
 	if (instr & 0x40) != 0 { rs += 8; }
 	let address = cpu.rget(rs);
 	if (address & 1) == 1 {
 		// Branch into thumb mode.
-		cpu.registers.setf_t();
 		cpu.rset(15, address & 0xFFFFFFFE);
 	} else {
 		// Branch into arm mode.
+		cpu.registers.clearf_t();
 		cpu.rset(15, address & 0xFFFFFFFC);
 	}
 }
@@ -649,7 +662,11 @@ gen_sdt!(thumb_ldrh_imm5, LDRH, ADDR_IMM5);
 
 /// Common strsp function.
 fn thumb_strsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	// #TODO
+	let offset = (instr & 0xff) << 2;
+	let base = cpu.rget(SP);
+	let address = base + offset;
+	let data = cpu.rget(rd);
+	cpu.mwrite32(address, data);
 }
 
 /// STRSP r0
@@ -710,7 +727,11 @@ pub fn thumb_strsp_r7(cpu: &mut ArmCpu, instr: u32) {
 
 /// Common ldrsp function.
 fn thumb_ldrsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	// #TODO
+	let offset = (instr & 0xff) << 2;
+	let base = cpu.rget(SP);
+	let address = base + offset;
+	let data = cpu.mread32(address);
+	cpu.rset(rd, data);
 }
 
 /// LDRSP r0
@@ -771,7 +792,9 @@ pub fn thumb_ldrsp_r7(cpu: &mut ArmCpu, instr: u32) {
 
 // Common addpc function.
 fn thumb_addpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	// #TODO
+	let mut offset = (instr & 0xff) << 2;
+	let pc = cpu.rget(15) & 0xFFFFFFFE;
+	cpu.rset(rd, pc + offset);
 }
 
 /// ADDPC r0
@@ -824,7 +847,9 @@ pub fn thumb_addpc_r7(cpu: &mut ArmCpu, instr: u32) {
 
 /// Common addsp function.
 fn thumb_addsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	// #TODO
+	let offset = (instr & 0xff) << 2;
+	let sp = cpu.rget(SP);
+	cpu.rset(rd, sp + offset);
 }
 
 /// ADDSP r0
@@ -878,7 +903,11 @@ pub fn thumb_addsp_r7(cpu: &mut ArmCpu, instr: u32) {
 /// ADDSP imm7
 /// 7-bit immediate offset
 pub fn thumb_addsp_imm7(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let mut offset = ((instr & 0x7f) << 2) as i32;
+	if (instr & 0x80) != 0 { offset = -offset; }
+	let sp = cpu.rget(SP) as i32;
+	let result = (sp + offset) as u32;
+	cpu.rset(SP, result);
 }
 
 /// [undefined] [undefined]
@@ -888,251 +917,377 @@ pub fn thumb_undefined(cpu: &mut ArmCpu, instr: u32) {
 	cpu.on_undefined();
 }
 
+#[inline(always)]
+fn thumb_stm_single(cpu: &mut ArmCpu, src_reg: u32, wb_reg: u32, address: &mut u32, pre: bool, inc: bool) {
+	if pre {
+		if inc { *address += 4; }
+		else { *address -= 4; }
+		cpu.rset(wb_reg, *address);
+	}
+	let src_data = cpu.rget(src_reg);
+	cpu.mwrite32(*address, src_data);
+	if !pre {
+		if inc { *address += 4; }
+		else { *address -= 4; }
+		cpu.rset(wb_reg, *address);
+	}
+}
+
+#[inline(always)]
+fn thumb_ldm_single(cpu: &mut ArmCpu, dst_reg: u32, wb_reg: u32, address: &mut u32, pre: bool, inc: bool) {
+	if pre {
+		if inc { *address += 4; }
+		else { *address -= 4; }
+		cpu.rset(wb_reg, *address);
+	}
+	let src_data = cpu.mread32(*address);
+	cpu.rset(dst_reg, src_data);
+	if !pre {
+		if inc { *address += 4; }
+		else { *address -= 4; }
+		cpu.rset(wb_reg, *address);
+	}
+}
+
 /// PUSH 
 /// Store multiple words to memory (STMDB equivalent)
 pub fn thumb_push(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let mut address = cpu.rget(SP);
+	let rlist = instr & 0xff;
+	for r in 0..7 {
+		if ((instr >> r) & 1) != 0 {
+			thumb_stm_single(cpu, r, 13, &mut address, true, false);
+		}
+	}
 }
 
 /// PUSH lr
 /// Store multiple words to memory (STMDB equivalent)
 /// Include r14
 pub fn thumb_push_lr(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let mut address = cpu.rget(SP);
+	let rlist = instr & 0xff;
+	for r in 0..7 {
+		if ((instr >> r) & 1) != 0 {
+			thumb_stm_single(cpu, r, 13, &mut address, true, false);
+		}
+	}
+	thumb_stm_single(cpu, 14, 13, &mut address, true, false);
 }
 
 /// POP 
 /// Load multiple words from memory (LDMIA equivalent)
 pub fn thumb_pop(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let mut address = cpu.rget(SP);
+	let rlist = instr & 0xff;
+	for r in 0..7 {
+		if ((instr >> r) & 1) != 0 {
+			thumb_ldm_single(cpu, r, 13, &mut address, false, true);
+		}
+	}
 }
 
 /// POP pc
 /// Load multiple words from memory (LDMIA equivalent)
 /// Include r15
 pub fn thumb_pop_pc(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let mut address = cpu.rget(SP);
+	let rlist = instr & 0xff;
+	for r in 0..7 {
+		if ((instr >> r) & 1) != 0 {
+			thumb_ldm_single(cpu, r, 13, &mut address, false, true);
+		}
+	}
+	thumb_ldm_single(cpu, 15, 13, &mut address, false, true);
+}
+
+/// Common STMIA instruction.
+fn thumb_stmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
+	let mut address = cpu.rget(rb);
+	let rlist = instr & 0xff;
+	for r in 0..7 {
+		if ((instr >> r) & 1) != 0 {
+			thumb_stm_single(cpu, r, rb, &mut address, false, true);
+		}
+	}
 }
 
 /// STMIA r0
 /// Store multiple words, increment after
 /// Using r0
 pub fn thumb_stmia_r0(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 0);
 }
 
 /// STMIA r1
 /// Store multiple words, increment after
 /// Using r1
 pub fn thumb_stmia_r1(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 1);
 }
 
 /// STMIA r2
 /// Store multiple words, increment after
 /// Using r2
 pub fn thumb_stmia_r2(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 2);
 }
 
 /// STMIA r3
 /// Store multiple words, increment after
 /// Using r3
 pub fn thumb_stmia_r3(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 3);
 }
 
 /// STMIA r4
 /// Store multiple words, increment after
 /// Using r4
 pub fn thumb_stmia_r4(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 4);
 }
 
 /// STMIA r5
 /// Store multiple words, increment after
 /// Using r5
 pub fn thumb_stmia_r5(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 5);
 }
 
 /// STMIA r6
 /// Store multiple words, increment after
 /// Using r6
 pub fn thumb_stmia_r6(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 6);
 }
 
 /// STMIA r7
 /// Store multiple words, increment after
 /// Using r7
 pub fn thumb_stmia_r7(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_stmia(cpu, instr, 7);
+}
+
+/// Common LDMIA instruction.
+fn thumb_ldmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
+	let mut address = cpu.rget(rb);
+	let rlist = instr & 0xff;
+	for r in 0..7 {
+		if ((instr >> r) & 1) != 0 {
+			thumb_ldm_single(cpu, r, rb, &mut address, false, true);
+		}
+	}
 }
 
 /// LDMIA r0
 /// Load multiple words, increment after
 /// Using r0
 pub fn thumb_ldmia_r0(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 0);
 }
 
 /// LDMIA r1
 /// Load multiple words, increment after
 /// Using r1
 pub fn thumb_ldmia_r1(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 1);
 }
 
 /// LDMIA r2
 /// Load multiple words, increment after
 /// Using r2
 pub fn thumb_ldmia_r2(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 2);
 }
 
 /// LDMIA r3
 /// Load multiple words, increment after
 /// Using r3
 pub fn thumb_ldmia_r3(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 3);
 }
 
 /// LDMIA r4
 /// Load multiple words, increment after
 /// Using r4
 pub fn thumb_ldmia_r4(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 4);
 }
 
 /// LDMIA r5
 /// Load multiple words, increment after
 /// Using r5
 pub fn thumb_ldmia_r5(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 5);
 }
 
 /// LDMIA r6
 /// Load multiple words, increment after
 /// Using r6
 pub fn thumb_ldmia_r6(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 6);
 }
 
 /// LDMIA r7
 /// Load multiple words, increment after
 /// Using r7
 pub fn thumb_ldmia_r7(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	thumb_ldmia(cpu, instr, 7);
+}
+
+/// Branch that occurs if the condition of the thumb
+/// conditional branch passes.
+#[inline(always)]
+fn thumb_b_cond_passed(cpu: &mut ArmCpu, instr: u32) {
+	let soffset9 = ((((instr & 0xff) as i32) << 24) >> 23) as u32;
+	let pc = cpu.rget(15) + soffset9;
+	cpu.rset(15, pc);
 }
 
 /// BEQ 
 /// Branch if zero flag set
 pub fn thumb_beq(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_z() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BNE 
 /// Branch if zero flag clear
 pub fn thumb_bne(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if !cpu.registers.getf_z() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BCS 
 /// Branch if carry flag set
 pub fn thumb_bcs(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_c() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BCC 
 /// Branch if carry flag clear
 pub fn thumb_bcc(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if !cpu.registers.getf_c() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BMI 
 /// Branch if negative flag set
 pub fn thumb_bmi(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_n() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BPL 
 /// Branch if negative flag clear
 pub fn thumb_bpl(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if !cpu.registers.getf_n() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BVS 
 /// Branch if overflow flag set
 pub fn thumb_bvs(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_v() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BVC 
 /// Branch if overflow flag clear
 pub fn thumb_bvc(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if !cpu.registers.getf_v() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BHI 
 /// Branch if higher (unsigned)
 pub fn thumb_bhi(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_c() & !cpu.registers.getf_z() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BLS 
 /// Branch if lower or the same (unsigned)
 pub fn thumb_bls(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if !cpu.registers.getf_c() || cpu.registers.getf_z() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BGE 
 /// Branch if greater than or equal to
 pub fn thumb_bge(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_n() == cpu.registers.getf_v() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BLT 
 /// Branch if less than
 pub fn thumb_blt(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_n() != cpu.registers.getf_v() {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BGT 
 /// Branch if greater than
 pub fn thumb_bgt(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if !cpu.registers.getf_z() && (cpu.registers.getf_n() == cpu.registers.getf_v()) {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// BLE 
 /// Branch if less than or equal to
 pub fn thumb_ble(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	if cpu.registers.getf_z() && (cpu.registers.getf_n() != cpu.registers.getf_v()) {
+		thumb_b_cond_passed(cpu, instr);
+	}
 }
 
 /// SWI 
 /// Software interrupt (enter supervisor mode)
 pub fn thumb_swi(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	cpu.thumb_swi(instr);
 }
 
 /// B 
 /// Branch
 pub fn thumb_b(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let soffset12 = ((((instr & 0x7ff) as i32) << 21) >> 20) as u32;
+	let pc = cpu.rget(15) + soffset12;
+	cpu.rset(15, pc);
 }
 
 /// BL setup
 /// Branch and link
 /// Two-instruction branch, high 11 bits of offset
 pub fn thumb_bl_setup(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let soffset11 = ((((instr & 0x7ff) as i32) << 21) >> 13) as u32;
+	let pc = cpu.rget(15);
+	cpu.rset(14, pc + soffset11);
 }
 
 /// BL off
 /// Branch and link
 /// Two-instruction branch, low 11 bits of offset
 pub fn thumb_bl_off(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
+	let offset12 = (instr & 0x7ff) << 1;
+	let lr = cpu.rget(14);
+	let address = lr + offset12;
+	let next = cpu.rget(15) - 2;
+	cpu.rset(14, next);
+	cpu.rset(15, address);
 }
 
