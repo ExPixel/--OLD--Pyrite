@@ -204,4 +204,17 @@ impl ArmCpu {
 			_ => false
 		}
 	}
+
+	/// Software interrupt in thumb mode.
+	pub fn thumb_swi(&mut self, instr: u16) {
+
+	}
+
+	/// Software interrupt in ARM mode.
+	pub fn arm_swi(&mut self, instr: u32) {
+	}
+
+	/// The CPU has hit an undefined instruction.
+	pub fn on_undefined(&mut self) {
+	}
 }

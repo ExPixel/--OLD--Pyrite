@@ -344,7 +344,7 @@ gen_hdt!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
 /// UNDEFINED
 /// just increments the clock
 pub fn arm_undefined(cpu: &mut ArmCpu, instr: u32) {
-	panic!("Not comfortable handling undefined instructions, yet");
+	cpu.on_undefined();
 }
 
 /// ANDS lli
@@ -2742,7 +2742,6 @@ pub fn arm_mrc(cpu: &mut ArmCpu, instr: u32) {
 /// SWI 
 /// Software interrupt (enter supervisor mode)
 pub fn arm_swi(cpu: &mut ArmCpu, instr: u32) {
-	// #TODO
-	unimplemented!();
+	cpu.arm_swi(instr);
 }
 
