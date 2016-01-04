@@ -11,7 +11,7 @@ function checkCode() {
 	local DATE=`date +"%T"`
 	echo "[${DATE}] COMPILE #${CURRENT_COMPILE}"
 	cargo check
-	echo "---- FINSHED COMPILING ----"
+	echo "---- FINSHED CHECKING ----"
 }
 
 # Reads a line from stdin, and then

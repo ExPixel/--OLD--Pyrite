@@ -105,11 +105,11 @@ impl ArmCpu {
 			let decoded = self.arm_pipeline.decoded;
 			let condition = (decoded >> 28) & 0xf;
 
-			{
-				// #DEBUG
-				let __pc = self.registers.get(REG_PC) - 8;
-				println!("_arm {}", super::super::debug::armdis::disasm_arm(__pc, &self.memory, 0b11111111));
-			}
+			// {
+			// 	// #DEBUG
+			// 	let __pc = self.registers.get(REG_PC) - 8;
+			// 	println!("_arm {}", super::super::debug::armdis::disasm_arm(__pc, &self.memory, 0b11111111));
+			// }
 
 			if self.check_condition(condition) {
 				execute_arm(self, decoded);
@@ -137,11 +137,11 @@ impl ArmCpu {
 			let decoded = self.thumb_pipeline.decoded as u32;
 
 
-			{
-				// #DEBUG
-				let __pc = self.registers.get(REG_PC) - 4;
-				println!("thumb {}", super::super::debug::armdis::disasm_thumb(__pc, &self.memory, 0b11111111));
-			}
+			// {
+			// 	// #DEBUG
+			// 	let __pc = self.registers.get(REG_PC) - 4;
+			// 	println!("thumb {}", super::super::debug::armdis::disasm_thumb(__pc, &self.memory, 0b11111111));
+			// }
 
 			execute_thumb(self, decoded);
 			branched = saved_pc != self.registers.get(REG_PC);
