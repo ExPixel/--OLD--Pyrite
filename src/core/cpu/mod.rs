@@ -2,9 +2,10 @@ pub mod arm;
 pub mod thumb;
 pub mod alu;
 pub mod clock;
+pub mod registers;
 
 use super::memory::GbaMemory;
-use super::registers::*;
+use self::registers::*;
 use self::arm::execute_arm;
 use self::thumb::execute_thumb;
 use self::clock::*;

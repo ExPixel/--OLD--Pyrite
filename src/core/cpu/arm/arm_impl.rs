@@ -1,5 +1,5 @@
 use super::super::ArmCpu;
-use super::super::super::registers;
+use super::super::registers;
 use super::super::super::memory::GbaMemory;
 use super::functions::*;
 use super::super::alu;
