@@ -103,7 +103,7 @@ impl GbaMemory {
 			// it is repeated in steps of 128K (64K+32K+32K, the two 32K blocks itself being mirrors of each other)
 			0x06000000 ... 0x06FFFFFF => {
 				let vram_128k = address % 0x20000; // 0x20000 = 128K (using 1024 not that metric 1000 crap.)
-				let vram_offset = if vram_128k >= 0x6000000 {
+				let vram_offset = if vram_128k >= 0x18000 {
 					// If this is over 96K (it goes into the mirrored 32K area)
 					vram_128k - 0x8000 // Subtract 32K
 				} else {
@@ -161,6 +161,9 @@ impl GbaMemory {
 			0x08000000 ... 0x0Dffffff => self.rom_write8(address, value),
 			_ => {
 				let local_addr = self.transform(address);
+				if local_addr == 412671 {
+					println!("addr: {:08x}", address);
+				}
 				self.internal_data[local_addr] = value;
 			}	
 		}

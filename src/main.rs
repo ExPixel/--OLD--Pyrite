@@ -4,6 +4,7 @@
 pub mod core;
 pub mod debug;
 
+extern crate sdl2;
 extern crate docopt;
 extern crate rustc_serialize;
 
@@ -22,7 +23,7 @@ macro_rules! println_err {
     )
 }
 
-pub fn load_rom(rom_path: String) -> Gba {
+pub fn load_rom<'a>(rom_path: String) -> Gba<'a> {
 	let mut gba = Gba::new();
 	let filepath = rom_path;
 	let mut f = match File::open(filepath.clone()) {
@@ -40,6 +41,7 @@ pub fn load_rom(rom_path: String) -> Gba {
 }
 
 pub fn run_gba(gba: &mut Gba) {
+	gba.init();
 	gba.run();
 }
 

@@ -12,3 +12,4 @@ debug-assertions = false
 [dependencies]
 docopt = "0.6"
 rustc-serialize = "0.3"  # if you're using `derive(RustcDecodable)`
+sdl2 = "0.12"
