@@ -1,5 +1,5 @@
 use super::super::ArmCpu;
-use super::super::super::memory::GbaMemory;
+// use super::super::super::memory::GbaMemory;
 use super::thumb_impl::*;
 use super::thumb_dp_impl::*;
 

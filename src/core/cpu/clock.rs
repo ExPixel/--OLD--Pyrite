@@ -1,48 +1,56 @@
 pub struct ArmCpuClock {
 	/// The number of cycles that have gone by.
-	cycles: u64
+	pub cycles: u64
 }
 
+#[allow(unused_variables)]
 impl ArmCpuClock {
+	pub fn new() -> ArmCpuClock {
+		ArmCpuClock {
+			cycles: 0
+		}
+	}
+
 	/// Internal cycle
 	pub fn internal(&mut self, cycles: u64) {
-	} 
+		self.cycles += cycles;
+	}
 
 	/// Sequential 8bit data access
-	pub fn daccess8_seq(&mut self, addr: u32) {}
+	pub fn daccess8_seq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Sequential 16 bit data access
-	pub fn daccess16_seq(&mut self, addr: u32) {}
+	pub fn daccess16_seq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Sequential 32 bit data access
-	pub fn daccess32_seq(&mut self, addr: u32) {}
+	pub fn daccess32_seq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Nonsequential 8bit data access
-	pub fn daccess8_nonseq(&mut self, addr: u32) {}
+	pub fn daccess8_nonseq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Nonsequential 16 bit data access
-	pub fn daccess16_nonseq(&mut self, addr: u32) {}
+	pub fn daccess16_nonseq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Nonsequential 32 bit data access
-	pub fn daccess32_nonseq(&mut self, addr: u32) {}
+	pub fn daccess32_nonseq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Sequential 8bit code access
-	pub fn caccess8_seq(&mut self, addr: u32) {}
+	pub fn caccess8_seq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Sequential 16 bit code access
-	pub fn caccess16_seq(&mut self, addr: u32) {}
+	pub fn caccess16_seq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Sequential 32 bit code access
-	pub fn caccess32_seq(&mut self, addr: u32) {}
+	pub fn caccess32_seq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Nonsequential 8bit code access
-	pub fn caccess8_nonseq(&mut self, addr: u32) {}
+	pub fn caccess8_nonseq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Nonsequential 16 bit code access
-	pub fn caccess16_nonseq(&mut self, addr: u32) {}
+	pub fn caccess16_nonseq(&mut self, addr: u32) { unimplemented!(); }
 
 	/// Nonsequential 32 bit code access
-	pub fn caccess32_nonseq(&mut self, addr: u32) {}
+	pub fn caccess32_nonseq(&mut self, addr: u32) { unimplemented!(); }
 }
 
 

@@ -17,10 +17,10 @@ struct Pipeline<T : Copy> {
 }
 
 impl<T : Copy> Pipeline<T> {
-	pub fn new(initTo: T) -> Pipeline<T> {
+	pub fn new(init_to: T) -> Pipeline<T> {
 		Pipeline {
-			fetched: initTo,
-			decoded: initTo,
+			fetched: init_to,
+			decoded: init_to,
 			count: 0u8
 		}
 	}
@@ -45,7 +45,8 @@ pub struct ArmCpu {
 	thumb_pipeline: Pipeline<u16>,
 	arm_pipeline: Pipeline<u32>,
 	pub registers: ArmRegisters,
-	pub memory: GbaMemory
+	pub memory: GbaMemory,
+	pub clock: ArmCpuClock
 }
 
 impl ArmCpu {
@@ -54,7 +55,8 @@ impl ArmCpu {
 			thumb_pipeline: Pipeline::new(0u16),
 			arm_pipeline: Pipeline::new(0u32),
 			registers: ArmRegisters::new(),
-			memory: GbaMemory::new()
+			memory: GbaMemory::new(),
+			clock: ArmCpuClock::new()
 		}
 	}
 
@@ -63,7 +65,11 @@ impl ArmCpu {
 	pub fn tick(&mut self) {
 		let thumb_mode = self.registers.getf_t();
 		if thumb_mode { self.thumb_tick(); }
-		else { self.arm_tick(); } 
+		else { self.arm_tick(); }
+
+		// #TODO debug code.
+		// for trying to use cycles.
+		self.clock.internal(2);
 	}
 
 	pub fn rget(&self, register: u32) -> u32 {
@@ -216,12 +222,15 @@ impl ArmCpu {
 	}
 
 	/// Software interrupt in thumb mode.
+	#[allow(unused_variables)]
 	pub fn thumb_swi(&mut self, instr: u32) {
-
+		unimplemented!(); // #TODO
 	}
 
 	/// Software interrupt in ARM mode.
+	#[allow(unused_variables)]
 	pub fn arm_swi(&mut self, instr: u32) {
+		unimplemented!();// #TODO
 	}
 
 	/// The CPU has hit an undefined instruction.

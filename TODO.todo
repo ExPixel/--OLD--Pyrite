@@ -1,4 +1,12 @@
 Core:
+  LCD:
+    ☐ Complete All Rendering
+      ☐ Complete Mode 0 Rendering
+      ☐ Complete Mode 1 Rendering
+      ☐ Complete Mode 2 Rendering
+      ☐ Complete Mode 3 Rendering
+      ☐ Complete Mode 4 Rendering
+      ☐ Complete Window Rendering
   CPU:
     ☐ Complete the CPU's logic.
       ✔ Complete the CPU's ALU @done (16-01-01 22:36)

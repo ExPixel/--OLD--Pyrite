@@ -1,5 +1,5 @@
 use super::ArmCpu;
-use super::registers::*;
+// use super::registers::*;
 
 macro_rules! pos {
 	($n:expr) => ($n >> 31)

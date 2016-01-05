@@ -1,5 +1,5 @@
 use super::super::ArmCpu;
-use super::super::super::memory::GbaMemory;
+// use super::super::super::memory::GbaMemory;
 use super::functions::*;
 use super::super::alu::*;
 use super::super::arm::functions::*;
@@ -792,7 +792,7 @@ pub fn thumb_ldrsp_r7(cpu: &mut ArmCpu, instr: u32) {
 
 // Common addpc function.
 fn thumb_addpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	let mut offset = (instr & 0xff) << 2;
+	let offset = (instr & 0xff) << 2;
 	let pc = cpu.rget(15) & 0xFFFFFFFE;
 	cpu.rset(rd, pc + offset);
 }
@@ -913,7 +913,7 @@ pub fn thumb_addsp_imm7(cpu: &mut ArmCpu, instr: u32) {
 /// [undefined] [undefined]
 /// [undefined]
 /// [undefined]
-pub fn thumb_undefined(cpu: &mut ArmCpu, instr: u32) {
+pub fn thumb_undefined(cpu: &mut ArmCpu, _: u32) {
 	cpu.on_undefined();
 }
 
@@ -953,7 +953,7 @@ fn thumb_ldm_single(cpu: &mut ArmCpu, dst_reg: u32, wb_reg: u32, address: &mut u
 /// Store multiple words to memory (STMDB equivalent)
 pub fn thumb_push(cpu: &mut ArmCpu, instr: u32) {
 	let mut address = cpu.rget(SP);
-	let rlist = instr & 0xff;
+	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_stm_single(cpu, r, 13, &mut address, true, false);
@@ -966,7 +966,7 @@ pub fn thumb_push(cpu: &mut ArmCpu, instr: u32) {
 /// Include r14
 pub fn thumb_push_lr(cpu: &mut ArmCpu, instr: u32) {
 	let mut address = cpu.rget(SP);
-	let rlist = instr & 0xff;
+	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_stm_single(cpu, r, 13, &mut address, true, false);
@@ -979,7 +979,7 @@ pub fn thumb_push_lr(cpu: &mut ArmCpu, instr: u32) {
 /// Load multiple words from memory (LDMIA equivalent)
 pub fn thumb_pop(cpu: &mut ArmCpu, instr: u32) {
 	let mut address = cpu.rget(SP);
-	let rlist = instr & 0xff;
+	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_ldm_single(cpu, r, 13, &mut address, false, true);
@@ -992,7 +992,7 @@ pub fn thumb_pop(cpu: &mut ArmCpu, instr: u32) {
 /// Include r15
 pub fn thumb_pop_pc(cpu: &mut ArmCpu, instr: u32) {
 	let mut address = cpu.rget(SP);
-	let rlist = instr & 0xff;
+	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_ldm_single(cpu, r, 13, &mut address, false, true);
@@ -1004,7 +1004,7 @@ pub fn thumb_pop_pc(cpu: &mut ArmCpu, instr: u32) {
 /// Common STMIA instruction.
 fn thumb_stmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
 	let mut address = cpu.rget(rb);
-	let rlist = instr & 0xff;
+	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_stm_single(cpu, r, rb, &mut address, false, true);
@@ -1071,7 +1071,7 @@ pub fn thumb_stmia_r7(cpu: &mut ArmCpu, instr: u32) {
 /// Common LDMIA instruction.
 fn thumb_ldmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
 	let mut address = cpu.rget(rb);
-	let rlist = instr & 0xff;
+	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_ldm_single(cpu, r, rb, &mut address, false, true);

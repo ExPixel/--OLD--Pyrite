@@ -1,6 +1,6 @@
 use super::super::ArmCpu;
 use super::super::registers;
-use super::super::super::memory::GbaMemory;
+// use super::super::super::memory::GbaMemory;
 use super::functions::*;
 use super::super::alu;
 
@@ -116,10 +116,12 @@ const LDRSH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsh;
 
 const HDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_imm;
 const HDT_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_reg;
-const HDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_imm;
-const HDT_NEG_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_reg;
-const HDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_imm;
-const HDT_POS_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_reg;
+// #TODO should consider going back and using these even though
+//       they actually make 0 difference.
+// const HDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_imm;
+// const HDT_NEG_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_reg;
+// const HDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_imm;
+// const HDT_POS_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_reg;
 
 // Functions for calculating the offset of a single data transfer.
 const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
@@ -224,12 +226,12 @@ macro_rules! gen_bdt {
 			let last_mode = cpu.registers.mode;
 			if $user { cpu.registers.mode = registers::MODE_USR; }
 
-			let registerList = instr & 0xffff;
+			let register_list = instr & 0xffff;
 			let rn = (instr >> 16) & 0xf;
 			let mut address = cpu.rget(rn);
 
 			for reg in 0..16 {
-				if (registerList & (1 << reg)) != 0 {
+				if (register_list & (1 << reg)) != 0 {
 					if $index_pre { address += 4; }
 					$transfer(cpu, address, reg);
 					if !$index_pre { address += 4; }
@@ -265,12 +267,12 @@ macro_rules! gen_ldm_u {
 			let last_mode = cpu.registers.mode;
 			if !psr_transfer { cpu.registers.mode = registers::MODE_USR; }
 
-			let registerList = instr & 0xffff;
+			let register_list = instr & 0xffff;
 			let rn = (instr >> 16) & 0xf;
 			let mut address = cpu.rget(rn);
 
 			for reg in 0..16 {
-				if (registerList & (1 << reg)) != 0 {
+				if (register_list & (1 << reg)) != 0 {
 					if $index_pre { address += 4; }
 					$transfer(cpu, address, reg);
 					// LDM with R15 in transfer list and S bit set (Mode changes)
@@ -343,7 +345,7 @@ gen_hdt!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
 
 /// UNDEFINED
 /// just increments the clock
-pub fn arm_undefined(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_undefined(cpu: &mut ArmCpu, _: u32) {
 	cpu.on_undefined();
 }
 
@@ -1152,7 +1154,7 @@ gen_hdt!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
 /// Move value to status word
 /// Register, CPSR
 pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
-	let rm = (instr & 0xf);
+	let rm = instr & 0xf;
 	let _rm = cpu.rget(rm);
 
 	// #FIXME this might be wrong but this is what the documentation looks like
@@ -2612,130 +2614,130 @@ pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
 /// STC ofm
 /// Store coprocessor data to memory
 /// Negative offset
-pub fn arm_stc_ofm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_ofm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ofm
 /// Load coprocessor data from memory
 /// Negative offset
-pub fn arm_ldc_ofm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_ofm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC prm
 /// Store coprocessor data to memory
 /// Pre-decrement
-pub fn arm_stc_prm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_prm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC prm
 /// Load coprocessor data from memory
 /// Pre-decrement
-pub fn arm_ldc_prm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_prm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC ofp
 /// Store coprocessor data to memory
 /// Positive offset
-pub fn arm_stc_ofp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_ofp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ofp
 /// Load coprocessor data from memory
 /// Positive offset
-pub fn arm_ldc_ofp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_ofp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC prp
 /// Store coprocessor data to memory
 /// Pre-increment
-pub fn arm_stc_prp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_prp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC prp
 /// Load coprocessor data from memory
 /// Pre-increment
-pub fn arm_ldc_prp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_prp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC unm
 /// Store coprocessor data to memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_stc_unm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_unm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC unm
 /// Load coprocessor data from memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_ldc_unm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_unm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC ptm
 /// Store coprocessor data to memory
 /// Post-decrement
-pub fn arm_stc_ptm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_ptm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ptm
 /// Load coprocessor data from memory
 /// Post-decrement
-pub fn arm_ldc_ptm(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_ptm(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC unp
 /// Store coprocessor data to memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_stc_unp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_unp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC unp
 /// Load coprocessor data from memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_ldc_unp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_unp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// STC ptp
 /// Store coprocessor data to memory
 /// Post-increment
-pub fn arm_stc_ptp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_stc_ptp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// LDC ptp
 /// Load coprocessor data from memory
 /// Post-increment
-pub fn arm_ldc_ptp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_ldc_ptp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// CDP 
 /// Perform coprocessor data operation
-pub fn arm_cdp(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_cdp(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// MCR 
 /// Write coprocessor register from ARM register
-pub fn arm_mcr(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_mcr(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 
 /// MRC 
 /// Read coprocessor register to ARM register
-pub fn arm_mrc(cpu: &mut ArmCpu, instr: u32) {
+pub fn arm_mrc(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
 }
 

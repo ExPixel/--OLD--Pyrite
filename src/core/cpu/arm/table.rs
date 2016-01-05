@@ -1,5 +1,5 @@
 use super::super::ArmCpu;
-use super::super::super::memory::GbaMemory;
+// use super::super::super::memory::GbaMemory;
 use super::arm_impl::*;
 
 pub static ARM_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 16]; 256] = [
