@@ -12,6 +12,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use docopt::Docopt;
 
+use core::memory::GbaMemory;
 use core::Gba;
 
 macro_rules! println_err {
@@ -40,13 +41,29 @@ pub fn load_rom<'a>(rom_path: String) -> Gba<'a> {
 	return gba
 }
 
+pub fn load_memory(rom_path: String) -> GbaMemory {
+	let mut memory = GbaMemory::new();
+	let filepath = rom_path;
+	let mut f = match File::open(filepath.clone()) {
+		Ok(file) => file,
+		Err(error) => panic!("Error while opening file '{}': {}", filepath, error)
+	};
+
+	let mut buffer = Vec::<u8>::new();
+	match f.read_to_end(&mut buffer) {
+		Ok(_) => {},
+		Err(error) => panic!("Error while reading file `{}`: {}", filepath, error)
+	}
+	memory.rom = buffer;
+	return memory;
+}
+
 pub fn run_gba(gba: &mut Gba) {
-	gba.init();
 	gba.run();
 }
 
-pub fn disasm_gba_rom(gba: &mut Gba, thumb_mode: bool) {
-	debug::print_gba_rom_disasm(gba, thumb_mode);
+pub fn disasm_gba_rom(memory: &mut GbaMemory, thumb_mode: bool) {
+	debug::print_gba_rom_disasm(memory, thumb_mode);
 }
 
 const USAGE: &'static str = "
@@ -84,10 +101,11 @@ fn main() {
 	}
 
 	if let Some(rom_file) = args.arg_rom {
-		let mut gba = Box::new(load_rom(rom_file));
 		if args.flag_disasm {
-			disasm_gba_rom(&mut gba, args.flag_thumb);
+			let mut memory = load_memory(rom_file);
+			disasm_gba_rom(&mut memory, args.flag_thumb);
 		} else {
+			let mut gba = Box::new(load_rom(rom_file));
 			run_gba(&mut gba);
 		}
 	}
