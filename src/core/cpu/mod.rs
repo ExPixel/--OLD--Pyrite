@@ -119,7 +119,10 @@ impl ArmCpu {
 			// }
 
 			if self.check_condition(condition) {
+				let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
+				before_execution(exec_addr, self); // #TODO remove this debug code.
 				execute_arm(self, decoded);
+				after_execution(exec_addr, self); // #TODO remove this debug code.
 			} /* #TODO else increase the clock by 1S cycle. */
 			branched = saved_pc != self.registers.get(REG_PC);
 		} else {
@@ -127,6 +130,8 @@ impl ArmCpu {
 		}
 
 		if branched {
+			// #FIXME I should probably be doing this in the instructions themselves.
+			self.align_pc(); // word aligning the program counter for ARM mode.
 			self.arm_pipeline.flush();
 		} else {
 			let pc = self.registers.get(REG_PC);
@@ -148,21 +153,36 @@ impl ArmCpu {
 			// 	// #DEBUG
 			// 	let __pc = self.registers.get(REG_PC) - 4;
 			// 	println!("thumb {}", super::super::debug::armdis::disasm_thumb(__pc, &self.memory, 0b11111111));
+			// 	// self.reg_dump();
 			// }
 
+			let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
+			before_execution(exec_addr, self); // #TODO remove this debug code.
 			execute_thumb(self, decoded);
+			after_execution(exec_addr, self); // #TODO remove this debug code.
 			branched = saved_pc != self.registers.get(REG_PC);
 		} else {
 			branched = false;
 		}
 
 		if branched {
+			// #FIXME I should probably be doing this in the instructions themselves.
+			self.align_pc(); // half-word aligning the program counter for THUMB mode.
 			self.thumb_pipeline.flush();
 		} else {
 			let pc = self.registers.get(REG_PC);
 			let next = self.memory.read16(pc);
 			self.registers.set(REG_PC, pc + 2);
 			self.thumb_pipeline.next(next);
+		}
+	}
+
+	pub fn align_pc(&mut self) {
+		let pc = self.rget(15);
+		if self.registers.getf_t() {
+			self.rset(15, pc & 0xFFFFFFFE);
+		} else {
+			self.rset(15, pc & 0xFFFFFFFC);
 		}
 	}
 
@@ -212,12 +232,27 @@ impl ArmCpu {
 	/// Returns true if the program counter is at an executable
 	/// location.
 	pub fn executable(&self) -> bool {
-		let pc = self.registers.get(REG_PC);
-		let area = (pc >> 24) & 0xf; // Area of memory we are at.
-		match area {
-			// BIOS, External Work Ram, Internal Work Ram, ROM0-2
-			0 | 2 | 3 | 8 | 0xA | 0xC => true,
-			_ => false
+		let ready = if self.registers.getf_t() {
+			self.thumb_pipeline.ready()
+		} else {
+			self.arm_pipeline.ready()
+		};
+
+		if ready {
+			let pc = self.get_exec_address();
+			let area = (pc >> 24) & 0xff; // Area of memory we are at.
+			match area {
+				// BIOS, External Work Ram, Internal Work Ram, ROM0-2
+				0x00 | 
+				0x02 | 
+				0x03 | 
+				0x08 | 0x09 | 
+				0x0A | 0x0B |
+				0x0C | 0x0D  => true,
+				_ => false
+			}
+		} else {
+			true
 		}
 	}
 
@@ -236,4 +271,73 @@ impl ArmCpu {
 	/// The CPU has hit an undefined instruction.
 	pub fn on_undefined(&mut self) {
 	}
+
+	/// Returns the address of the instruction currently
+	/// being executed.
+	pub fn get_exec_address(&self) -> u32 {
+		if self.registers.getf_t() {
+			self.registers.get(15) - 4
+		} else {
+			self.registers.get(15) - 8
+		}
+	}
+
+
+	/// Disasssembly of the instruction currently being executed.
+	pub fn disasm_exec(&self) -> String {
+		if self.registers.getf_t() {
+			super::super::debug::armdis::disasm_thumb(self.get_exec_address(), &self.memory, 0b11111111)
+		} else {
+			super::super::debug::armdis::disasm_arm(self.get_exec_address(), &self.memory, 0b11111111)
+		}
+	}
+
+	pub fn reg_dump(&self) {
+		for r in 0..13 {
+			print!("r{} = 0x{:08x}; ", r, self.rget(r));
+		}
+		print!("sp = 0x{:08x}; ", self.rget(13));
+		print!("lr = 0x{:08x}; ", self.rget(14));
+		println!("pc = 0x{:08x}", self.rget(15));
+	}
+
+	pub fn reg_dump_pretty(&self) {
+		println!("executing: {}", self.disasm_exec());
+		for r in 0..13 {
+			println!("r{} = 0x{:08x}; ", r, self.rget(r));
+		}
+		println!("sp = 0x{:08x}; ", self.rget(13));
+		println!("lr = 0x{:08x}; ", self.rget(14));
+		println!("pc = 0x{:08x}", self.rget(15));
+
+		print!("cpsr = 0x{:08x} [ ", self.registers.get_cpsr());
+		if self.registers.getf_n() { print!("n "); }
+		if self.registers.getf_z() { print!("z "); }
+		if self.registers.getf_c() { print!("c "); }
+		if self.registers.getf_v() { print!("v "); }
+		if self.registers.getf_i() { print!("i "); }
+		if self.registers.getf_f() { print!("f "); }
+		if self.registers.getf_t() { print!("t "); }
+		println!("]");
+
+
+		println!("spsr = 0x{:08x}", self.registers.get_spsr_safe());
+	}
 }
+
+
+fn before_execution(address: u32, cpu: &mut ArmCpu) {
+	if address == 0x08000214 { // 08000210
+		println!("-- BEFORE --");
+		cpu.reg_dump_pretty();
+	}
+}
+
+fn after_execution(address: u32, cpu: &mut ArmCpu) {
+	if address == 0x08000214 {
+		println!("== AFTER ==");
+		cpu.reg_dump_pretty();
+		panic!(".");
+	}
+}
+

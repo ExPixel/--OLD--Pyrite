@@ -1,15 +1,13 @@
-// Warnings are off right now because of a lot
-// of ununsed variables and dead code right now.
 pub mod core;
 pub mod debug;
+pub mod util;
 
+extern crate time;
 extern crate sdl2;
-extern crate docopt;
-extern crate rustc_serialize;
 
 use std::io::prelude::*;
+use std::env;
 use std::fs::File;
-use docopt::Docopt;
 
 use core::memory::GbaMemory;
 use core::Gba;
@@ -81,18 +79,39 @@ Options:
 	-v --version    Prints the version and exits.
 ";
 
-#[derive(Debug, RustcDecodable)]
+
+#[derive(Default)]
 struct Args {
 	arg_rom: Option<String>,
 	flag_version: bool,
 	flag_disasm: bool,
-	flag_thumb: bool
+	flag_thumb: bool,
+	flag_help: bool
 }
 
 fn main() {
-	let args: Args = Docopt::new(USAGE)
-							.and_then(|d| d.decode())
-							.unwrap_or_else(|e| e.exit());
+	let mut args: Args = Default::default();
+	let args_list: Vec<String> = env::args().collect();
+
+	for (index, arg) in args_list.iter().enumerate() {
+		if index == 0 { continue; } // This is the executable.
+		if arg.starts_with("-") {
+			match arg.as_ref() {
+				"-d" | "--disasm"	=> args.flag_disasm = true,
+				"-t" | "--thumb"	=> args.flag_thumb = true,
+				"-v" | "--version"	=> args.flag_version = true,
+				"-h" | "--help"		=> args.flag_help = true,
+				_ => { panic!("Unexpected option {}", arg) }
+			}
+		} else {
+			args.arg_rom = Some(arg.clone());
+		}
+	}
+
+	if args.flag_help || args_list.len() < 1{
+		println!("{}", USAGE);
+		return;
+	}
 
 	if args.flag_version {
 		println!("pyrite version \"0.1.0\"");
@@ -100,6 +119,7 @@ fn main() {
 	}
 
 	if let Some(rom_file) = args.arg_rom {
+		println!("Emulating ROM: {}", rom_file);
 		if args.flag_disasm {
 			let mut memory = load_memory(rom_file);
 			disasm_gba_rom(&mut memory, args.flag_thumb);
@@ -107,5 +127,8 @@ fn main() {
 			let mut gba = Box::new(load_rom(rom_file));
 			run_gba(&mut gba);
 		}
+	} else {
+		println!("NO ROM FILE PROVIDED.");
+		println!("{}", USAGE);
 	}
 }

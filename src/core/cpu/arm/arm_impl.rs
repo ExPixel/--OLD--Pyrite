@@ -17,11 +17,49 @@ macro_rules! gen_dproc {
 		$operation:ident
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			// When Rd is R15 and the S flag is set the result of the operation is placed in R15 and the 
+			// SPSR corresponding to the current mode is moved to the CPSR. 
+			// This allows state changes which atomically restore both PC and CPSR. 
+			// This form of instruction should not be used in User mode.
 			let rn = (instr >> 16) & 0xf;
+			let rd = (instr >> 12) & 0xf;
+			let rn_value = cpu.rget(rn);
+			let operand2 = $operand2_function(cpu, instr);
+			let result = $operation(cpu, rn_value, operand2);
+			cpu.rset(rd, result);
+		}
+	)
+}
+
+/// Generates a function for a dataprocessing instruction that sets flags..
+///
+/// Pass in the name of the instruction to generate,
+/// The function used to retrieve the second operand
+/// of the instruction, and a function to be applied
+/// to both operands.
+macro_rules! gen_dproc_sf {
+	(
+		$instr_name:ident,
+		$operand2_function:ident,
+		$operation:ident
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let rn = (instr >> 16) & 0xf;
+			let saved_cpsr = cpu.registers.get_cpsr();
 			let rn_value = cpu.rget(rn);
 			let operand2 = $operand2_function(cpu, instr);
 			let result = $operation(cpu, rn_value, operand2);
 			let rd = (instr >> 12) & 0xf;
+
+			// When Rd is R15 and the S flag is set the result of the operation is placed in R15 and the 
+			// SPSR corresponding to the current mode is moved to the CPSR. 
+			// This allows state changes which atomically restore both PC and CPSR. 
+			// This form of instruction should not be used in User mode.
+			if rd == 15 { 
+				cpu.registers.set_cpsr(saved_cpsr); // to make it seem as if there was no changes to the flags.
+				cpu.registers.spsr_to_cpsr();
+			}
+
 			cpu.rset(rd, result);
 		}
 	)
@@ -99,8 +137,8 @@ const PRE: bool = true;
 const POST: bool = false;
 
 // Used to decide whether IO indexing should increment or decrement.
-const DEC: bool = true;
-const INC: bool = false;
+const DEC: bool = false;
+const INC: bool = true;
 
 // SDT Functions
 const LDR: fn(&mut ArmCpu, u32, u32) = arm_fn_ldr;
@@ -163,15 +201,16 @@ macro_rules! gen_sdt {
 		$user: expr			// boolean - true if this should force user mode registers.
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-			let last_mode = cpu.registers.mode;
+			let last_mode = cpu.registers.get_mode();
 			if $user {
-				cpu.registers.mode = registers::MODE_USR;
+				cpu.registers.set_mode(registers::MODE_USR);
 			}
 
 			let rn = (instr >> 16) & 0xf;
 			let rd = (instr >> 12) & 0xf;
 			let _rn = cpu.rget(rn); // base
 			let offset = $offset_fn(cpu, instr);
+
 			let address = if $index_pre {
 				if $index_inc { _rn + offset }
 				else { _rn - offset }
@@ -187,7 +226,7 @@ macro_rules! gen_sdt {
 			}
 
 			if $user {
-				cpu.registers.mode = last_mode;
+				cpu.registers.set_mode(last_mode);
 			}
 		}
 	)
@@ -223,8 +262,8 @@ macro_rules! gen_bdt {
 			// #FIXME not sure if the base register should also be taken from
 			// a user mode register or if it should be taken from the current mode's
 			// registers. So the placement of this change might be wrong.
-			let last_mode = cpu.registers.mode;
-			if $user { cpu.registers.mode = registers::MODE_USR; }
+			let last_mode = cpu.registers.get_mode();
+			if $user { cpu.registers.set_mode(registers::MODE_USR); }
 
 			let register_list = instr & 0xffff;
 			let rn = (instr >> 16) & 0xf;
@@ -242,7 +281,7 @@ macro_rules! gen_bdt {
 				}
 			}
 
-			if $user { cpu.registers.mode = last_mode; }
+			if $user { cpu.registers.set_mode(last_mode); }
 		}
 	)
 }
@@ -264,8 +303,8 @@ macro_rules! gen_ldm_u {
 			// a user mode register or if it should be taken from the current mode's
 			// registers. So the placement of this change might be wrong.
 			let psr_transfer = ((instr >> 15) & 1) == 1; // r15 is in the transfer list.
-			let last_mode = cpu.registers.mode;
-			if !psr_transfer { cpu.registers.mode = registers::MODE_USR; }
+			let last_mode = cpu.registers.get_mode();
+			if !psr_transfer { cpu.registers.set_mode(registers::MODE_USR); }
 
 			let register_list = instr & 0xffff;
 			let rn = (instr >> 16) & 0xf;
@@ -288,7 +327,7 @@ macro_rules! gen_ldm_u {
 				}
 			}
 
-			if !psr_transfer { cpu.registers.mode = last_mode; }
+			if !psr_transfer { cpu.registers.set_mode(last_mode); }
 		}
 	)
 }
@@ -352,42 +391,42 @@ pub fn arm_undefined(cpu: &mut ArmCpu, _: u32) {
 /// ANDS lli
 /// Logical And, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_ands_lli, arm_fn_op2_lli_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_lli, arm_fn_op2_lli_s, arm_fn_and_s);
 
 /// ANDS llr
 /// Logical And, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_ands_llr, arm_fn_op2_llr_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_llr, arm_fn_op2_llr_s, arm_fn_and_s);
 
 /// ANDS lri
 /// Logical And, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_ands_lri, arm_fn_op2_lri_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_lri, arm_fn_op2_lri_s, arm_fn_and_s);
 
 /// ANDS lrr
 /// Logical And, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_ands_lrr, arm_fn_op2_lrr_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_lrr, arm_fn_op2_lrr_s, arm_fn_and_s);
 
 /// ANDS ari
 /// Logical And, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_ands_ari, arm_fn_op2_ari_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_ari, arm_fn_op2_ari_s, arm_fn_and_s);
 
 /// ANDS arr
 /// Logical And, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_ands_arr, arm_fn_op2_arr_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_arr, arm_fn_op2_arr_s, arm_fn_and_s);
 
 /// ANDS rri
 /// Logical And, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_ands_rri, arm_fn_op2_rri_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_rri, arm_fn_op2_rri_s, arm_fn_and_s);
 
 /// ANDS rrr
 /// Logical And, setting flags
 /// Rotate right by register
-gen_dproc!(arm_ands_rrr, arm_fn_op2_rrr_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_rrr, arm_fn_op2_rrr_s, arm_fn_and_s);
 
 /// MULS
 /// Multiply registers, setting flags
@@ -455,42 +494,42 @@ gen_mul!(arm_mla, arm_fn_mla, false);
 /// EORS lli
 /// Logical Exclusive-or, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_eors_lli, arm_fn_op2_lli_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_lli, arm_fn_op2_lli_s, arm_fn_eor_s);
 
 /// EORS llr
 /// Logical Exclusive-or, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_eors_llr, arm_fn_op2_llr_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_llr, arm_fn_op2_llr_s, arm_fn_eor_s);
 
 /// EORS lri
 /// Logical Exclusive-or, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_eors_lri, arm_fn_op2_lri_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_lri, arm_fn_op2_lri_s, arm_fn_eor_s);
 
 /// EORS lrr
 /// Logical Exclusive-or, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_eors_lrr, arm_fn_op2_lrr_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_lrr, arm_fn_op2_lrr_s, arm_fn_eor_s);
 
 /// EORS ari
 /// Logical Exclusive-or, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_eors_ari, arm_fn_op2_ari_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_ari, arm_fn_op2_ari_s, arm_fn_eor_s);
 
 /// EORS arr
 /// Logical Exclusive-or, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_eors_arr, arm_fn_op2_arr_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_arr, arm_fn_op2_arr_s, arm_fn_eor_s);
 
 /// EORS rri
 /// Logical Exclusive-or, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_eors_rri, arm_fn_op2_rri_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_rri, arm_fn_op2_rri_s, arm_fn_eor_s);
 
 /// EORS rrr
 /// Logical Exclusive-or, setting flags
 /// Rotate right by register
-gen_dproc!(arm_eors_rrr, arm_fn_op2_rrr_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_rrr, arm_fn_op2_rrr_s, arm_fn_eor_s);
 
 /// MLAS
 /// Multiply and accumulate registers, setting flags
@@ -544,42 +583,42 @@ gen_hdt!(arm_strh_ptim, STRH, POST, DEC, HDT_IMM, false);
 /// SUBS lli
 /// Subtract, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_subs_lli, arm_fn_op2_lli_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_lli, arm_fn_op2_lli_s, arm_fn_sub_s);
 
 /// SUBS llr
 /// Subtract, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_subs_llr, arm_fn_op2_llr_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_llr, arm_fn_op2_llr_s, arm_fn_sub_s);
 
 /// SUBS lri
 /// Subtract, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_subs_lri, arm_fn_op2_lri_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_lri, arm_fn_op2_lri_s, arm_fn_sub_s);
 
 /// SUBS lrr
 /// Subtract, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_subs_lrr, arm_fn_op2_lrr_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_lrr, arm_fn_op2_lrr_s, arm_fn_sub_s);
 
 /// SUBS ari
 /// Subtract, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_subs_ari, arm_fn_op2_ari_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_ari, arm_fn_op2_ari_s, arm_fn_sub_s);
 
 /// SUBS arr
 /// Subtract, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_subs_arr, arm_fn_op2_arr_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_arr, arm_fn_op2_arr_s, arm_fn_sub_s);
 
 /// SUBS rri
 /// Subtract, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_subs_rri, arm_fn_op2_rri_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_rri, arm_fn_op2_rri_s, arm_fn_sub_s);
 
 /// SUBS rrr
 /// Subtract, setting flags
 /// Rotate right by register
-gen_dproc!(arm_subs_rrr, arm_fn_op2_rrr_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_rrr, arm_fn_op2_rrr_s, arm_fn_sub_s);
 
 /// LDRH ptim
 /// Load halfword
@@ -639,42 +678,42 @@ gen_dproc!(arm_rsb_rrr, arm_fn_op2_rrr, arm_fn_rsb);
 /// RSBS lli
 /// Reverse Subtract, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_rsbs_lli, arm_fn_op2_lli_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_lli, arm_fn_op2_lli_s, arm_fn_rsb_s);
 
 /// RSBS llr
 /// Reverse Subtract, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_rsbs_llr, arm_fn_op2_llr_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_llr, arm_fn_op2_llr_s, arm_fn_rsb_s);
 
 /// RSBS lri
 /// Reverse Subtract, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_rsbs_lri, arm_fn_op2_lri_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_lri, arm_fn_op2_lri_s, arm_fn_rsb_s);
 
 /// RSBS lrr
 /// Reverse Subtract, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_rsbs_lrr, arm_fn_op2_lrr_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_lrr, arm_fn_op2_lrr_s, arm_fn_rsb_s);
 
 /// RSBS ari
 /// Reverse Subtract, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_rsbs_ari, arm_fn_op2_ari_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_ari, arm_fn_op2_ari_s, arm_fn_rsb_s);
 
 /// RSBS arr
 /// Reverse Subtract, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_rsbs_arr, arm_fn_op2_arr_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_arr, arm_fn_op2_arr_s, arm_fn_rsb_s);
 
 /// RSBS rri
 /// Reverse Subtract, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_rsbs_rri, arm_fn_op2_rri_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_rri, arm_fn_op2_rri_s, arm_fn_rsb_s);
 
 /// RSBS rrr
 /// Reverse Subtract, setting flags
 /// Rotate right by register
-gen_dproc!(arm_rsbs_rrr, arm_fn_op2_rrr_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_rrr, arm_fn_op2_rrr_s, arm_fn_rsb_s);
 
 /// ADD lli
 /// Add to register
@@ -728,42 +767,42 @@ gen_hdt!(arm_strh_ptrp, STRH, POST, INC, HDT_REG, false);
 /// ADDS lli
 /// Add to register, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_adds_lli, arm_fn_op2_lli_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_lli, arm_fn_op2_lli_s, arm_fn_add_s);
 
 /// ADDS llr
 /// Add to register, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_adds_llr, arm_fn_op2_llr_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_llr, arm_fn_op2_llr_s, arm_fn_add_s);
 
 /// ADDS lri
 /// Add to register, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_adds_lri, arm_fn_op2_lri_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_lri, arm_fn_op2_lri_s, arm_fn_add_s);
 
 /// ADDS lrr
 /// Add to register, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_adds_lrr, arm_fn_op2_lrr_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_lrr, arm_fn_op2_lrr_s, arm_fn_add_s);
 
 /// ADDS ari
 /// Add to register, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_adds_ari, arm_fn_op2_ari_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_ari, arm_fn_op2_ari_s, arm_fn_add_s);
 
 /// ADDS arr
 /// Add to register, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_adds_arr, arm_fn_op2_arr_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_arr, arm_fn_op2_arr_s, arm_fn_add_s);
 
 /// ADDS rri
 /// Add to register, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_adds_rri, arm_fn_op2_rri_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_rri, arm_fn_op2_rri_s, arm_fn_add_s);
 
 /// ADDS rrr
 /// Add to register, setting flags
 /// Rotate right by register
-gen_dproc!(arm_adds_rrr, arm_fn_op2_rrr_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_rrr, arm_fn_op2_rrr_s, arm_fn_add_s);
 
 /// UMULLS
 /// Unsigned long multiply, setting flags
@@ -831,42 +870,42 @@ gen_mull!(arm_umlal, arm_fn_umlal, false);
 /// ADCS lli
 /// Add to register with carry, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_adcs_lli, arm_fn_op2_lli_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_lli, arm_fn_op2_lli_s, arm_fn_adc_s);
 
 /// ADCS llr
 /// Add to register with carry, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_adcs_llr, arm_fn_op2_llr_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_llr, arm_fn_op2_llr_s, arm_fn_adc_s);
 
 /// ADCS lri
 /// Add to register with carry, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_adcs_lri, arm_fn_op2_lri_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_lri, arm_fn_op2_lri_s, arm_fn_adc_s);
 
 /// ADCS lrr
 /// Add to register with carry, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_adcs_lrr, arm_fn_op2_lrr_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_lrr, arm_fn_op2_lrr_s, arm_fn_adc_s);
 
 /// ADCS ari
 /// Add to register with carry, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_adcs_ari, arm_fn_op2_ari_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_ari, arm_fn_op2_ari_s, arm_fn_adc_s);
 
 /// ADCS arr
 /// Add to register with carry, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_adcs_arr, arm_fn_op2_arr_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_arr, arm_fn_op2_arr_s, arm_fn_adc_s);
 
 /// ADCS rri
 /// Add to register with carry, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_adcs_rri, arm_fn_op2_rri_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_rri, arm_fn_op2_rri_s, arm_fn_adc_s);
 
 /// ADCS rrr
 /// Add to register with carry, setting flags
 /// Rotate right by register
-gen_dproc!(arm_adcs_rrr, arm_fn_op2_rrr_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_rrr, arm_fn_op2_rrr_s, arm_fn_adc_s);
 
 /// UMLALS
 /// Unsigned long multiply and accumulate, setting flags
@@ -924,42 +963,42 @@ gen_hdt!(arm_strh_ptip, STRH, POST, INC, HDT_IMM, false);
 /// SBCS lli
 /// Subtract from register with borrow, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_sbcs_lli, arm_fn_op2_lli_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_lli, arm_fn_op2_lli_s, arm_fn_sbc_s);
 
 /// SBCS llr
 /// Subtract from register with borrow, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_sbcs_llr, arm_fn_op2_llr_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_llr, arm_fn_op2_llr_s, arm_fn_sbc_s);
 
 /// SBCS lri
 /// Subtract from register with borrow, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_sbcs_lri, arm_fn_op2_lri_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_lri, arm_fn_op2_lri_s, arm_fn_sbc_s);
 
 /// SBCS lrr
 /// Subtract from register with borrow, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_sbcs_lrr, arm_fn_op2_lrr_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_lrr, arm_fn_op2_lrr_s, arm_fn_sbc_s);
 
 /// SBCS ari
 /// Subtract from register with borrow, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_sbcs_ari, arm_fn_op2_ari_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_ari, arm_fn_op2_ari_s, arm_fn_sbc_s);
 
 /// SBCS arr
 /// Subtract from register with borrow, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_sbcs_arr, arm_fn_op2_arr_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_arr, arm_fn_op2_arr_s, arm_fn_sbc_s);
 
 /// SBCS rri
 /// Subtract from register with borrow, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_sbcs_rri, arm_fn_op2_rri_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_rri, arm_fn_op2_rri_s, arm_fn_sbc_s);
 
 /// SBCS rrr
 /// Subtract from register with borrow, setting flags
 /// Rotate right by register
-gen_dproc!(arm_sbcs_rrr, arm_fn_op2_rrr_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_rrr, arm_fn_op2_rrr_s, arm_fn_sbc_s);
 
 /// SMULLS
 /// Signed long multiply, setting flags
@@ -1027,42 +1066,42 @@ gen_mull!(arm_smlal, arm_fn_smlal, false);
 /// RSCS lli
 /// Subtract register from value with borrow, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_rscs_lli, arm_fn_op2_lli_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_lli, arm_fn_op2_lli_s, arm_fn_rsc_s);
 
 /// RSCS llr
 /// Subtract register from value with borrow, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_rscs_llr, arm_fn_op2_llr_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_llr, arm_fn_op2_llr_s, arm_fn_rsc_s);
 
 /// RSCS lri
 /// Subtract register from value with borrow, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_rscs_lri, arm_fn_op2_lri_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_lri, arm_fn_op2_lri_s, arm_fn_rsc_s);
 
 /// RSCS lrr
 /// Subtract register from value with borrow, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_rscs_lrr, arm_fn_op2_lrr_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_lrr, arm_fn_op2_lrr_s, arm_fn_rsc_s);
 
 /// RSCS ari
 /// Subtract register from value with borrow, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_rscs_ari, arm_fn_op2_ari_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_ari, arm_fn_op2_ari_s, arm_fn_rsc_s);
 
 /// RSCS arr
 /// Subtract register from value with borrow, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_rscs_arr, arm_fn_op2_arr_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_arr, arm_fn_op2_arr_s, arm_fn_rsc_s);
 
 /// RSCS rri
 /// Subtract register from value with borrow, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_rscs_rri, arm_fn_op2_rri_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_rri, arm_fn_op2_rri_s, arm_fn_rsc_s);
 
 /// RSCS rrr
 /// Subtract register from value with borrow, setting flags
 /// Rotate right by register
-gen_dproc!(arm_rscs_rrr, arm_fn_op2_rrr_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_rrr, arm_fn_op2_rrr_s, arm_fn_rsc_s);
 
 /// SMLALS
 /// Signed long multiply and accumulate, setting flags
@@ -1446,42 +1485,42 @@ gen_hdt!(arm_strh_ofrp, STRH, PRE, INC, HDT_REG, false);
 /// ORRS lli
 /// Logical Or, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_orrs_lli, arm_fn_op2_lli_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_lli, arm_fn_op2_lli_s, arm_fn_orr_s);
 
 /// ORRS llr
 /// Logical Or, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_orrs_llr, arm_fn_op2_llr_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_llr, arm_fn_op2_llr_s, arm_fn_orr_s);
 
 /// ORRS lri
 /// Logical Or, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_orrs_lri, arm_fn_op2_lri_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_lri, arm_fn_op2_lri_s, arm_fn_orr_s);
 
 /// ORRS lrr
 /// Logical Or, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_orrs_lrr, arm_fn_op2_lrr_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_lrr, arm_fn_op2_lrr_s, arm_fn_orr_s);
 
 /// ORRS ari
 /// Logical Or, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_orrs_ari, arm_fn_op2_ari_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_ari, arm_fn_op2_ari_s, arm_fn_orr_s);
 
 /// ORRS arr
 /// Logical Or, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_orrs_arr, arm_fn_op2_arr_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_arr, arm_fn_op2_arr_s, arm_fn_orr_s);
 
 /// ORRS rri
 /// Logical Or, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_orrs_rri, arm_fn_op2_rri_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_rri, arm_fn_op2_rri_s, arm_fn_orr_s);
 
 /// ORRS rrr
 /// Logical Or, setting flags
 /// Rotate right by register
-gen_dproc!(arm_orrs_rrr, arm_fn_op2_rrr_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_rrr, arm_fn_op2_rrr_s, arm_fn_orr_s);
 
 /// LDRH ofrp
 /// Load halfword
@@ -1546,42 +1585,42 @@ gen_hdt!(arm_strh_prrp, STRH, PRE, INC, HDT_REG, true);
 /// MOVS lli
 /// Move value to a register, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_movs_lli, arm_fn_op2_lli_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_lli, arm_fn_op2_lli_s, arm_fn_mov_s);
 
 /// MOVS llr
 /// Move value to a register, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_movs_llr, arm_fn_op2_llr_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_llr, arm_fn_op2_llr_s, arm_fn_mov_s);
 
 /// MOVS lri
 /// Move value to a register, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_movs_lri, arm_fn_op2_lri_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_lri, arm_fn_op2_lri_s, arm_fn_mov_s);
 
 /// MOVS lrr
 /// Move value to a register, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_movs_lrr, arm_fn_op2_lrr_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_lrr, arm_fn_op2_lrr_s, arm_fn_mov_s);
 
 /// MOVS ari
 /// Move value to a register, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_movs_ari, arm_fn_op2_ari_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_ari, arm_fn_op2_ari_s, arm_fn_mov_s);
 
 /// MOVS arr
 /// Move value to a register, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_movs_arr, arm_fn_op2_arr_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_arr, arm_fn_op2_arr_s, arm_fn_mov_s);
 
 /// MOVS rri
 /// Move value to a register, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_movs_rri, arm_fn_op2_rri_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_rri, arm_fn_op2_rri_s, arm_fn_mov_s);
 
 /// MOVS rrr
 /// Move value to a register, setting flags
 /// Rotate right by register
-gen_dproc!(arm_movs_rrr, arm_fn_op2_rrr_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_rrr, arm_fn_op2_rrr_s, arm_fn_mov_s);
 
 /// LDRH prrp
 /// Load halfword
@@ -1646,42 +1685,42 @@ gen_hdt!(arm_strh_ofip, STRH, PRE, INC, HDT_IMM, false);
 /// BICS lli
 /// Clear bits in register (NAND), setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_bics_lli, arm_fn_op2_lli_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_lli, arm_fn_op2_lli_s, arm_fn_bic_s);
 
 /// BICS llr
 /// Clear bits in register (NAND), setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_bics_llr, arm_fn_op2_llr_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_llr, arm_fn_op2_llr_s, arm_fn_bic_s);
 
 /// BICS lri
 /// Clear bits in register (NAND), setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_bics_lri, arm_fn_op2_lri_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_lri, arm_fn_op2_lri_s, arm_fn_bic_s);
 
 /// BICS lrr
 /// Clear bits in register (NAND), setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_bics_lrr, arm_fn_op2_lrr_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_lrr, arm_fn_op2_lrr_s, arm_fn_bic_s);
 
 /// BICS ari
 /// Clear bits in register (NAND), setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_bics_ari, arm_fn_op2_ari_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_ari, arm_fn_op2_ari_s, arm_fn_bic_s);
 
 /// BICS arr
 /// Clear bits in register (NAND), setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_bics_arr, arm_fn_op2_arr_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_arr, arm_fn_op2_arr_s, arm_fn_bic_s);
 
 /// BICS rri
 /// Clear bits in register (NAND), setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_bics_rri, arm_fn_op2_rri_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_rri, arm_fn_op2_rri_s, arm_fn_bic_s);
 
 /// BICS rrr
 /// Clear bits in register (NAND), setting flags
 /// Rotate right by register
-gen_dproc!(arm_bics_rrr, arm_fn_op2_rrr_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_rrr, arm_fn_op2_rrr_s, arm_fn_bic_s);
 
 /// LDRH ofip
 /// Load halfword
@@ -1746,42 +1785,42 @@ gen_hdt!(arm_strh_prip, STRH, PRE, INC, HDT_IMM, true);
 /// MVNS lli
 /// Move negation of value to a register, setting flags
 /// Logical shift-left by immediate
-gen_dproc!(arm_mvns_lli, arm_fn_op2_lli_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_lli, arm_fn_op2_lli_s, arm_fn_mvn_s);
 
 /// MVNS llr
 /// Move negation of value to a register, setting flags
 /// Logical shift-left by register
-gen_dproc!(arm_mvns_llr, arm_fn_op2_llr_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_llr, arm_fn_op2_llr_s, arm_fn_mvn_s);
 
 /// MVNS lri
 /// Move negation of value to a register, setting flags
 /// Logical shift-right by immediate
-gen_dproc!(arm_mvns_lri, arm_fn_op2_lri_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_lri, arm_fn_op2_lri_s, arm_fn_mvn_s);
 
 /// MVNS lrr
 /// Move negation of value to a register, setting flags
 /// Logical shift-right by register
-gen_dproc!(arm_mvns_lrr, arm_fn_op2_lrr_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_lrr, arm_fn_op2_lrr_s, arm_fn_mvn_s);
 
 /// MVNS ari
 /// Move negation of value to a register, setting flags
 /// Arithmetic shift-right by immediate
-gen_dproc!(arm_mvns_ari, arm_fn_op2_ari_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_ari, arm_fn_op2_ari_s, arm_fn_mvn_s);
 
 /// MVNS arr
 /// Move negation of value to a register, setting flags
 /// Arithmetic shift-right by register
-gen_dproc!(arm_mvns_arr, arm_fn_op2_arr_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_arr, arm_fn_op2_arr_s, arm_fn_mvn_s);
 
 /// MVNS rri
 /// Move negation of value to a register, setting flags
 /// Rotate right by immediate, or rotate right with extend (RRX)
-gen_dproc!(arm_mvns_rri, arm_fn_op2_rri_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_rri, arm_fn_op2_rri_s, arm_fn_mvn_s);
 
 /// MVNS rrr
 /// Move negation of value to a register, setting flags
 /// Rotate right by register
-gen_dproc!(arm_mvns_rrr, arm_fn_op2_rrr_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_rrr, arm_fn_op2_rrr_s, arm_fn_mvn_s);
 
 /// LDRH prip
 /// Load halfword
@@ -1806,7 +1845,7 @@ gen_dproc!(arm_and_imm, arm_fn_op2_imm, arm_fn_and);
 /// ANDS imm
 /// Logical And, setting flags
 /// Immediate value
-gen_dproc!(arm_ands_imm, arm_fn_op2_imm_s, arm_fn_and_s);
+gen_dproc_sf!(arm_ands_imm, arm_fn_op2_imm_s, arm_fn_and_s);
 
 /// EOR imm
 /// Logical Exclusive-or
@@ -1816,7 +1855,7 @@ gen_dproc!(arm_eor_imm, arm_fn_op2_imm, arm_fn_eor);
 /// EORS imm
 /// Logical Exclusive-or, setting flags
 /// Immediate value
-gen_dproc!(arm_eors_imm, arm_fn_op2_imm_s, arm_fn_eor_s);
+gen_dproc_sf!(arm_eors_imm, arm_fn_op2_imm_s, arm_fn_eor_s);
 
 /// SUB imm
 /// Subtract from register
@@ -1826,7 +1865,7 @@ gen_dproc!(arm_sub_imm, arm_fn_op2_imm, arm_fn_sub);
 /// SUBS imm
 /// Subtract, setting flags
 /// Immediate value
-gen_dproc!(arm_subs_imm, arm_fn_op2_imm_s, arm_fn_sub_s);
+gen_dproc_sf!(arm_subs_imm, arm_fn_op2_imm_s, arm_fn_sub_s);
 
 /// RSB imm
 /// Subtract register from value
@@ -1836,7 +1875,7 @@ gen_dproc!(arm_rsb_imm, arm_fn_op2_imm, arm_fn_rsb);
 /// RSBS imm
 /// Reverse Subtract, setting flags
 /// Immediate value
-gen_dproc!(arm_rsbs_imm, arm_fn_op2_imm_s, arm_fn_rsb_s);
+gen_dproc_sf!(arm_rsbs_imm, arm_fn_op2_imm_s, arm_fn_rsb_s);
 
 /// ADD imm
 /// Add to register
@@ -1846,7 +1885,7 @@ gen_dproc!(arm_add_imm, arm_fn_op2_imm, arm_fn_add);
 /// ADDS imm
 /// Add to register, setting flags
 /// Immediate value
-gen_dproc!(arm_adds_imm, arm_fn_op2_imm_s, arm_fn_add_s);
+gen_dproc_sf!(arm_adds_imm, arm_fn_op2_imm_s, arm_fn_add_s);
 
 /// ADC imm
 /// Add to register with carry
@@ -1856,7 +1895,7 @@ gen_dproc!(arm_adc_imm, arm_fn_op2_imm, arm_fn_adc);
 /// ADCS imm
 /// Add to register with carry, setting flags
 /// Immediate value
-gen_dproc!(arm_adcs_imm, arm_fn_op2_imm_s, arm_fn_adc_s);
+gen_dproc_sf!(arm_adcs_imm, arm_fn_op2_imm_s, arm_fn_adc_s);
 
 /// SBC imm
 /// Subtract from register with borrow
@@ -1866,7 +1905,7 @@ gen_dproc!(arm_sbc_imm, arm_fn_op2_imm, arm_fn_sbc);
 /// SBCS imm
 /// Subtract from register with borrow, setting flags
 /// Immediate value
-gen_dproc!(arm_sbcs_imm, arm_fn_op2_imm_s, arm_fn_sbc_s);
+gen_dproc_sf!(arm_sbcs_imm, arm_fn_op2_imm_s, arm_fn_sbc_s);
 
 /// RSC imm
 /// Subtract register from value with borrow
@@ -1876,7 +1915,7 @@ gen_dproc!(arm_rsc_imm, arm_fn_op2_imm, arm_fn_rsc);
 /// RSCS imm
 /// Subtract register from value with borrow, setting flags
 /// Immediate value
-gen_dproc!(arm_rscs_imm, arm_fn_op2_imm_s, arm_fn_rsc_s);
+gen_dproc_sf!(arm_rscs_imm, arm_fn_op2_imm_s, arm_fn_rsc_s);
 
 /// TSTS imm
 /// Test bits in register (Logical And), setting flags
@@ -1922,7 +1961,7 @@ gen_dproc!(arm_orr_imm, arm_fn_op2_imm, arm_fn_orr);
 /// ORRS imm
 /// Logical Or, setting flags
 /// Immediate value
-gen_dproc!(arm_orrs_imm, arm_fn_op2_imm_s, arm_fn_orr_s);
+gen_dproc_sf!(arm_orrs_imm, arm_fn_op2_imm_s, arm_fn_orr_s);
 
 /// MOV imm
 /// Move value to a register
@@ -1932,7 +1971,7 @@ gen_dproc!(arm_mov_imm, arm_fn_op2_imm, arm_fn_mov);
 /// MOVS imm
 /// Move value to a register, setting flags
 /// Immediate value
-gen_dproc!(arm_movs_imm, arm_fn_op2_imm_s, arm_fn_mov_s);
+gen_dproc_sf!(arm_movs_imm, arm_fn_op2_imm_s, arm_fn_mov_s);
 
 /// BIC imm
 /// Clear bits in register (NAND)
@@ -1942,7 +1981,7 @@ gen_dproc!(arm_bic_imm, arm_fn_op2_imm, arm_fn_bic);
 /// BICS imm
 /// Clear bits in register (NAND), setting flags
 /// Immediate value
-gen_dproc!(arm_bics_imm, arm_fn_op2_imm_s, arm_fn_bic_s);
+gen_dproc_sf!(arm_bics_imm, arm_fn_op2_imm_s, arm_fn_bic_s);
 
 /// MVN imm
 /// Move negation of value to a register
@@ -1952,7 +1991,7 @@ gen_dproc!(arm_mvn_imm, arm_fn_op2_imm, arm_fn_mvn);
 /// MVNS imm
 /// Move negation of value to a register, setting flags
 /// Immediate value
-gen_dproc!(arm_mvns_imm, arm_fn_op2_imm_s, arm_fn_mvn_s);
+gen_dproc_sf!(arm_mvns_imm, arm_fn_op2_imm_s, arm_fn_mvn_s);
 
 /// STR ptim
 gen_sdt!(arm_str_ptim, STR, POST, DEC, SDT_IMM, false, false);

@@ -9,7 +9,7 @@ function checkCode() {
 	CURRENT_COMPILE=$(($CURRENT_COMPILE + 1))
 	clear
 	local DATE=`date +"%T"`
-	echo "[${DATE}] COMPILE #${CURRENT_COMPILE}"
+	echo "[${DATE}] CHECK #${CURRENT_COMPILE}"
 	cargo check
 	echo "---- FINSHED CHECKING ----"
 }

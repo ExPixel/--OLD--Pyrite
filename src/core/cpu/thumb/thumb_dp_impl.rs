@@ -16,7 +16,7 @@ macro_rules! gen_alu {
 			let rs = (instr >> 3) & 0x7;
 			let _rd = cpu.rget(rd);
 			let _rs = cpu.rget(rs);
-			let result = $operation(cpu, rd, rs);
+			let result = $operation(cpu, _rd, _rs);
 			cpu.rset(rd, result);
 		}
 	)
@@ -33,7 +33,7 @@ macro_rules! gen_alu_nw {
 			let rs = (instr >> 3) & 0x7;
 			let _rd = cpu.rget(rd);
 			let _rs = cpu.rget(rs);
-			$operation(cpu, rd, rs)
+			$operation(cpu, _rd, _rs)
 			// ^ not including the semi-colon causes an error to occur
 			// if I use a function that returns anything.
 		}

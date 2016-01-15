@@ -109,6 +109,7 @@ pub fn set_sub_flags(cpu: &mut ArmCpu, lhs: u32, rhs: u32, res: u32) {
 	cpu.registers.putfi_c(((neg!(lhs) & pos!(rhs)) | (neg!(lhs) & pos!(res)) | (pos!(rhs) & pos!(res))));
 }
 
+
 // ---- ARM ALU SHIFTS ----
 pub fn arm_alu_lli(lhs: u32, rhs: u32) -> u32 {
 	// LSL #0 is a special case, where the shifter carry out is the old value of the CPSR C

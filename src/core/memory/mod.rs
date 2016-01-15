@@ -1,7 +1,7 @@
 pub mod ioreg;
 
 // #TODO implement io registers.
-// use self::ioreg::IORegisters;
+pub use self::ioreg::*;
 
 pub struct MemoryRegion {
 	pub start: u32,
@@ -14,14 +14,14 @@ const INTERNAL_MEM_SIZE: usize	= 0x64bff;
 
 // Internal Memory
 pub const MEM_BIOS:		MemoryRegion = MemoryRegion { start: 0x0, end: 0x3fff, size: 0x4000, local_addr: 0x0 };
-pub const MEM_WRAM_B:	MemoryRegion = MemoryRegion { start: 0x02000000, end: 0x0203ffff, size: 0x40000, local_addr: 0x4000 };
-pub const MEM_WRAM_C:	MemoryRegion = MemoryRegion { start: 0x03000000, end: 0x03007fff, size: 0x8000, local_addr: 0x44000 };
-pub const MEM_IOREG:	MemoryRegion = MemoryRegion { start: 0x04000000, end: 0x040003fe, size: 0x3ff, local_addr: 0x4c000 };
+pub const MEM_WRAM_B:	MemoryRegion = MemoryRegion { start: 0x02000000, end: 0x0203ffff, size: 0x40000, local_addr: MEM_BIOS.local_addr + MEM_BIOS.size };
+pub const MEM_WRAM_C:	MemoryRegion = MemoryRegion { start: 0x03000000, end: 0x03007fff, size: 0x8000, local_addr: MEM_WRAM_B.local_addr + MEM_WRAM_B.size };
+pub const MEM_IOREG:	MemoryRegion = MemoryRegion { start: 0x04000000, end: 0x040003fe, size: 0x805, local_addr: MEM_WRAM_C.local_addr + MEM_WRAM_C.size };
 
 // Internal Video Memory
-pub const MEM_PAL:		MemoryRegion = MemoryRegion { start: 0x05000000, end: 0x050003ff, size: 0x400, local_addr: 0x4c3ff };
-pub const MEM_VRAM:		MemoryRegion = MemoryRegion { start: 0x06000000, end: 0x06017fff, size: 0x18000, local_addr: 0x4c7ff };
-pub const MEM_OAM:		MemoryRegion = MemoryRegion { start: 0x07000000, end: 0x070003ff, size: 0x400, local_addr: 0x647ff };
+pub const MEM_PAL:		MemoryRegion = MemoryRegion { start: 0x05000000, end: 0x050003ff, size: 0x400, local_addr: MEM_IOREG.local_addr + MEM_IOREG.size };
+pub const MEM_VRAM:		MemoryRegion = MemoryRegion { start: 0x06000000, end: 0x06017fff, size: 0x18000, local_addr: MEM_PAL.local_addr + MEM_PAL.size };
+pub const MEM_OAM:		MemoryRegion = MemoryRegion { start: 0x07000000, end: 0x070003ff, size: 0x400, local_addr: MEM_VRAM.local_addr + MEM_VRAM.size };
 
 // External Memory
 pub const MEM_ROM0:		MemoryRegion = MemoryRegion { start: 0x08000000, end: 0x09ffffff, size: 0x2000000, local_addr: 0 };
@@ -82,6 +82,13 @@ impl GbaMemory {
 			// Port Size: 32 bit
 			// Mirrors:  Every 0x8000 bytes from 0x03000000 to 0x03FFFFFF
 			0x03000000 ... 0x03FFFFFF => (address % 0x8000) + MEM_WRAM_C.local_addr,
+
+			0x04000000 ... 0x04FFFFFF => {
+				let _addrmasked = address & 0xFFFF;
+				if _addrmasked >= 0x0800  && _addrmasked <= 0x0803 { MEM_IOREG.local_addr + _addrmasked }
+				else if address <= 0x04000804 { address - 0x04000000 + MEM_IOREG.local_addr }
+				else { panic!("Invalid IO register address. Not sure how to handle this! {:08x}", address) }
+			}
 
 			// Palette RAM:
 			// Start: 0x05000000
@@ -194,3 +201,34 @@ impl GbaMemory {
 		else { self.rom[local_addr] }
 	}
 }
+
+pub trait ReadIOReg<R> {
+	type RegSizeType: Sized;
+	fn get_reg(&self, reg: R) -> Self::RegSizeType;
+	fn set_reg(&mut self, reg: R, value: Self::RegSizeType);
+}
+
+impl ReadIOReg<IORegister8> for GbaMemory {
+	type RegSizeType = u8;
+
+	fn get_reg(&self, reg: IORegister8) -> u8 { return self.read8(reg.0) }
+	fn set_reg(&mut self, reg: IORegister8, value: u8) { self.write8(reg.0, value); }
+}
+
+
+impl ReadIOReg<IORegister16> for GbaMemory {
+	type RegSizeType = u16;
+
+	fn get_reg(&self, reg: IORegister16) -> u16 { return self.read16(reg.0) }
+	fn set_reg(&mut self, reg: IORegister16, value: u16) { self.write16(reg.0, value); }
+}
+
+impl ReadIOReg<IORegister32> for GbaMemory {
+	type RegSizeType = u32;
+
+	fn get_reg(&self, reg: IORegister32) -> u32 { return self.read32(reg.0) }
+	fn set_reg(&mut self, reg: IORegister32, value: u32) { self.write32(reg.0, value); }
+}
+
+
+

@@ -1,26 +1,28 @@
+// MY EYES
+
 function _map() {
 	data8 = data8.map(function(item) {
-  	return { "name": item[0], "offset": item[1] }
+  	return { "name": "self." + item[0], "offset": item[1] }
   });
   
 	data16 = data16.map(function(item) {
-  	return { "name": item[0], "offset": item[1] }
+  	return { "name": "self." + item[0], "offset": item[1] }
   });
   
 	data32 = data32.map(function(item) {
-  	return { "name": item[0], "offset": item[1] }
+  	return { "name": "self." + item[0], "offset": item[1] }
   });
   
 	_map8();
   _map16();
   _map32();
   
-  writeln("D8 Map");
+  writeln("\nD8 Map\n===============\n");
   outputMap(d8map);
-  writeln("D16 Map");
+  writeln("\nD16 Map\n===============\n");
   outputMap(d16map);
-  writeln("D32 Map");
-  outputMap(d16map);
+  writeln("\nD32 Map\n===============\n");
+  outputMap(d32map);
 }
 
 function outputMap(map) {
@@ -59,7 +61,6 @@ function _map32() {
     d8map[item.offset + 3] = shiftc(item.name, 24, 0xFF, 8);
   });
 }
-
 
 function shiftc(a, shift, mask, type) {
   // if((typeof a) !== "number") { a = parseInt(a); }

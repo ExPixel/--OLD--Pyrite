@@ -64,7 +64,6 @@ pub const REG_PC: u32 = 15;
 
 pub struct ArmRegisters {
 	internal_registers: [u32; 31],
-	pub mode: u32,
 
 	/// Current Program Status Register (CPSR)
 	///   Bit   Expl.
@@ -91,7 +90,6 @@ impl ArmRegisters {
 	pub fn new() -> ArmRegisters {
 		ArmRegisters {
 			internal_registers: [0u32; 31],
-			mode: 0,
 			cpsr: 0,
 			spsr: [0u32; 5]
 		}
@@ -109,6 +107,29 @@ impl ArmRegisters {
 		self.internal_registers[reg_index] = value;
 	}
 
+	pub fn get_with_mode(&self, mode: u32, register: u32) -> u32 {
+		let reg_index = Self::get_register_index_with_mode(mode, register);
+		self.internal_registers[reg_index]
+	}
+
+	pub fn set_with_mode(&mut self, mode: u32, register: u32, value: u32) {
+		let reg_index = Self::get_register_index_with_mode(mode, register);
+		self.internal_registers[reg_index] = value;
+	}
+
+	fn get_register_index_with_mode(mode: u32, register32: u32) -> usize {
+		let register = register32 as usize;
+		match mode {
+			MODE_USR | MODE_SYS => register,
+			MODE_FIQ if register >= 8 && register <= 14  => register + 8,
+			MODE_SVC if register == 13 || register == 14 => register + 10,
+			MODE_ABT if register == 13 || register == 14 => register + 12,
+			MODE_IRQ if register == 13 || register == 14 => register + 14,
+			MODE_UND if register == 13 || register == 14 => register + 16,
+			_ => register
+		}
+	}
+
 	/// Changes register numbers to their location
 	/// in the internal_registers array.
 	/// 
@@ -121,7 +142,7 @@ impl ArmRegisters {
 	/// UND: starting at 29 for r13-r14  
 	fn get_register_index(&self, register32: u32) -> usize {
 		let register = register32 as usize;
-		match self.mode {
+		match self.get_mode() {
 			MODE_USR | MODE_SYS => register,
 			MODE_FIQ if register >= 8 && register <= 14  => register + 8,
 			MODE_SVC if register == 13 || register == 14 => register + 10,
@@ -130,6 +151,15 @@ impl ArmRegisters {
 			MODE_UND if register == 13 || register == 14 => register + 16,
 			_ => register
 		}
+	}
+
+	pub fn get_mode(&self) -> u32 {
+		self.cpsr & 0x1f
+	}
+
+	pub fn set_mode(&mut self, mode: u32) {
+		self.cpsr &= !0x1f;
+		self.cpsr |= mode;
 	}
 
 	/// Writes a value to the cpsr
@@ -151,13 +181,25 @@ impl ArmRegisters {
 
 	/// Returns the index of the spsr for the current mode.
 	pub fn get_spsr_index(&self) -> usize {
-		match self.mode {
+		match self.get_mode() {
 			MODE_FIQ => 0,
 			MODE_SVC => 1,
 			MODE_ABT => 2,
 			MODE_IRQ => 3,
 			MODE_UND => 4,
-			_ => panic!("BAD SPSR INDEX! CURRENT MODE: {}", self.mode)
+			_ => panic!("BAD SPSR INDEX! CURRENT MODE: {}", self.get_mode())
+		}
+	}
+
+	/// Returns the index of the spsr for the current mode.
+	pub fn get_spsr_index_safe(&self) -> Option<usize> {
+		match self.get_mode() {
+			MODE_FIQ => Some(0),
+			MODE_SVC => Some(1),
+			MODE_ABT => Some(2),
+			MODE_IRQ => Some(3),
+			MODE_UND => Some(4),
+			_ => None
 		}
 	}
 
@@ -172,6 +214,14 @@ impl ArmRegisters {
 		self.spsr[spsr_index]
 	}
 
+	pub fn get_spsr_safe(&self) -> u32 {
+		let spsr_index = self.get_spsr_index_safe();
+		match spsr_index {
+			Some(idx) => self.spsr[idx],
+			None => 0
+		}
+	}
+
 	pub fn set_spsr(&mut self, value: u32) {
 		let spsr_index = self.get_spsr_index();
 		self.spsr[spsr_index] = value;
@@ -179,7 +229,7 @@ impl ArmRegisters {
 
 	/// Only writes to flag bits in unpriveldged modes.
 	pub fn set_spsr_safe(&mut self, value: u32) {
-		if is_priveleged_mode(self.mode) {
+		if is_priveleged_mode(self.get_mode()) {
 			self.set_spsr_flags(value);
 		} else {
 			self.set_spsr(value);
@@ -188,10 +238,10 @@ impl ArmRegisters {
 
 	/// Only writes to flag bits in unpriveldged modes.
 	pub fn set_cpsr_safe(&mut self, value: u32) {
-		if is_priveleged_mode(self.mode) {
-			self.set_cpsr_flags(value);
-		} else {
+		if is_priveleged_mode(self.get_mode()) {
 			self.set_cpsr(value);
+		} else {
+			self.set_cpsr_flags(value);
 		}
 	}
 

@@ -528,9 +528,10 @@ pub fn thumb_bx_reg(cpu: &mut ArmCpu, instr: u32) {
 
 /// Common ldrpc function.
 fn thumb_ldrpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	let pc = cpu.rget(15) & 0xFFFFFFFE;
-	let address = (instr & 0xff) << 2;
-	let data = cpu.mread32(pc + address);
+	let pc = cpu.rget(15) & 0xFFFFFFFC; // Has to be word aligned.
+	let offset = (instr & 0xff) << 2;
+	let address = pc + offset;
+	let data = cpu.mread32(address);
 	cpu.rset(rd, data);
 }
 
@@ -793,7 +794,7 @@ pub fn thumb_ldrsp_r7(cpu: &mut ArmCpu, instr: u32) {
 // Common addpc function.
 fn thumb_addpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let offset = (instr & 0xff) << 2;
-	let pc = cpu.rget(15) & 0xFFFFFFFE;
+	let pc = cpu.rget(15) & 0xFFFFFFFC; // Has to be word aligned.
 	cpu.rset(rd, pc + offset);
 }
 
@@ -924,8 +925,10 @@ fn thumb_stm_single(cpu: &mut ArmCpu, src_reg: u32, wb_reg: u32, address: &mut u
 		else { *address -= 4; }
 		cpu.rset(wb_reg, *address);
 	}
+
 	let src_data = cpu.rget(src_reg);
 	cpu.mwrite32(*address, src_data);
+
 	if !pre {
 		if inc { *address += 4; }
 		else { *address -= 4; }
@@ -1004,6 +1007,7 @@ pub fn thumb_pop_pc(cpu: &mut ArmCpu, instr: u32) {
 /// Common STMIA instruction.
 fn thumb_stmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
 	let mut address = cpu.rget(rb);
+
 	// let rlist = instr & 0xff;
 	for r in 0..7 {
 		if ((instr >> r) & 1) != 0 {
@@ -1274,7 +1278,7 @@ pub fn thumb_b(cpu: &mut ArmCpu, instr: u32) {
 /// Branch and link
 /// Two-instruction branch, high 11 bits of offset
 pub fn thumb_bl_setup(cpu: &mut ArmCpu, instr: u32) {
-	let soffset11 = ((((instr & 0x7ff) as i32) << 21) >> 13) as u32;
+	let soffset11 = ((((instr & 0x7ff) as i32) << 21) >> 9) as u32;
 	let pc = cpu.rget(15);
 	cpu.rset(14, pc + soffset11);
 }
@@ -1287,7 +1291,7 @@ pub fn thumb_bl_off(cpu: &mut ArmCpu, instr: u32) {
 	let lr = cpu.rget(14);
 	let address = lr + offset12;
 	let next = cpu.rget(15) - 2;
-	cpu.rset(14, next);
+	cpu.rset(14, next | 1); // bit 0 of lr must be set.
 	cpu.rset(15, address);
 }
 

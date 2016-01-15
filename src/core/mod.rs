@@ -4,6 +4,7 @@ pub mod lcd;
 pub mod joypad;
 pub mod device;
 
+// use self::memory::*;
 use self::cpu::registers;
 use self::cpu::ArmCpu;
 use self::device::GbaDevice;
@@ -31,15 +32,33 @@ impl<'a> Gba<'a> {
 		self.cpu.memory.rom = data;
 	}
 
-	pub fn run(&mut self) {
+	pub fn init(&mut self) {
 		self.cpu.registers.set(registers::REG_PC, 0x8000000);
+
+		self.cpu.registers.set_mode(registers::MODE_SYS);
+
+		// #FIXME I this these should be set by the BIOS but doing it here for now.
+		self.cpu.registers.set_with_mode(registers::REG_SP, registers::MODE_USR, 0x03007F00); // Also System
+		self.cpu.registers.set_with_mode(registers::REG_SP, registers::MODE_IRQ, 0x03007FA0);
+		self.cpu.registers.set_with_mode(registers::REG_SP, registers::MODE_SVC, 0x03007FE0);
+	}
+
+	pub fn run(&mut self) {
+		self.init();
 		self.__debug_init_texture();
 		self.device.render();
 		'running: loop {
 			self.frame();
 			self.device.render();
 			if self.poll_device_events() { break 'running; }
+
+			{
+				let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
+				let title = format!("Pyrite - EXEC: 0x{:08x}", self.cpu.get_exec_address());
+				window.set_title(&title);
+			}
 		}
+		println!("-- Shutdown successfully.");
 		// self.cpu.registers.set(registers::REG_PC, 0x8000000);
 		// // let mut x = 0;
 		// while self.cpu.executable() {
@@ -95,6 +114,9 @@ impl<'a> Gba<'a> {
 	fn run_cpu_cycles(&mut self, cycles: u64) {
 		let target = self.cpu.clock.cycles + cycles;
 		while self.cpu.clock.cycles < target {
+			if !self.cpu.executable() {
+				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
+			}
 			self.cpu.tick();
 		}
 	}

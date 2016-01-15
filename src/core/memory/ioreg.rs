@@ -1,395 +1,116 @@
-#[allow(unused_variables)]
-#[allow(non_snake_case)]
-pub struct IORegisters {
-	// LCD I/O Registers
-	pub DISPCNT: u16, 
-	pub DISPSTAT: u16, 
-	pub VCOUNT: u16, 
-	pub BG0CNT: u16, 
-	pub BG1CNT: u16, 
-	pub BG2CNT: u16, 
-	pub BG3CNT: u16, 
-	pub BG0HOFS: u16, 
-	pub BG0VOFS: u16, 
-	pub BG1HOFS: u16, 
-	pub BG1VOFS: u16, 
-	pub BG2HOFS: u16, 
-	pub BG2VOFS: u16, 
-	pub BG3HOFS: u16, 
-	pub BG3VOFS: u16, 
-	pub BG2PA: u16, 
-	pub BG2PB: u16, 
-	pub BG2PC: u16, 
-	pub BG2PD: u16, 
-	pub BG2X: u32, 
-	pub BG2Y: u32, 
-	pub BG3PA: u16, 
-	pub BG3PB: u16, 
-	pub BG3PC: u16, 
-	pub BG3PD: u16, 
-	pub BG3X: u32, 
-	pub BG3Y: u32, 
-	pub WIN0H: u16, 
-	pub WIN1H: u16, 
-	pub WIN0V: u16, 
-	pub WIN1V: u16, 
-	pub WININ: u16, 
-	pub WINOUT: u16, 
-	pub MOSAIC: u16, 
-	pub BLDCNT: u16, 
-	pub BLDALPHA: u16, 
-	pub BLDY: u16, 
+pub struct IORegister8(pub u32);
+pub struct IORegister16(pub u32);
+pub struct IORegister32(pub u32);
 
-	// Sound Registers
-	pub SOUND1CNT_L: u16,
-	pub SOUND1CNT_H: u16,
-	pub SOUND1CNT_X: u16,
-	pub SOUND2CNT_L: u16,
-	pub SOUND2CNT_H: u16,
-	pub SOUND3CNT_L: u16,
-	pub SOUND3CNT_H: u16,
-	pub SOUND3CNT_X: u16,
-	pub SOUND4CNT_L: u16,
-	pub SOUND4CNT_H: u16,
-	pub SOUNDCNT_L: u16,
-	pub SOUNDCNT_H: u16,
-	pub SOUNDCNT_X: u16,
-	pub SOUNDBIAS: u16,
-	pub WAVE_RAM0_L: u16,
-	pub WAVE_RAM0_H: u16,
-	pub WAVE_RAM1_L: u16,
-	pub WAVE_RAM1_H: u16,
-	pub WAVE_RAM2_L: u16,
-	pub WAVE_RAM2_H: u16,
-	pub WAVE_RAM3_L: u16,
-	pub WAVE_RAM3_H: u16,
-	pub FIFO_A: u32,
-	pub FIFO_B: u32,
-	pub FIF0_A_L: u16,
-	pub FIFO_A_H: u16,
-	pub FIFO_B_L: u16,
-	pub FIFO_B_H: u16,
+pub const POSTFLG: IORegister8 = IORegister8(0x4000300);
+pub const HALTCNT: IORegister8 = IORegister8(0x4000301);
 
-	// DMA Transfer Channels
-	pub DMA0SAD: u32,
-	pub DMA0DAD: u32,
-	pub DMA0CNT_L: u16,
-	pub DMA0CNT_H: u16,
-	pub DMA1SAD: u32,
-	pub DMA1DAD: u32,
-	pub DMA1CNT_L: u16,
-	pub DMA1CNT_H: u16,
-	pub DMA2SAD: u32,
-	pub DMA2DAD: u32,
-	pub DMA2CNT_L: u16,
-	pub DMA2CNT_H: u16,
-	pub DMA3SAD: u32,
-	pub DMA3DAD: u32,
-	pub DMA3CNT_L: u16,
-	pub DMA3CNT_H: u16,
+pub const DISPCNT: IORegister16 = IORegister16(0x4000000);
+pub const DISPSTAT: IORegister16 = IORegister16(0x4000004);
+pub const VCOUNT: IORegister16 = IORegister16(0x4000006);
+pub const BG0CNT: IORegister16 = IORegister16(0x4000008);
+pub const BG1CNT: IORegister16 = IORegister16(0x400000a);
+pub const BG2CNT: IORegister16 = IORegister16(0x400000c);
+pub const BG3CNT: IORegister16 = IORegister16(0x400000e);
+pub const BG0HOFS: IORegister16 = IORegister16(0x4000010);
+pub const BG0VOFS: IORegister16 = IORegister16(0x4000012);
+pub const BG1HOFS: IORegister16 = IORegister16(0x4000014);
+pub const BG1VOFS: IORegister16 = IORegister16(0x4000016);
+pub const BG2HOFS: IORegister16 = IORegister16(0x4000018);
+pub const BG2VOFS: IORegister16 = IORegister16(0x400001a);
+pub const BG3HOFS: IORegister16 = IORegister16(0x400001c);
+pub const BG3VOFS: IORegister16 = IORegister16(0x400001e);
+pub const BG2PA: IORegister16 = IORegister16(0x4000020);
+pub const BG2PB: IORegister16 = IORegister16(0x4000022);
+pub const BG2PC: IORegister16 = IORegister16(0x4000024);
+pub const BG2PD: IORegister16 = IORegister16(0x4000026);
+pub const BG3PA: IORegister16 = IORegister16(0x4000030);
+pub const BG3PB: IORegister16 = IORegister16(0x4000032);
+pub const BG3PC: IORegister16 = IORegister16(0x4000034);
+pub const BG3PD: IORegister16 = IORegister16(0x4000036);
+pub const WIN0H: IORegister16 = IORegister16(0x4000040);
+pub const WIN1H: IORegister16 = IORegister16(0x4000042);
+pub const WIN0V: IORegister16 = IORegister16(0x4000044);
+pub const WIN1V: IORegister16 = IORegister16(0x4000046);
+pub const WININ: IORegister16 = IORegister16(0x4000048);
+pub const WINOUT: IORegister16 = IORegister16(0x400004a);
+pub const MOSAIC: IORegister16 = IORegister16(0x400004c);
+pub const BLDCNT: IORegister16 = IORegister16(0x4000050);
+pub const BLDALPHA: IORegister16 = IORegister16(0x4000052);
+pub const BLDY: IORegister16 = IORegister16(0x4000054);
+pub const SOUND1CNT_L: IORegister16 = IORegister16(0x4000060);
+pub const SOUND1CNT_H: IORegister16 = IORegister16(0x4000062);
+pub const SOUND1CNT_X: IORegister16 = IORegister16(0x4000064);
+pub const SOUND2CNT_L: IORegister16 = IORegister16(0x4000068);
+pub const SOUND2CNT_H: IORegister16 = IORegister16(0x400006c);
+pub const SOUND3CNT_L: IORegister16 = IORegister16(0x4000070);
+pub const SOUND3CNT_H: IORegister16 = IORegister16(0x4000072);
+pub const SOUND3CNT_X: IORegister16 = IORegister16(0x4000074);
+pub const SOUND4CNT_L: IORegister16 = IORegister16(0x4000078);
+pub const SOUND4CNT_H: IORegister16 = IORegister16(0x400007c);
+pub const SOUNDCNT_L: IORegister16 = IORegister16(0x4000080);
+pub const SOUNDCNT_H: IORegister16 = IORegister16(0x4000082);
+pub const SOUNDCNT_X: IORegister16 = IORegister16(0x4000084);
+pub const SOUNDBIAS: IORegister16 = IORegister16(0x4000088);
+pub const WAVE_RAM0_L: IORegister16 = IORegister16(0x4000090);
+pub const WAVE_RAM0_H: IORegister16 = IORegister16(0x4000092);
+pub const WAVE_RAM1_L: IORegister16 = IORegister16(0x4000094);
+pub const WAVE_RAM1_H: IORegister16 = IORegister16(0x4000096);
+pub const WAVE_RAM2_L: IORegister16 = IORegister16(0x4000098);
+pub const WAVE_RAM2_H: IORegister16 = IORegister16(0x400009a);
+pub const WAVE_RAM3_L: IORegister16 = IORegister16(0x400009c);
+pub const WAVE_RAM3_H: IORegister16 = IORegister16(0x400009e);
+pub const FIF0_A_L: IORegister16 = IORegister16(0x40000a0);
+pub const FIFO_A_H: IORegister16 = IORegister16(0x40000a2);
+pub const FIFO_B_L: IORegister16 = IORegister16(0x40000a4);
+pub const FIFO_B_H: IORegister16 = IORegister16(0x40000a6);
+pub const DMA0CNT_L: IORegister16 = IORegister16(0x40000b8);
+pub const DMA0CNT_H: IORegister16 = IORegister16(0x40000ba);
+pub const DMA1CNT_L: IORegister16 = IORegister16(0x40000c4);
+pub const DMA1CNT_H: IORegister16 = IORegister16(0x40000c6);
+pub const DMA2CNT_L: IORegister16 = IORegister16(0x40000d0);
+pub const DMA2CNT_H: IORegister16 = IORegister16(0x40000d2);
+pub const DMA3CNT_L: IORegister16 = IORegister16(0x40000dc);
+pub const DMA3CNT_H: IORegister16 = IORegister16(0x40000de);
+pub const TM0CNT_L: IORegister16 = IORegister16(0x4000100);
+pub const TM0CNT_H: IORegister16 = IORegister16(0x4000102);
+pub const TM1CNT_L: IORegister16 = IORegister16(0x4000104);
+pub const TM1CNT_H: IORegister16 = IORegister16(0x4000106);
+pub const TM2CNT_L: IORegister16 = IORegister16(0x4000108);
+pub const TM2CNT_H: IORegister16 = IORegister16(0x400010a);
+pub const TM3CNT_L: IORegister16 = IORegister16(0x400010c);
+pub const TM3CNT_H: IORegister16 = IORegister16(0x400010e);
+pub const SIOMULTI0: IORegister16 = IORegister16(0x4000120);
+pub const SIOMULTI1: IORegister16 = IORegister16(0x4000122);
+pub const SIOMULTI2: IORegister16 = IORegister16(0x4000124);
+pub const SIOMULTI3: IORegister16 = IORegister16(0x4000126);
+pub const SIOCNT: IORegister16 = IORegister16(0x4000128);
+pub const SIOMLT_SEND: IORegister16 = IORegister16(0x400012a);
+pub const KEYINPUT: IORegister16 = IORegister16(0x4000130);
+pub const KEYCNT: IORegister16 = IORegister16(0x4000132);
+pub const RCNT: IORegister16 = IORegister16(0x4000134);
+pub const IR: IORegister16 = IORegister16(0x4000136);
+pub const JOYCNT: IORegister16 = IORegister16(0x4000140);
+pub const JOY_STAT: IORegister16 = IORegister16(0x4000158);
+pub const IE: IORegister16 = IORegister16(0x4000200);
+pub const IF: IORegister16 = IORegister16(0x4000202);
+pub const WAITCNT: IORegister16 = IORegister16(0x4000204);
+pub const IME: IORegister16 = IORegister16(0x4000208);
 
-	// Timer Registers
-	pub TM0CNT_L: u16,
-	pub TM0CNT_H: u16,
-	pub TM1CNT_L: u16,
-	pub TM1CNT_H: u16,
-	pub TM2CNT_L: u16,
-	pub TM2CNT_H: u16,
-	pub TM3CNT_L: u16,
-	pub TM3CNT_H: u16,
-
-	// Serial Communication (1)
-	pub SIODATA32: u32,
-	pub SIOMULTI0: u16,
-	pub SIOMULTI1: u16,
-	pub SIOMULTI2: u16,
-	pub SIOMULTI3: u16,
-	pub SIOCNT: u16,
-	pub SIOMLT_SEND: u16,
-	pub SIODATA8: u16,
-
-	// Keypad Input
-	pub KEYINPUT: u16,
-	pub KEYCNT: u16,
-
-	// Serial Communication (2)
-	pub RCNT: u16,
-	pub IR: u16, // Infrared register (Prototypes Only)
-	pub JOYCNT: u16,
-	pub JOY_RECV: u32,
-	pub JOY_TRANS: u32,
-	pub JOY_STAT: u16,
-
-	// Interrupt, Waitstate, and Power-Down Control
-	pub IE: u16,
-	pub IF: u16,
-	pub WAITCNT: u16,
-	pub IME: u16,
-	pub POSTFLG: u8,
-	pub HALTCNT: u8,
-}
-
-impl IORegisters {
-	pub fn new() -> IORegisters {
-		IORegisters {
-			// LCD I/O Registers
-			DISPCNT: 0, 
-			DISPSTAT: 0, 
-			VCOUNT: 0, 
-			BG0CNT: 0, 
-			BG1CNT: 0, 
-			BG2CNT: 0, 
-			BG3CNT: 0, 
-			BG0HOFS: 0, 
-			BG0VOFS: 0, 
-			BG1HOFS: 0, 
-			BG1VOFS: 0, 
-			BG2HOFS: 0, 
-			BG2VOFS: 0, 
-			BG3HOFS: 0, 
-			BG3VOFS: 0, 
-			BG2PA: 0, 
-			BG2PB: 0, 
-			BG2PC: 0, 
-			BG2PD: 0, 
-			BG2X: 0, 
-			BG2Y: 0, 
-			BG3PA: 0, 
-			BG3PB: 0, 
-			BG3PC: 0, 
-			BG3PD: 0, 
-			BG3X: 0, 
-			BG3Y: 0, 
-			WIN0H: 0, 
-			WIN1H: 0, 
-			WIN0V: 0, 
-			WIN1V: 0, 
-			WININ: 0, 
-			WINOUT: 0, 
-			MOSAIC: 0, 
-			BLDCNT: 0, 
-			BLDALPHA: 0, 
-			BLDY: 0, 
-
-			// Sound Registers
-			SOUND1CNT_L: 0,
-			SOUND1CNT_H: 0,
-			SOUND1CNT_X: 0,
-			SOUND2CNT_L: 0,
-			SOUND2CNT_H: 0,
-			SOUND3CNT_L: 0,
-			SOUND3CNT_H: 0,
-			SOUND3CNT_X: 0,
-			SOUND4CNT_L: 0,
-			SOUND4CNT_H: 0,
-			SOUNDCNT_L: 0,
-			SOUNDCNT_H: 0,
-			SOUNDCNT_X: 0,
-			SOUNDBIAS: 0,
-			WAVE_RAM0_L: 0,
-			WAVE_RAM0_H: 0,
-			WAVE_RAM1_L: 0,
-			WAVE_RAM1_H: 0,
-			WAVE_RAM2_L: 0,
-			WAVE_RAM2_H: 0,
-			WAVE_RAM3_L: 0,
-			WAVE_RAM3_H: 0,
-			FIFO_A: 0,
-			FIFO_B: 0,
-			FIF0_A_L: 0,
-			FIFO_A_H: 0,
-			FIFO_B_L: 0,
-			FIFO_B_H: 0,
-
-			// DMA Transfer Channels
-			DMA0SAD: 0,
-			DMA0DAD: 0,
-			DMA0CNT_L: 0,
-			DMA0CNT_H: 0,
-			DMA1SAD: 0,
-			DMA1DAD: 0,
-			DMA1CNT_L: 0,
-			DMA1CNT_H: 0,
-			DMA2SAD: 0,
-			DMA2DAD: 0,
-			DMA2CNT_L: 0,
-			DMA2CNT_H: 0,
-			DMA3SAD: 0,
-			DMA3DAD: 0,
-			DMA3CNT_L: 0,
-			DMA3CNT_H: 0,
-
-			// Timer Registers
-			TM0CNT_L: 0,
-			TM0CNT_H: 0,
-			TM1CNT_L: 0,
-			TM1CNT_H: 0,
-			TM2CNT_L: 0,
-			TM2CNT_H: 0,
-			TM3CNT_L: 0,
-			TM3CNT_H: 0,
-
-			// Serial Communication (1)
-			SIODATA32: 0,
-			SIOMULTI0: 0,
-			SIOMULTI1: 0,
-			SIOMULTI2: 0,
-			SIOMULTI3: 0,
-			SIOCNT: 0,
-			SIOMLT_SEND: 0,
-			SIODATA8: 0,
-
-			// Keypad Input
-			KEYINPUT: 0,
-			KEYCNT: 0,
-
-			// Serial Communication (2)
-			RCNT: 0,
-			IR: 0, // Infrared register (Prototypes Only)
-			JOYCNT: 0,
-			JOY_RECV: 0,
-			JOY_TRANS: 0,
-			JOY_STAT: 0,
-
-			// Interrupt, Waitstate, and Power-Down Control
-			IE: 0,
-			IF: 0,
-			WAITCNT: 0,
-			IME: 0,
-			POSTFLG: 0,
-			HALTCNT: 0
-		}
-	}
-
-	pub fn write8(&mut self, address:u32, value: u8) {
-		match address {
-			0x4000300 => self.POSTFLG = value,
-			0x4000301 => self.HALTCNT = value,
-			_ => {}
-		}
-	}
-
-	pub fn write16(&mut self, address: u32, value: u16) {
-		match address {
-			0x4000000 => self.DISPCNT = value,
-			0x4000004 => self.DISPSTAT = value,
-			0x4000006 => self.VCOUNT = value,
-			0x4000008 => self.BG0CNT = value,
-			0x400000a => self.BG1CNT = value,
-			0x400000c => self.BG2CNT = value,
-			0x400000e => self.BG3CNT = value,
-			0x4000010 => self.BG0HOFS = value,
-			0x4000012 => self.BG0VOFS = value,
-			0x4000014 => self.BG1HOFS = value,
-			0x4000016 => self.BG1VOFS = value,
-			0x4000018 => self.BG2HOFS = value,
-			0x400001a => self.BG2VOFS = value,
-			0x400001c => self.BG3HOFS = value,
-			0x400001e => self.BG3VOFS = value,
-			0x4000020 => self.BG2PA = value,
-			0x4000022 => self.BG2PB = value,
-			0x4000024 => self.BG2PC = value,
-			0x4000026 => self.BG2PD = value,
-			0x4000030 => self.BG3PA = value,
-			0x4000032 => self.BG3PB = value,
-			0x4000034 => self.BG3PC = value,
-			0x4000036 => self.BG3PD = value,
-			0x4000040 => self.WIN0H = value,
-			0x4000042 => self.WIN1H = value,
-			0x4000044 => self.WIN0V = value,
-			0x4000046 => self.WIN1V = value,
-			0x4000048 => self.WININ = value,
-			0x400004a => self.WINOUT = value,
-			0x400004c => self.MOSAIC = value,
-			0x4000050 => self.BLDCNT = value,
-			0x4000052 => self.BLDALPHA = value,
-			0x4000054 => self.BLDY = value,
-			0x4000060 => self.SOUND1CNT_L = value,
-			0x4000062 => self.SOUND1CNT_H = value,
-			0x4000064 => self.SOUND1CNT_X = value,
-			0x4000068 => self.SOUND2CNT_L = value,
-			0x400006c => self.SOUND2CNT_H = value,
-			0x4000070 => self.SOUND3CNT_L = value,
-			0x4000072 => self.SOUND3CNT_H = value,
-			0x4000074 => self.SOUND3CNT_X = value,
-			0x4000078 => self.SOUND4CNT_L = value,
-			0x400007c => self.SOUND4CNT_H = value,
-			0x4000080 => self.SOUNDCNT_L = value,
-			0x4000082 => self.SOUNDCNT_H = value,
-			0x4000084 => self.SOUNDCNT_X = value,
-			0x4000088 => self.SOUNDBIAS = value,
-			0x4000090 => self.WAVE_RAM0_L = value,
-			0x4000092 => self.WAVE_RAM0_H = value,
-			0x4000094 => self.WAVE_RAM1_L = value,
-			0x4000096 => self.WAVE_RAM1_H = value,
-			0x4000098 => self.WAVE_RAM2_L = value,
-			0x400009a => self.WAVE_RAM2_H = value,
-			0x400009c => self.WAVE_RAM3_L = value,
-			0x400009e => self.WAVE_RAM3_H = value,
-			0x40000a0 => self.FIF0_A_L = value,
-			0x40000a2 => self.FIFO_A_H = value,
-			0x40000a4 => self.FIFO_B_L = value,
-			0x40000a6 => self.FIFO_B_H = value,
-			0x40000b8 => self.DMA0CNT_L = value,
-			0x40000ba => self.DMA0CNT_H = value,
-			0x40000c4 => self.DMA1CNT_L = value,
-			0x40000c6 => self.DMA1CNT_H = value,
-			0x40000d0 => self.DMA2CNT_L = value,
-			0x40000d2 => self.DMA2CNT_H = value,
-			0x40000dc => self.DMA3CNT_L = value,
-			0x40000de => self.DMA3CNT_H = value,
-			0x4000100 => self.TM0CNT_L = value,
-			0x4000102 => self.TM0CNT_H = value,
-			0x4000104 => self.TM1CNT_L = value,
-			0x4000106 => self.TM1CNT_H = value,
-			0x4000108 => self.TM2CNT_L = value,
-			0x400010a => self.TM2CNT_H = value,
-			0x400010c => self.TM3CNT_L = value,
-			0x400010e => self.TM3CNT_H = value,
-			0x4000120 => self.SIOMULTI0 = value,
-			0x4000122 => self.SIOMULTI1 = value,
-			0x4000124 => self.SIOMULTI2 = value,
-			0x4000126 => self.SIOMULTI3 = value,
-			0x4000128 => self.SIOCNT = value,
-			0x400012a => {
-				self.SIOMLT_SEND = value;
-				self.SIODATA8 = value;
-			},
-			0x4000130 => self.KEYINPUT = value,
-			0x4000132 => self.KEYCNT = value,
-			0x4000134 => self.RCNT = value,
-			0x4000136 => self.IR = value,
-			0x4000140 => self.JOYCNT = value,
-			0x4000158 => self.JOY_STAT = value,
-			0x4000200 => self.IE = value,
-			0x4000202 => self.IF = value,
-			0x4000204 => self.WAITCNT = value,
-			0x4000208 => self.IME = value,
-			_ => {}
-		}
-	}
-
-	pub fn write32(&mut self, address: u32, value: u32) {
-		match address {
-			0x4000028 => self.BG2X = value,
-			0x400002c => self.BG2Y = value,
-			0x4000038 => self.BG3X = value,
-			0x400003c => self.BG3Y = value,
-			0x40000a0 => self.FIFO_A = value,
-			0x40000a4 => self.FIFO_B = value,
-			0x40000b0 => self.DMA0SAD = value,
-			0x40000b4 => self.DMA0DAD = value,
-			0x40000bc => self.DMA1SAD = value,
-			0x40000c0 => self.DMA1DAD = value,
-			0x40000c8 => self.DMA2SAD = value,
-			0x40000cc => self.DMA2DAD = value,
-			0x40000d4 => self.DMA3SAD = value,
-			0x40000d8 => self.DMA3DAD = value,
-			0x4000120 => self.SIODATA32 = value,
-			0x4000150 => self.JOY_RECV = value,
-			0x4000154 => self.JOY_TRANS = value,
-			_ => {}
-		}
-	}
-}
-
+pub const BG2X: IORegister32 = IORegister32(0x4000028);
+pub const BG2Y: IORegister32 = IORegister32(0x400002c);
+pub const BG3X: IORegister32 = IORegister32(0x4000038);
+pub const BG3Y: IORegister32 = IORegister32(0x400003c);
+pub const FIFO_A: IORegister32 = IORegister32(0x40000a0);
+pub const FIFO_B: IORegister32 = IORegister32(0x40000a4);
+pub const DMA0SAD: IORegister32 = IORegister32(0x40000b0);
+pub const DMA0DAD: IORegister32 = IORegister32(0x40000b4);
+pub const DMA1SAD: IORegister32 = IORegister32(0x40000bc);
+pub const DMA1DAD: IORegister32 = IORegister32(0x40000c0);
+pub const DMA2SAD: IORegister32 = IORegister32(0x40000c8);
+pub const DMA2DAD: IORegister32 = IORegister32(0x40000cc);
+pub const DMA3SAD: IORegister32 = IORegister32(0x40000d4);
+pub const DMA3DAD: IORegister32 = IORegister32(0x40000d8);
+pub const SIODATA32: IORegister32 = IORegister32(0x4000120);
+pub const JOY_RECV: IORegister32 = IORegister32(0x4000150);
+pub const JOY_TRANS: IORegister32 = IORegister32(0x4000154);
