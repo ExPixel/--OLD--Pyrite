@@ -16,23 +16,19 @@ pub mod mode5;
 
 pub type GbaLcdLine = [u32; 240];
 
-// No point in having a secondary screen buffer
-// since the GBA renders in scan lines anyway.
+// // No point in having a secondary screen buffer
+// // since the GBA renders in scan lines anyway.
 // pub type GbaLcdScreenBuffer = [GbaLcdLine; 160];
 
-pub struct GbaLcd {
-	pub line: GbaLcdLine
-}
+pub struct GbaLcd;
 
 impl GbaLcd {
 	pub fn new() -> GbaLcd {
-		GbaLcd {
-			line: [0u32; 240]
-		}
+		GbaLcd
 	}
 
 	/// Causes the LCD to render a single line.
 	#[allow(unused_variables)] // #TODO remove this
-	pub fn render_line(&mut self, memory: &mut GbaMemory) {
+	pub fn render_line(&mut self, memory: &mut GbaMemory, line: u16, line_buffer: &mut [u8]) {
 	}
 }

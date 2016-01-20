@@ -12,6 +12,8 @@ use std::fs::File;
 use core::memory::GbaMemory;
 use core::Gba;
 
+const BIOS_PATH: &'static str = "roms/legal/gba.bin";
+
 macro_rules! println_err {
     ($($arg:tt)*) => (
     	match writeln!(&mut ::std::io::stderr(), $($arg)*) {
@@ -22,7 +24,18 @@ macro_rules! println_err {
 }
 
 pub fn load_bios(gba: &mut Gba) {
-	
+	let mut f = match File::open(BIOS_PATH) {
+		Ok(file) => file,
+		Err(error) => panic!("Error while opening file '{}': {}", BIOS_PATH, error)
+	};
+
+	let mut bios_buffer = &mut gba.cpu.memory.internal_data[0..0x40000]; // a slice exactly as large as the bios
+	match f.read(bios_buffer) {
+		Ok(bytes) => println!("Read {} bytes into BIOS region.", bytes),
+		Err(error) => panic!("Error while reading from file '{}': {}", BIOS_PATH, error)
+	}
+
+	println!("Loaded BIOS at {}.", BIOS_PATH);
 }
 
 pub fn load_rom(gba: &mut Gba, rom_path: String) {
@@ -38,6 +51,7 @@ pub fn load_rom(gba: &mut Gba, rom_path: String) {
 		Err(error) => panic!("Error while reading file `{}`: {}", filepath, error)
 	}
 	gba.load_cartridge(buffer);
+	println!("Loaded ROM {}.", filepath);
 }
 
 pub fn load_memory(rom_path: String) -> GbaMemory {

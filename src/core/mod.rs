@@ -4,7 +4,7 @@ pub mod lcd;
 pub mod joypad;
 pub mod device;
 
-// use self::memory::*;
+use self::memory::*;
 use self::cpu::registers;
 use self::cpu::ArmCpu;
 use self::device::GbaDevice;
@@ -45,7 +45,6 @@ impl<'a> Gba<'a> {
 
 	pub fn run(&mut self) {
 		self.init();
-		self.__debug_init_texture();
 		self.device.render();
 		'running: loop {
 			self.frame();
@@ -54,7 +53,7 @@ impl<'a> Gba<'a> {
 
 			{
 				let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
-				let title = format!("Pyrite - EXEC: 0x{:08x}", self.cpu.get_exec_address());
+				let title = format!("Pyrite - {} FPS", self.device.fps_counter.fps);
 				window.set_title(&title);
 			}
 		}
@@ -69,45 +68,105 @@ impl<'a> Gba<'a> {
 	}
 
 	fn frame(&mut self) {
-		for _ in 0..160	{ self.do_vdraw_line(); }
-		for _ in 0..68	{ self.do_vblank_line(); }
+		// Clears the VBlank flag.
+		{
+			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+			dispstat &= !0x1;
+			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+		}
+
+		unsafe {
+			// #TODO The borrow checker got annoying, will fix this at some point.
+			let dd = &mut self.device as *mut GbaDevice;
+			(*dd).gba_screen.with_lock(None, |buffer: &mut [u8], pitch: usize| {		
+				for vcount in 0..160 {
+					self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
+					self.check_line_coincidence(vcount);
+
+					let line_data_off = (vcount as usize) * pitch;
+
+					self.do_vdraw_line(vcount, &mut buffer[line_data_off..(line_data_off + pitch)]);
+				}
+			}).expect("Failed to aquire texture lock.");
+		}
+
+		// Sets the VBlank flag.
+		{
+			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+			dispstat |= 0x1;
+			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+		}
+
+		for vcount in 160..228 {
+			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
+			self.check_line_coincidence(vcount);
+			self.do_vblank_line();
+		}
 	}
 
-	/*
-	* Horizontal Dimensions
-	* The drawing time for each dot is 4 CPU cycles.
-	*   Visible     240 dots,  57.221 us,    960 cycles - 78% of h-time
-	*   H-Blanking   68 dots,  16.212 us,    272 cycles - 22% of h-time
-	*   Total       308 dots,  73.433 us,   1232 cycles - ca. 13.620 kHz
-	* VRAM and Palette RAM may be accessed during H-Blanking. OAM can accessed only if "H-Blank Interval Free" bit in DISPCNT register is set.
-	* 
-	* Vertical Dimensions
-	*   Visible (*) 160 lines, 11.749 ms, 197120 cycles - 70% of v-time
-	*   V-Blanking   68 lines,  4.994 ms,  83776 cycles - 30% of v-time
-	*   Total       228 lines, 16.743 ms, 280896 cycles - ca. 59.737 Hz
-	* All VRAM, OAM, and Palette RAM may be accessed during V-Blanking.
-	* Note that no H-Blank interrupts are generated within V-Blank period.
-	*/
+	fn check_line_coincidence(&mut self, vcount: u16) {
+		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		if ((dispstat >> 8) & 0xf) == vcount {
+			dispstat |= 0x4; // Sets the V-Counter flag
+		} else {
+			dispstat &= !0x4; // Clears the V-Counter flag
+		}
+		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+	}
 
-	fn do_vdraw_line(&mut self) {
-		// #TODO set io registers
+	/// Horizontal Dimensions
+	/// The drawing time for each dot is 4 CPU cycles.
+	///   Visible     240 dots,  57.221 us,    960 cycles - 78% of h-time
+	///   H-Blanking   68 dots,  16.212 us,    272 cycles - 22% of h-time
+	///   Total       308 dots,  73.433 us,   1232 cycles - ca. 13.620 kHz
+	/// VRAM and Palette RAM may be accessed during H-Blanking. OAM can accessed only if "H-Blank Interval Free" bit in DISPCNT register is set.
+	/// 
+	/// Vertical Dimensions
+	///   Visible (*) 160 lines, 11.749 ms, 197120 cycles - 70% of v-time
+	///   V-Blanking   68 lines,  4.994 ms,  83776 cycles - 30% of v-time
+	///   Total       228 lines, 16.743 ms, 280896 cycles - ca. 59.737 Hz
+	/// All VRAM, OAM, and Palette RAM may be accessed during V-Blanking.
+	/// Note that no H-Blank interrupts are generated within V-Blank period.
+	fn do_vdraw_line(&mut self, line: u16, line_buffer: &mut [u8]) {
 		self.do_hdraw();
-		self.lcd.render_line(&mut self.cpu.memory); // #TODO pass the line to the device.
+		self.lcd.render_line(&mut self.cpu.memory, line, line_buffer);
 		self.do_hblank();
 	}
 
+/*
+4000004h - DISPSTAT - General LCD Status (Read/Write)
+Display status and Interrupt control. The H-Blank conditions are generated once per scanline, including for the 'hidden' scanlines during V-Blank.
+  Bit   Expl.
+  0     V-Blank flag   (Read only) (1=VBlank) (set in line 160..226; not 227)
+  1     H-Blank flag   (Read only) (1=HBlank) (toggled in all lines, 0..227)
+  2     V-Counter flag (Read only) (1=Match)  (set in selected line)     (R)
+  3     V-Blank IRQ Enable         (1=Enable)                          (R/W)
+  4     H-Blank IRQ Enable         (1=Enable)                          (R/W)
+  5     V-Counter IRQ Enable       (1=Enable)                          (R/W)
+  6     Not used (0) / DSi: LCD Initialization Ready (0=Busy, 1=Ready)   (R)
+  7     Not used (0) / NDS: MSB of V-Vcount Setting (LYC.Bit8) (0..262)(R/W)
+  8-15  V-Count Setting (LYC)      (0..227)                            (R/W)
+*/
+
 	fn do_vblank_line(&mut self) {
-		// #TODO set io registers
 		self.run_cpu_cycles(1232);
 	}
 
 	fn do_hdraw(&mut self) {
-		// #TODO set io registers
+		// Clears the HBlank flag:
+		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		dispstat &= !0x2;
+		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+
 		self.run_cpu_cycles(960);
 	}
 
 	fn do_hblank(&mut self) {
-		// #TODO set io registers
+		// Sets the HBlank flag:
+		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		dispstat |= 0x2;
+		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+
 		self.run_cpu_cycles(272);
 	}
 
@@ -121,18 +180,18 @@ impl<'a> Gba<'a> {
 		}
 	}
 
-	fn __debug_init_texture(&mut self) {
-		self.device.gba_screen.with_lock(None, |buffer: &mut [u8], pitch: usize| {
-			for y in 0..160 {
-				for x in 0..240 {
-					let offset = y*pitch + x*3;
-					buffer[offset + 0] = x as u8;
-					buffer[offset + 1] = y as u8;
-					buffer[offset + 2] = ((x + y) / 2) as u8;
-				}
-			}
-		}).expect("Failed to aquire texture lock.");
-	}
+	// fn __debug_init_texture(&mut self) {
+	// 	self.device.gba_screen.with_lock(None, |buffer: &mut [u8], pitch: usize| {
+	// 		for y in 0..160 {
+	// 			for x in 0..240 {
+	// 				let offset = y*pitch + x*3;
+	// 				buffer[offset + 0] = x as u8;
+	// 				buffer[offset + 1] = y as u8;
+	// 				buffer[offset + 2] = ((x + y) / 2) as u8;
+	// 			}
+	// 		}
+	// 	}).expect("Failed to aquire texture lock.");
+	// }
 
 	/// Polls for and handles events from the device.
 	/// returns true if this should quit.

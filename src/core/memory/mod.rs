@@ -1,7 +1,8 @@
 pub mod ioreg;
 
-// #TODO implement io registers.
-pub use self::ioreg::*;
+use self::ioreg::IORegister8;
+use self::ioreg::IORegister16;
+use self::ioreg::IORegister32;
 
 pub struct MemoryRegion {
 	pub start: u32,
@@ -30,7 +31,7 @@ pub const MEM_ROM2:		MemoryRegion = MemoryRegion { start: 0x0c000000, end: 0x0Df
 pub const MEM_SRAM:		MemoryRegion = MemoryRegion { start: 0x0e000000, end: 0x0E00ffff, size: 0x10000, local_addr: 0 };
 
 pub struct GbaMemory {
-	internal_data: [u8; INTERNAL_MEM_SIZE],
+	pub internal_data: [u8; INTERNAL_MEM_SIZE],
 	pub rom: Vec<u8>
 	// #TODO add SRAM.
 }
@@ -163,6 +164,38 @@ impl GbaMemory {
 		self.__write8__(address + 3, ((value >> 24) & 0xff) as u8);
 	}
 
+	pub fn direct_read8(&self, index: usize) -> u8 {
+		self.internal_data[index]
+	}
+
+	pub fn direct_read16(&self, index: usize) -> u16 {
+		self.direct_read8(index) as u16 | 
+		((self.direct_read8(index + 1) as u16) << 8)
+	}
+
+	pub fn direct_read32(&self, index: usize) -> u32 {
+		self.direct_read8(index) as u32 | 
+		((self.direct_read8(index + 1) as u32) << 8) |
+		((self.direct_read8(index + 2) as u32) << 16) |
+		((self.direct_read8(index + 3) as u32) << 24)
+	}
+
+	pub fn direct_write8(&mut self, index: usize, value: u8) {
+		self.internal_data[index] = value;
+	}
+
+	pub fn direct_write16(&mut self, index: usize, value: u16) {
+		self.direct_write8(index, (value & 0xff) as u8);
+		self.direct_write8(index + 1, ((value >> 8) & 0xff) as u8);
+	}
+
+	pub fn direct_write32(&mut self, index: usize, value: u32) {
+		self.direct_write8(index, (value & 0xff) as u8);
+		self.direct_write8(index + 1, ((value >> 8) & 0xff) as u8);
+		self.direct_write8(index + 2, ((value >> 16) & 0xff) as u8);
+		self.direct_write8(index + 3, ((value >> 24) & 0xff) as u8);	
+	}
+
 	#[inline]
 	fn __write8__(&mut self, address: u32, value: u8) {
 		match address {
@@ -211,23 +244,23 @@ pub trait ReadIOReg<R> {
 impl ReadIOReg<IORegister8> for GbaMemory {
 	type RegSizeType = u8;
 
-	fn get_reg(&self, reg: IORegister8) -> u8 { return self.read8(reg.0) }
-	fn set_reg(&mut self, reg: IORegister8, value: u8) { self.write8(reg.0, value); }
+	fn get_reg(&self, reg: IORegister8) -> u8 { return self.direct_read8(reg.0 + MEM_IOREG.local_addr) }
+	fn set_reg(&mut self, reg: IORegister8, value: u8) { self.direct_write8(reg.0 + MEM_IOREG.local_addr, value); }
 }
 
 
 impl ReadIOReg<IORegister16> for GbaMemory {
 	type RegSizeType = u16;
 
-	fn get_reg(&self, reg: IORegister16) -> u16 { return self.read16(reg.0) }
-	fn set_reg(&mut self, reg: IORegister16, value: u16) { self.write16(reg.0, value); }
+	fn get_reg(&self, reg: IORegister16) -> u16 { return self.direct_read16(reg.0 + MEM_IOREG.local_addr) }
+	fn set_reg(&mut self, reg: IORegister16, value: u16) { self.direct_write16(reg.0 + MEM_IOREG.local_addr, value); }
 }
 
 impl ReadIOReg<IORegister32> for GbaMemory {
 	type RegSizeType = u32;
 
-	fn get_reg(&self, reg: IORegister32) -> u32 { return self.read32(reg.0) }
-	fn set_reg(&mut self, reg: IORegister32, value: u32) { self.write32(reg.0, value); }
+	fn get_reg(&self, reg: IORegister32) -> u32 { return self.direct_read32(reg.0 + MEM_IOREG.local_addr) }
+	fn set_reg(&mut self, reg: IORegister32, value: u32) { self.direct_write32(reg.0 + MEM_IOREG.local_addr, value); }
 }
 
 

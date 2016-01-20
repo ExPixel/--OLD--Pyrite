@@ -35,7 +35,6 @@ impl FrameCounter {
 			self.fps = self.delta_frames;
 			self.delta_frames = 0;
 			self.last_time = current_time;
-			println!("FPS: {} - TOTAL FRAMES: {} - TOTAL NS: {}", self.fps, self.total_frames, self.total_time);
 		}
 	}
 }

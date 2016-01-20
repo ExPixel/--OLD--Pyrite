@@ -7,8 +7,6 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
 use sdl2::render::Texture;
 
-use super::lcd::GbaLcdLine;
-
 use ::util::frame_counter::FrameCounter;
 
 pub struct GbaDevice<'a> {
@@ -47,10 +45,6 @@ impl<'a> GbaDevice<'a> {
 			gba_screen: texture,
 			fps_counter: FrameCounter::new()
 		}
-	}
-
-	#[allow(unused_variables)]
-	pub fn render_line(&mut self, line: usize, line_data: &GbaLcdLine) {
 	}
 
 	/// Renders the screen texture.
