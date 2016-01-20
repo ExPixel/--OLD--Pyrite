@@ -276,9 +276,9 @@ impl ArmCpu {
 	/// being executed.
 	pub fn get_exec_address(&self) -> u32 {
 		if self.registers.getf_t() {
-			self.registers.get(15) - 4
+			self.registers.get(15) - (self.thumb_pipeline.count as u32) * 2
 		} else {
-			self.registers.get(15) - 8
+			self.registers.get(15) - (self.arm_pipeline.count as u32) * 4
 		}
 	}
 
@@ -327,17 +327,17 @@ impl ArmCpu {
 
 
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
-	if address == 0x08000214 { // 08000210
-		println!("-- BEFORE --");
-		cpu.reg_dump_pretty();
-	}
+	// if address == 0x08000360 { // 08000210
+	// 	println!("-- BEFORE --");
+	// 	cpu.reg_dump_pretty();
+	// }
 }
 
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	if address == 0x08000214 {
-		println!("== AFTER ==");
-		cpu.reg_dump_pretty();
-		panic!(".");
-	}
+	// if address == 0x08000360 {
+	// 	println!("== AFTER ==");
+	// 	cpu.reg_dump_pretty();
+	// 	panic!(".");
+	// }
 }
 

@@ -79,7 +79,11 @@ pub fn arm_fn_ldm_single(cpu: &mut ArmCpu, address: u32, dest_reg: u32) {
 }
 
 pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {
-	let data = cpu.rget(src_reg);
+	let data = if src_reg == 15 {
+		cpu.rget(15) + 4 // address of STM + 12
+	} else {
+		cpu.rget(src_reg)
+	};
 	cpu.mwrite32(address, data);
 }
 
