@@ -1,7 +1,5 @@
 use super::memory::GbaMemory;
 
-use sdl2::render::Texture;
-
 // #TODO remove these allows
 #[allow(unused_variables)]
 pub mod mode0;
@@ -22,21 +20,19 @@ pub type GbaLcdLine = [u32; 240];
 // since the GBA renders in scan lines anyway.
 // pub type GbaLcdScreenBuffer = [GbaLcdLine; 160];
 
-pub struct GbaLcd;
+pub struct GbaLcd {
+	pub line: GbaLcdLine
+}
 
 impl GbaLcd {
 	pub fn new() -> GbaLcd {
-		GbaLcd
+		GbaLcd {
+			line: [0u32; 240]
+		}
 	}
 
 	/// Causes the LCD to render a single line.
 	#[allow(unused_variables)] // #TODO remove this
-	pub fn render_line(&mut self, screen: &mut Texture, memory: &mut GbaMemory) {
-		self.render_to_screen(screen);
-	}
-
-	/// Renders the current screen buffer.
-	#[allow(unused_variables)] // #TODO remove this
-	fn render_to_screen(&mut self, screen: &mut Texture) {
+	pub fn render_line(&mut self, memory: &mut GbaMemory) {
 	}
 }

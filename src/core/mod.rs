@@ -92,7 +92,7 @@ impl<'a> Gba<'a> {
 	fn do_vdraw_line(&mut self) {
 		// #TODO set io registers
 		self.do_hdraw();
-		self.lcd.render_line(&mut self.device.gba_screen, &mut self.cpu.memory);
+		self.lcd.render_line(&mut self.cpu.memory); // #TODO pass the line to the device.
 		self.do_hblank();
 	}
 

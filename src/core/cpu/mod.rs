@@ -326,6 +326,7 @@ impl ArmCpu {
 }
 
 
+#[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address == 0x08000360 { // 08000210
 	// 	println!("-- BEFORE --");
@@ -333,6 +334,8 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// }
 }
 
+
+#[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address == 0x08000360 {
 	// 	println!("== AFTER ==");

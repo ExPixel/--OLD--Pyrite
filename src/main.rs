@@ -21,8 +21,11 @@ macro_rules! println_err {
     )
 }
 
-pub fn load_rom<'a>(rom_path: String) -> Gba<'a> {
-	let mut gba = Gba::new();
+pub fn load_bios(gba: &mut Gba) {
+	
+}
+
+pub fn load_rom(gba: &mut Gba, rom_path: String) {
 	let filepath = rom_path;
 	let mut f = match File::open(filepath.clone()) {
 		Ok(file) => file,
@@ -35,7 +38,6 @@ pub fn load_rom<'a>(rom_path: String) -> Gba<'a> {
 		Err(error) => panic!("Error while reading file `{}`: {}", filepath, error)
 	}
 	gba.load_cartridge(buffer);
-	return gba
 }
 
 pub fn load_memory(rom_path: String) -> GbaMemory {
@@ -124,7 +126,9 @@ fn main() {
 			let mut memory = load_memory(rom_file);
 			disasm_gba_rom(&mut memory, args.flag_thumb);
 		} else {
-			let mut gba = Box::new(load_rom(rom_file));
+			let mut gba = Box::new(Gba::new());
+			load_bios(&mut gba);
+			load_rom(&mut gba, rom_file);
 			run_gba(&mut gba);
 		}
 	} else {
