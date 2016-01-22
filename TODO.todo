@@ -8,49 +8,49 @@ Core:
       ☐ Complete Mode 4 Rendering
       ☐ Complete Window Rendering
   CPU:
-    ☐ Complete the CPU's logic.
-      ✔ Complete the CPU's ALU @done (16-01-01 22:36)
-        ☐ Quick Style Fix: Change the '_s' in alu shifts to just 's'
-      ☐ Alignment on all data transfer instructions
-      ✔ Complete the CPU's ARM instructions (minus swi). @done (16-01-03 23:16)
-        ✔ Data processing instructions @done (15-12-24 23:41)
-        ✔ PSR transfer instructions @done (16-01-01 18:33)
-        ✔ Multiply instructions @done (16-01-01 20:28)
-        ✔ Multiply long instructions @done (16-01-01 20:28)
-        ✔ Single data swap instruction @done (16-01-01 18:45)
-        ✔ Branch instructions (B, BL) @done (16-01-01 20:28)
-        ✔ Branch and exchange instruction @done (16-01-01 20:28)
-           One thing that I saw VBA doing a lot was aligning addresses along word boundaries
-           for many of its data transfer functions. The ARM7TDMI documentation is very vague about where I'm suppose to align things, e.g. 
-               "The address should normally be a word aligned quantity and non-word aligned addresses do not affect the instruction. However, the bottom 2 bits of the address will appear on A[1:0] and might be interpreted by the memory system."
-           I'm not sure what that means exactly, but I should find out at some point. Thankfully
-           all of the ~208 data transfer instructions are done with 4 macros so changing 
-           all of them at the same time doesn't take much effort.
-        ✔ Halfword data transfer: register offset instructions @done (16-01-01 14:27)
-        ✔ Halfword data transfer: immediate offset instructions @done (16-01-01 14:27)
-        ✔ Single data transfer instructions @done (16-01-01 14:27)
-          ✔ Find out what the Negative/Positive Immediate Offsets are @done (15-12-30 15:56)
-             They don't have any information about post/pre indexing
-             or incrementing or decrementing. This is not in line with the
-             other single data transfer instructions. They might not even be part
-             of these instructions but they are in the same area in the table, so...
-             FOUND VIA #TODO negative imm offset
-             or #TODO positive imm offset
-        ✔ Block data transfer instructions @done (16-01-01 15:24)
-        ☐ Software interrupt instructions
-        ☐ Consider just inlining all of the stuff inside of the ALU.
-           A lot of the things in the ALU, I was just going to write
-           at their call sites anyways. None of them are very large
-           so it might be worth forcing them to be inlined. Until I build more
-           of this and get a chance to look though, I'm just going to assume that
-           LLVM is already inlining them.
-      ✔ Complete the CPU's THUMB instructions. @done (16-01-03 23:15)
+    ✔ Complete the CPU's logic. @done (16-01-20 15:26)
+    ✔ Complete the CPU's ALU @done (16-01-01 22:36)
+    ☐ Alignment on all data transfer instructions
+    ✔ Complete the CPU's ARM instructions (minus swi). @done (16-01-03 23:16)
+      ✔ Data processing instructions @done (15-12-24 23:41)
+      ✔ PSR transfer instructions @done (16-01-01 18:33)
+      ✔ Multiply instructions @done (16-01-01 20:28)
+      ✔ Multiply long instructions @done (16-01-01 20:28)
+      ✔ Single data swap instruction @done (16-01-01 18:45)
+      ✔ Branch instructions (B, BL) @done (16-01-01 20:28)
+      ✔ Branch and exchange instruction @done (16-01-01 20:28)
+         One thing that I saw VBA doing a lot was aligning addresses along word boundaries
+         for many of its data transfer functions. The ARM7TDMI documentation is very vague about where I'm suppose to align things, e.g. 
+             "The address should normally be a word aligned quantity and non-word aligned addresses do not affect the instruction. However, the bottom 2 bits of the address will appear on A[1:0] and might be interpreted by the memory system."
+         I'm not sure what that means exactly, but I should find out at some point. Thankfully
+         all of the ~208 data transfer instructions are done with 4 macros so changing 
+         all of them at the same time doesn't take much effort.
+      ✔ Halfword data transfer: register offset instructions @done (16-01-01 14:27)
+      ✔ Halfword data transfer: immediate offset instructions @done (16-01-01 14:27)
+      ✔ Single data transfer instructions @done (16-01-01 14:27)
+        ✔ Find out what the Negative/Positive Immediate Offsets are @done (15-12-30 15:56)
+           They don't have any information about post/pre indexing
+           or incrementing or decrementing. This is not in line with the
+           other single data transfer instructions. They might not even be part
+           of these instructions but they are in the same area in the table, so...
+           FOUND VIA #TODO negative imm offset
+           or #TODO positive imm offset
+      ✔ Block data transfer instructions @done (16-01-01 15:24)
+      ✔ Software interrupt instructions @done (16-01-22 12:43)
+      ☐ Undefined instruction should go into the correct interrupt vector.
+      ☐ Consider just inlining all of the stuff inside of the ALU.
+         A lot of the things in the ALU, I was just going to write
+         at their call sites anyways. None of them are very large
+         so it might be worth forcing them to be inlined. Until I build more
+         of this and get a chance to look though, I'm just going to assume that
+         LLVM is already inlining them.
+    ✔ Complete the CPU's THUMB instructions. @done (16-01-03 23:15)
       Accuracy+:
        ☐ Implement Gamepak Prefetch for the CPU
   MMU:
-    ☐ Figure out how I want to do ioregsiters
+    ✔ Figure out how I want to do ioregsiters @done (16-01-20 15:27)
         Right now I'm not sure if IO registers allow partial reads and writes.
         After figuring that out, I can create a strategy for how I want to handle them.
         For now there is no difference between them and all of the the GBA's other internal
         memory.
-    ☐ Implement IO Registers.
+    ✔ Implement IO Registers. @done (16-01-20 15:27)

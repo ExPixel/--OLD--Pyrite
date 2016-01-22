@@ -13,6 +13,48 @@ use self::lcd::GbaLcd;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
+/// LCD V-Blank Interrupt
+pub const INT_VBLANK: u16 = 0x01;
+
+/// LCD H-Blank Interrupt
+pub const INT_HBLANK: u16 = 0x02;
+
+/// LCD V-Counter Match Interrupt
+pub const INT_VCOUNT: u16 = 0x04;
+
+/// Timer 0 Overflow Interrupt
+pub const INT_TIMER0: u16 = 0x08;
+
+/// Timer 1 Overflow Interrupt
+pub const INT_TIMER1: u16 = 0x10;
+
+/// Timer 2 Overflow Interrupt
+pub const INT_TIMER2: u16 = 0x20;
+
+/// Timer 3 Overflow Interrupt
+pub const INT_TIMER3: u16 = 0x40;
+
+/// Serial Communication Interrupt
+pub const INT_SERIAL: u16 = 0x80;
+
+/// DMA 0 Interrupt
+pub const INT_DMA0: u16 = 0x100;
+
+/// DMA 1 Interrupt
+pub const INT_DMA1: u16 = 0x200;
+
+/// DMA 2 Interrupt
+pub const INT_DMA2: u16 = 0x400;
+
+/// DMA 3 Interrupt
+pub const INT_DMA3: u16 = 0x800;
+
+/// Keypad Interrupt
+pub const INT_KEYPAD: u16 = 0x1000;
+
+/// Game Pak (external IRQ source) Interrupt
+pub const INT_GAMEPAK: u16 = 0x2000;
+
 pub struct Gba<'a> {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
@@ -38,9 +80,9 @@ impl<'a> Gba<'a> {
 		self.cpu.registers.set_mode(registers::MODE_SYS);
 
 		// #FIXME I this these should be set by the BIOS but doing it here for now.
-		self.cpu.registers.set_with_mode(registers::REG_SP, registers::MODE_USR, 0x03007F00); // Also System
-		self.cpu.registers.set_with_mode(registers::REG_SP, registers::MODE_IRQ, 0x03007FA0);
-		self.cpu.registers.set_with_mode(registers::REG_SP, registers::MODE_SVC, 0x03007FE0);
+		self.cpu.registers.set_with_mode(registers::MODE_USR, registers::REG_SP, 0x03007F00); // Also System
+		self.cpu.registers.set_with_mode(registers::MODE_IRQ, registers::REG_SP, 0x03007FA0);
+		self.cpu.registers.set_with_mode(registers::MODE_SVC, registers::REG_SP, 0x03007FE0);
 	}
 
 	pub fn run(&mut self) {
@@ -53,18 +95,11 @@ impl<'a> Gba<'a> {
 
 			{
 				let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
-				let title = format!("Pyrite - {} FPS", self.device.fps_counter.fps);
+				let title = format!("Pyrite - {} FPS - {:04x}", self.device.fps_counter.fps, self.cpu.memory.get_reg(ioreg::DISPCNT));
 				window.set_title(&title);
 			}
 		}
 		println!("-- Shutdown successfully.");
-		// self.cpu.registers.set(registers::REG_PC, 0x8000000);
-		// // let mut x = 0;
-		// while self.cpu.executable() {
-		// 	self.cpu.tick();
-		// 	// x += 1;
-		// 	// if(x > 64) { break; }
-		// }
 	}
 
 	fn frame(&mut self) {
@@ -97,10 +132,37 @@ impl<'a> Gba<'a> {
 			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 		}
 
-		for vcount in 160..228 {
+		// We do the first iteration of vblank here in order
+		// to fire the interrupt once.
+		self.cpu.memory.set_reg(ioreg::VCOUNT, 160);
+		self.check_line_coincidence(160);
+		self.try_fire_vblank_int();
+		self.do_vblank_line();
+
+		for vcount in 161..228 {
 			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
 			self.check_line_coincidence(vcount);
 			self.do_vblank_line();
+		}
+	}
+
+	/// Attempts to fire an vblank interrupt
+	/// if it is enabled in DISPSTAT
+	/// the CPU handles checking the IME and IE registers.
+	fn try_fire_vblank_int(&mut self) {
+		let dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		if ((dispstat >> 3) & 1) != 0 {
+			self.cpu.hardware_interrupt(INT_VBLANK);
+		}
+	}
+
+	/// Attempts to fire an hblank interrupt
+	/// if it is enabled in DISPSTAT
+	/// the CPU handles checking the IME and IE registers.
+	fn try_fire_hblank_int(&mut self) {
+		let dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		if ((dispstat >> 4) & 1) != 0 {
+			self.cpu.hardware_interrupt(INT_HBLANK);
 		}
 	}
 
@@ -166,6 +228,8 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		dispstat |= 0x2;
 		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+
+		self.try_fire_hblank_int();
 
 		self.run_cpu_cycles(272);
 	}

@@ -6,6 +6,7 @@ pub struct IORegister32(pub usize);
 
 pub const POSTFLG: IORegister8 = IORegister8(0x0000300);
 pub const HALTCNT: IORegister8 = IORegister8(0x0000301);
+
 pub const DISPCNT: IORegister16 = IORegister16(0x0000000);
 pub const DISPSTAT: IORegister16 = IORegister16(0x0000004);
 pub const VCOUNT: IORegister16 = IORegister16(0x0000006);

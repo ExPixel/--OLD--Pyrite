@@ -265,6 +265,8 @@ macro_rules! gen_stm {
 			let rn = (instr >> 16) & 0xf;
 			let mut address = cpu.rget(rn);
 
+			// println!("rn: {}", rn);
+
 			if $index_inc {
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
@@ -2796,10 +2798,8 @@ gen_ldm_u!(arm_ldmib_uw, PRE, INC, true);
 pub fn arm_b(cpu: &mut ArmCpu, instr: u32) {
 	let pc = cpu.rget(15);
 	let mut offset = instr & 0xffffff;
-	if (offset & 0x800000) == 1 {
-		offset |= 0xff000000;
-	}
 	offset <<= 2;
+	offset = (((offset as i32) << 6) >> 6) as u32;
 	cpu.rset(15, pc + offset);
 }
 
@@ -2809,10 +2809,8 @@ pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
 	let pc = cpu.rget(15);
 	cpu.rset(14, (pc - 4) & 0xFFFFFFFC);
 	let mut offset = instr & 0xffffff;
-	if (offset & 0x800000) == 1 {
-		offset |= 0xff000000;
-	}
 	offset <<= 2;
+	offset = (((offset as i32) << 6) >> 6) as u32;
 	cpu.rset(15, pc + offset);
 }
 

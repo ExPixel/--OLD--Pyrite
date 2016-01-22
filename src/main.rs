@@ -23,13 +23,13 @@ macro_rules! println_err {
     )
 }
 
-pub fn load_bios(gba: &mut Gba) {
+pub fn load_bios(memory: &mut GbaMemory) {
 	let mut f = match File::open(BIOS_PATH) {
 		Ok(file) => file,
 		Err(error) => panic!("Error while opening file '{}': {}", BIOS_PATH, error)
 	};
 
-	let mut bios_buffer = &mut gba.cpu.memory.internal_data[0..0x40000]; // a slice exactly as large as the bios
+	let mut bios_buffer = &mut memory.internal_data[0..0x40000]; // a slice exactly as large as the bios
 	match f.read(bios_buffer) {
 		Ok(bytes) => println!("Read {} bytes into BIOS region.", bytes),
 		Err(error) => panic!("Error while reading from file '{}': {}", BIOS_PATH, error)
@@ -138,10 +138,11 @@ fn main() {
 		println!("Emulating ROM: {}", rom_file);
 		if args.flag_disasm {
 			let mut memory = load_memory(rom_file);
+			// load_bios(&mut memory);
 			disasm_gba_rom(&mut memory, args.flag_thumb);
 		} else {
 			let mut gba = Box::new(Gba::new());
-			load_bios(&mut gba);
+			load_bios(&mut gba.cpu.memory);
 			load_rom(&mut gba, rom_file);
 			run_gba(&mut gba);
 		}

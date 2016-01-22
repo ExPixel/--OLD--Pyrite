@@ -4,11 +4,14 @@ pub mod alu;
 pub mod clock;
 pub mod registers;
 
-use super::memory::GbaMemory;
+use super::memory::*;
 use self::registers::*;
 use self::arm::execute_arm;
 use self::thumb::execute_thumb;
 use self::clock::*;
+
+const SWI_VECTOR: u32 = 0x08;
+const HWI_VECTOR: u32 = 0x18;
 
 struct Pipeline<T : Copy> {
 	fetched: T,
@@ -256,16 +259,90 @@ impl ArmCpu {
 		}
 	}
 
-	/// Software interrupt in thumb mode.
-	#[allow(unused_variables)]
-	pub fn thumb_swi(&mut self, instr: u32) {
-		unimplemented!(); // #TODO
+	// #TODO: look at this later
+	// this is where I think the BIOS
+	// finally jumps to the location of the
+	// swi's function.
+	// 0x0000016c
+
+	// Perform Software Interrupt:
+	// Move the address of the next instruction into LR, move CPSR to SPSR, 
+	// load the SWI vector address (0x8) into the PC. Switch to ARM state and enter SVC mode.
+	pub fn thumb_swi(&mut self, _: u32) {
+		// #TODO add my own implementation of BIOS functions.
+		self.registers.set_mode(MODE_SVC);
+		self.registers.cpsr_to_spsr();
+		let next_pc = self.rget(15) - 2;
+		self.rset(REG_LR, next_pc);
+		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+		self.registers.clearf_t(); // Enters ARM mode.
 	}
 
-	/// Software interrupt in ARM mode.
-	#[allow(unused_variables)]
-	pub fn arm_swi(&mut self, instr: u32) {
-		unimplemented!();// #TODO
+	// The software interrupt instruction is used to enter Supervisor mode in a controlled manner. 
+	// The instruction causes the software interrupt trap to be taken, which effects the mode change. 
+	// The PC is then forced to a fixed value (0x08) and the CPSR is saved in SPSR_svc. 
+	// If the SWI vector address is suitably protected (by external memory management hardware) 
+	// from modification by the user, a fully protected operating system may be constructed.
+
+	// The PC is saved in R14_svc upon entering the software interrupt trap, 
+	// with the PC adjusted to point to the word after the SWI instruction. 
+	// MOVS PC,R14_svc will return to the calling program and restore the CPSR.
+	// 
+	// Note that the link mechanism is not re-entrant, 
+	// so if the supervisor code wishes to use software interrupts within itself it 
+	// must first save a copy of the return address and SPSR.
+	pub fn arm_swi(&mut self, _: u32) {
+		// #TODO add my own implementation of BIOS functions.
+		self.registers.set_mode(MODE_SVC);
+		self.registers.cpsr_to_spsr();
+		let next_pc = self.rget(15) - 4;
+		self.rset(REG_LR, next_pc);
+		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+	}
+
+
+	/// Taken From TONC:
+	/// There are three registers specifically for interrupts: REG_IE (0400:0200h), 
+	/// REG_IF (0400:0202h) and REG_IME (0400:0208h). REG_IME is the master interrupt control; 
+	/// unless this is set to ‘1’, interrupts will be ignored completely. 
+	/// To enable a specific interrupt you need to set the appropriate bit in REG_IE. 
+	/// When an interrupt occurs, the corresponding bit in REG_IF will be set.
+	pub fn hardware_interrupt(&mut self, mask: u16) {
+		let reg_ime = self.memory.get_reg(ioreg::IME);
+		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
+		let reg_ie = self.memory.get_reg(ioreg::IE);
+		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
+		let mut reg_if = self.memory.get_reg(ioreg::IF);
+		reg_if |= mask; // set the corresponding bit in IF.
+		self.memory.set_reg(ioreg::IF, reg_if);
+		self.hardware_interrupt_branch();
+	}
+
+	/// The branch part of the hardware interrupt with the state
+	/// and status changes.
+	///
+	/// - When an interrupt occurs, the CPU does the following:
+	/// 
+	/// 1. Switches state to IRQ mode, bank-swaps the current stack register and 
+	///    link register (thus preserving their old values), saves the CPSR in SPSR_irq, 
+	///    and sets bit 7 (interrupt disable) in the CPSR. 
+	/// 2. Saves the address of the next instruction in LR_irq compensating for Thumb/ARM 
+	///    depending on the mode you are in. 
+	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
+	///    (which you, the programmer, never see)
+	fn hardware_interrupt_branch(&mut self) {
+		self.registers.set_mode(MODE_IRQ);
+		self.registers.cpsr_to_spsr();
+		let next_pc = if self.registers.getf_t() {
+			self.rget(15) - 2
+		} else {
+			self.rget(15) - 4
+		};
+		self.rset(REG_LR, next_pc);
+		self.rset(REG_PC, HWI_VECTOR);
+
+		self.reg_dump_pretty();
+		panic!("picnic");
 	}
 
 	/// The CPU has hit an undefined instruction.
@@ -276,9 +353,11 @@ impl ArmCpu {
 	/// being executed.
 	pub fn get_exec_address(&self) -> u32 {
 		if self.registers.getf_t() {
-			self.registers.get(15) - (self.thumb_pipeline.count as u32) * 2
+			let c = if self.thumb_pipeline.count > 2 { 2 } else { self.thumb_pipeline.count as u32 };
+			self.registers.get(15) - (c * 2)
 		} else {
-			self.registers.get(15) - (self.arm_pipeline.count as u32) * 4
+			let c = if self.arm_pipeline.count > 2 { 2 } else { self.arm_pipeline.count as u32 };
+			self.registers.get(15) - (c * 4)
 		}
 	}
 
@@ -318,7 +397,18 @@ impl ArmCpu {
 		if self.registers.getf_i() { print!("i "); }
 		if self.registers.getf_f() { print!("f "); }
 		if self.registers.getf_t() { print!("t "); }
-		println!("]");
+		print!("] ");
+
+		match self.registers.get_mode() {
+			MODE_USR => println!("[USR]"),
+			MODE_SYS => println!("[SYS]"),
+			MODE_FIQ => println!("[FIQ]"),
+			MODE_IRQ => println!("[IRQ]"),
+			MODE_SVC => println!("[SVC]"),
+			MODE_ABT => println!("[ABT]"),
+			MODE_UND => println!("[UND]"),
+			_ => println!("[???]")
+		}
 
 
 		println!("spsr = 0x{:08x}", self.registers.get_spsr_safe());
@@ -328,19 +418,13 @@ impl ArmCpu {
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
-	// if address == 0x08000360 { // 08000210
-	// 	println!("-- BEFORE --");
-	// 	cpu.reg_dump_pretty();
+	// if address < 0x40000 {
+	// 	println!("% {}", cpu.disasm_exec());
 	// }
 }
 
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	// if address == 0x08000360 {
-	// 	println!("== AFTER ==");
-	// 	cpu.reg_dump_pretty();
-	// 	panic!(".");
-	// }
 }
 

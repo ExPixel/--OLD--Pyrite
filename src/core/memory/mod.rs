@@ -11,8 +11,6 @@ pub struct MemoryRegion {
 	local_addr: usize
 }
 
-const INTERNAL_MEM_SIZE: usize	= 0x64bff;
-
 // Internal Memory
 pub const MEM_BIOS:		MemoryRegion = MemoryRegion { start: 0x0, end: 0x3fff, size: 0x4000, local_addr: 0x0 };
 pub const MEM_WRAM_B:	MemoryRegion = MemoryRegion { start: 0x02000000, end: 0x0203ffff, size: 0x40000, local_addr: MEM_BIOS.local_addr + MEM_BIOS.size };
@@ -23,6 +21,8 @@ pub const MEM_IOREG:	MemoryRegion = MemoryRegion { start: 0x04000000, end: 0x040
 pub const MEM_PAL:		MemoryRegion = MemoryRegion { start: 0x05000000, end: 0x050003ff, size: 0x400, local_addr: MEM_IOREG.local_addr + MEM_IOREG.size };
 pub const MEM_VRAM:		MemoryRegion = MemoryRegion { start: 0x06000000, end: 0x06017fff, size: 0x18000, local_addr: MEM_PAL.local_addr + MEM_PAL.size };
 pub const MEM_OAM:		MemoryRegion = MemoryRegion { start: 0x07000000, end: 0x070003ff, size: 0x400, local_addr: MEM_VRAM.local_addr + MEM_VRAM.size };
+
+const INTERNAL_MEM_SIZE: usize	= MEM_OAM.local_addr + MEM_OAM.size;
 
 // External Memory
 pub const MEM_ROM0:		MemoryRegion = MemoryRegion { start: 0x08000000, end: 0x09ffffff, size: 0x2000000, local_addr: 0 };
@@ -53,6 +53,16 @@ impl GbaMemory {
 			internal_data: [0u8; INTERNAL_MEM_SIZE],
 			rom: vec![]
 		}
+	}
+
+	// #TODO handle rom.
+	pub fn get_region_mut(&mut self, region: MemoryRegion) -> &mut [u8] {
+		&mut self.internal_data[region.local_addr..(region.local_addr+region.size)]
+	}
+
+	// #TODO handle rom.
+	pub fn get_region(&self, region: MemoryRegion) -> &[u8] {
+		&self.internal_data[region.local_addr..(region.local_addr+region.size)]
 	}
 
 	/// Transforms a global GBA memory address
@@ -202,10 +212,15 @@ impl GbaMemory {
 			0x08000000 ... 0x0Dffffff => self.rom_write8(address, value),
 			_ => {
 				let local_addr = self.transform(address);
-				if local_addr == 412671 {
-					println!("addr: {:08x}", address);
+				match address {
+					// Handles the weirdness of writing to the IF register.
+					// When one of the bits is set, it's actually cleared.
+					// #FIXME take a look at this again at some point.
+					//        because I'm not sure if this is exactly what
+					//        is supposed to be happening.
+					0x4000202 | 0x4000203 => self.internal_data[local_addr] &= !value,
+					_ => self.internal_data[local_addr] = value
 				}
-				self.internal_data[local_addr] = value;
 			}	
 		}
 	}
@@ -263,5 +278,49 @@ impl ReadIOReg<IORegister32> for GbaMemory {
 	fn set_reg(&mut self, reg: IORegister32, value: u32) { self.direct_write32(reg.0 + MEM_IOREG.local_addr, value); }
 }
 
+pub trait GbaMemoryReadAccess {
+	fn direct_read8(&self, index: usize) -> u8;
 
+	fn direct_read16(&self, index: usize) -> u16 {
+		self.direct_read8(index) as u16 | 
+		((self.direct_read8(index + 1) as u16) << 8)
+	}
+
+	fn direct_read32(&self, index: usize) -> u32 {
+		self.direct_read8(index) as u32 | 
+		((self.direct_read8(index + 1) as u32) << 8) |
+		((self.direct_read8(index + 2) as u32) << 16) |
+		((self.direct_read8(index + 3) as u32) << 24)
+	}
+}
+
+
+
+pub trait GbaMemoryWriteAccess {
+	fn direct_write8(&mut self, index: usize, value: u8);
+
+	fn direct_write16(&mut self, index: usize, value: u16) {
+		self.direct_write8(index, (value & 0xff) as u8);
+		self.direct_write8(index + 1, ((value >> 8) & 0xff) as u8);
+	}
+
+	fn direct_write32(&mut self, index: usize, value: u32) {
+		self.direct_write8(index, (value & 0xff) as u8);
+		self.direct_write8(index + 1, ((value >> 8) & 0xff) as u8);
+		self.direct_write8(index + 2, ((value >> 16) & 0xff) as u8);
+		self.direct_write8(index + 3, ((value >> 24) & 0xff) as u8);	
+	}
+}
+
+impl<'a> GbaMemoryReadAccess for &'a [u8] {
+	fn direct_read8(&self, index: usize) -> u8 { self[index] }
+}
+
+impl<'a> GbaMemoryReadAccess for &'a mut [u8] {
+	fn direct_read8(&self, index: usize) -> u8 { self[index] }
+}
+
+impl<'a> GbaMemoryWriteAccess for &'a mut [u8] {
+	fn direct_write8(&mut self, index: usize, value: u8) { self[index] = value; }
+}
 

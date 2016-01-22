@@ -84,6 +84,7 @@ pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {
 	} else {
 		cpu.rget(src_reg)
 	};
+	// println!("storing r{}=0x{:08x} to [0x{:08x}]", src_reg, data, address);
 	cpu.mwrite32(address, data);
 }
 

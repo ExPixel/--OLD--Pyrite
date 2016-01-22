@@ -1,5 +1,4 @@
-use super::*;
 use super::super::memory::GbaMemory;
 
-pub fn render_mode_2(line: &mut GbaLcdLine, memory: &mut GbaMemory) {
+pub fn render_mode_2(dispcnt: u16, memory: &mut GbaMemory, line: u16, line_buffer: &mut [u8]) {
 }
