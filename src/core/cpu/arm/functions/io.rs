@@ -76,6 +76,7 @@ pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 pub fn arm_fn_ldm_single(cpu: &mut ArmCpu, address: u32, dest_reg: u32) {
 	let data = cpu.mread32(address);
 	cpu.rset(dest_reg, data);
+	// println!("loading [0x{:08x}]={:08x} into r{}", address, data, dest_reg);
 }
 
 pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {

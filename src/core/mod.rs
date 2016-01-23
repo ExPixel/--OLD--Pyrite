@@ -11,6 +11,7 @@ use self::cpu::registers;
 use self::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::lcd::GbaLcd;
+use self::joypad::GbaJoypad;
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -57,7 +58,8 @@ pub const INT_GAMEPAK: u16 = 0x2000;
 pub struct Gba {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
-	pub device: GbaDevice
+	pub device: GbaDevice,
+	pub joypad: GbaJoypad
 }
 
 impl Gba {
@@ -65,7 +67,8 @@ impl Gba {
 		Gba {
 			cpu: ArmCpu::new(),
 			lcd: GbaLcd::new(),
-			device: GbaDevice::new()
+			device: GbaDevice::new(),
+			joypad: GbaJoypad::new()
 		}
 	}
 
@@ -82,10 +85,13 @@ impl Gba {
 		self.cpu.registers.set_with_mode(registers::MODE_USR, registers::REG_SP, 0x03007F00); // Also System
 		self.cpu.registers.set_with_mode(registers::MODE_IRQ, registers::REG_SP, 0x03007FA0);
 		self.cpu.registers.set_with_mode(registers::MODE_SVC, registers::REG_SP, 0x03007FE0);
+
+		self.cpu.memory.set_reg(ioreg::KEYINPUT, 0xffff); // make sure all keys are marked as released.
 	}
 
 	pub fn run(&mut self) {
 		self.init();
+		self.joypad.tick(&mut self.cpu);
 		// self.device.render();
 		'running: loop {
 			self.frame();
@@ -215,6 +221,8 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	}
 
 	fn do_hblank(&mut self) {
+		self.joypad.tick(&mut self.cpu); // #TODO Not sure if we should update the joypad this often.
+
 		// Sets the HBlank flag:
 		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		dispstat |= 0x2;
@@ -232,6 +240,10 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
 			self.cpu.tick();
+
+			if self.cpu.memory.read16(0x4000122) == 0xdead {
+				println!("BEEF");
+			}
 		}
 	}
 
@@ -254,6 +266,15 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		for event in self.device.display.poll_events() {
 			match event {
 				glium::glutin::Event::Closed => return true,
+				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::D)) => {
+					self.cpu.reg_dump_pretty();
+				},
+				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(keycode)) => {
+					self.joypad.key_pressed(keycode);
+				},
+				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Released, _, Some(keycode)) => {
+					self.joypad.key_released(keycode);
+				},
 				_ => {}
 			}
 		}

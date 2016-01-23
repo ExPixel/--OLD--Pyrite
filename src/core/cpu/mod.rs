@@ -421,10 +421,40 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address < 0x40000 {
 	// 	println!("% {}", cpu.disasm_exec());
 	// }
+	// if address == 0x8000500 {
+	// 	println!("BEFORE");
+	// 	cpu.reg_dump_pretty();
+	// 	println!("============");
+	// }
 }
 
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
+	// if address == 0x8000500 {
+	// 	println!("============");
+	// 	println!("AFTER");
+	// 	cpu.reg_dump_pretty();
+	// 	panic!("picnic");
+	// }
 }
+
+// r0 = 0xea048f43;
+// r1 = 0x00008008;
+// r2 = 0x00000080;
+// r3 = 0x00000003;
+// r4 = 0xfffffff3;
+// r5 = 0x00000004;
+// r6 = 0x00000004;
+// r7 = 0x0624c850;
+// r8 = 0x00000000;
+// r9 = 0x0624c498;
+// r10 = 0x0800220a;
+// r11 = 0x00000000;
+// r12 = 0x00000000;
+// sp = 0x03007cd8;
+// lr = 0x08000998;
+// pc = 0x0800055c
+// cpsr = 0x0000001f [ ] [SYS]
+// spsr = 0x00000000
 

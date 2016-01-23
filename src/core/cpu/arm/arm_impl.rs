@@ -270,9 +270,9 @@ macro_rules! gen_stm {
 			if $index_inc {
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
-						if $index_pre { address -= 4; } // pre index
+						if $index_pre { address += 4; } // pre index
 						STM(cpu, address, r);
-						if !$index_pre { address -= 4; } // post index
+						if !$index_pre { address += 4; } // post index
 						if $writeback { cpu.rset(rn, address) } // writeback at the end of the second cycle.
 					}
 				}
@@ -325,9 +325,9 @@ macro_rules! gen_ldm {
 			if $index_inc {
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
-						if $index_pre { address -= 4; } // pre index
+						if $index_pre { address += 4; } // pre index
 						LDM(cpu, address, r);
-						if !$index_pre { address -= 4; } // post index
+						if !$index_pre { address += 4; } // post index
 						if $writeback { cpu.rset(rn, address) } // writeback at the end of the second cycle.
 					}
 				}
