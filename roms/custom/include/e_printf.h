@@ -1,6 +1,7 @@
 #ifndef E_PRINTF_H
 #define E_PRINTF_H
 
+#include "e_debug.h"
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -18,17 +19,34 @@ void e_printc(char c) {
 	SIODATA32_H = 0xbeef; // Flush the written data.
 }
 
-void e_printf(char *format, ...) {
-	va_list va;
-	va_start(va, format);
-	char buffer[256];
-	sprintf(buffer, format, va);
-	int idx = 0;
-	char c = '\0';
-	while(idx < 256 && (c = buffer[idx]) != '\0') {
-		e_printc(c);
+void e_print(char source[]) {
+	u32 idx = 0;
+	while(source[idx]) {
+		e_printc(source[idx]);
 		idx++;
 	}
 }
+
+void e_println(char source[]) {
+	u32 idx = 0;
+	while(source[idx]) {
+		e_printc(source[idx]);
+		idx++;
+	}
+	e_printc('\n');
+}
+
+// void e_printf(char *format, ...) {
+// 	va_list va;
+// 	va_start(va, format);
+// 	char buffer[256];
+// 	sprintf(buffer, format, va);
+// 	int idx = 0;
+// 	char c = '\0';
+// 	while(idx < 256 && (c = buffer[idx]) != '\0') {
+// 		e_printc(c);
+// 		idx++;
+// 	}
+// }
 
 #endif

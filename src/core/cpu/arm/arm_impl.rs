@@ -219,9 +219,9 @@ macro_rules! gen_sdt {
 			if $writeback || $user || !($index_pre) {
 				cpu.rset(rn,
 					if !($index_pre) {
-						if $index_inc { _rn + offset }
-						else { _rn - offset }
-					} else { _rn }
+						if $index_inc { address + offset }
+						else { address - offset }
+					} else { address }
 				);
 			}
 

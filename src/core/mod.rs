@@ -59,7 +59,8 @@ pub struct Gba {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
 	pub device: GbaDevice,
-	pub joypad: GbaJoypad
+	pub joypad: GbaJoypad,
+	pub debug: GbaDebug
 }
 
 impl Gba {
@@ -68,7 +69,8 @@ impl Gba {
 			cpu: ArmCpu::new(),
 			lcd: GbaLcd::new(),
 			device: GbaDevice::new(),
-			joypad: GbaJoypad::new()
+			joypad: GbaJoypad::new(),
+			debug: GbaDebug::new()
 		}
 	}
 
@@ -240,10 +242,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
 			self.cpu.tick();
-
-			if self.cpu.memory.read16(0x4000122) == 0xdead {
-				println!("BEEF");
-			}
+			self.debug.on_tick(&mut self.cpu);
 		}
 	}
 
@@ -281,3 +280,32 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		return false;
 	}
 }
+
+pub struct GbaDebug {
+	waiting_for_io: bool
+}
+
+impl GbaDebug {
+	pub fn new() -> GbaDebug {
+		GbaDebug { waiting_for_io: false }
+	}
+
+	pub fn on_tick(&mut self, cpu: &mut ArmCpu) {
+		if self.waiting_for_io {
+			let siodata32_h = cpu.memory.read16(0x4000122);
+			if siodata32_h == 0xbeef {
+				let siodata32_l = cpu.memory.read16(0x4000120);
+				print!("{}", (siodata32_l as u8) as char);
+				self.waiting_for_io = false;
+			}
+		} else {
+			let siodata32_h = cpu.memory.read16(0x4000122);
+			if siodata32_h == 0xdead {
+				self.waiting_for_io = true;
+			}
+		}
+	}
+}
+
+
+

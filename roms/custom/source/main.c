@@ -5,7 +5,7 @@
 #include <gba_input.h>
 #include <stdio.h>
 #include "e_printf.h"
-// #include "e_debug.h"
+#include "e_debug.h"
 
 #define DISPCNT *((volatile u16*)(0x04000000))
 #define VCOUNT *((volatile u16*)(0x04000006))
@@ -17,10 +17,8 @@ void wait_for_line(u16 line);
 u32 draw_line(u32 line, u32 data);
 
 int main(void) {
-	SIODATA32_L = 0xdead;
-	SIODATA32_L = 0xdead;
-	// e_printf("Hello :)");
-	DISPCNT = 0x4;
+	e_println("\"Hello from the other side.\" --Plies");
+	DISPCNT = 0x3;
 	DISPCNT |= (1 << 10);
 	u16 line = 0;
 	u32 data = 0;

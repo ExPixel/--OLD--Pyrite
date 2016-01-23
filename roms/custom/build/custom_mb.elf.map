@@ -2,110 +2,8 @@ Archive member included to satisfy reference by file (symbol)
 
 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
                               /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/gba_crt0.o (__libc_init_array)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
-                              main.o (sprintf)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o) (_svfprintf_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (_wcrtomb_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (_wcsrtombs_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o) (__wctomb)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (_dtoa_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (_free_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__locale_charset)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (_malloc_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (__utf8_mbtowc)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (memchr)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o) (memcpy)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (memset)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o) (__malloc_lock)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o) (_Balloc)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__fpclassifyd)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (frexp)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strcasecmp)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strcat)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strchr)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcmp.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strcmp)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strcpy)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strlcpy)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (strlen)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strncasecmp)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (strncmp)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (strncpy)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (_strtol_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__ssprint_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o) (_wcsnrtombs_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o) (_calloc_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (__set_ctype)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o) (_getenv_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o) (memmove)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o) (_realloc_r)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o) (environ)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o) (__env_lock)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o) (_sbrk_r)
 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(malloc_vars.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o) (fake_heap_start)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(syscall_support.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o) (__libc_lock_acquire_recursive)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o) (__getreent)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivsi3.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o) (__aeabi_uidiv)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_dvmd_tls.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivsi3.o) (__aeabi_idiv0)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_addsubdf3.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__aeabi_dsub)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_muldivdf3.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__aeabi_dmul)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_cmpdf2.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__aeabi_dcmpeq)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_fixdfsi.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__aeabi_d2iz)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_aeabi_uldivmod.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o) (__aeabi_uldivmod)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_aeabi_uldivmod.o) (__udivmoddi4)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzdi2.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o) (__clzdi2)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzsi2.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzdi2.o) (__clzsi2)
-/Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
-                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o) (_impure_ptr)
+                              /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/gba_crt0.o (fake_heap_end)
 
 Discarded input sections
 
@@ -116,548 +14,14 @@ Discarded input sections
  .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crti.o
  .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crti.o
  .data          0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
- .text          0x00000000       0xf8 main.o
+ .text          0x00000000      0x11c main.o
  .data          0x00000000        0x0 main.o
  .bss           0x00000000        0x0 main.o
  .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
  .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
  .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .text._sprintf_r
-                0x00000000       0x64 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .text.sprintf  0x00000000       0x68 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-sprintf.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .text.get_arg  0x00000000     0x1630 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .text._svfprintf_r
-                0x00000000     0x46d8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .rodata.blanks.7120
-                0x00000000       0x10 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .rodata.str1.4
-                0x00000000       0x44 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .rodata.zeroes.7121
-                0x00000000       0x10 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfprintf.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .text._wcrtomb_r
-                0x00000000       0x98 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .text.wcrtomb  0x00000000       0xa0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcrtomb.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .text._wcsrtombs_r
-                0x00000000       0x24 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .text.wcsrtombs
-                0x00000000       0x3c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsrtombs.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text.__utf8_wctomb
-                0x00000000      0x114 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text._wctomb_r
-                0x00000000       0x50 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text.__ascii_wctomb
-                0x00000000       0x28 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text.__sjis_wctomb
-                0x00000000       0x8c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text.__eucjp_wctomb
-                0x00000000       0xc8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text.__jis_wctomb
-                0x00000000       0xe0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .data.__wctomb
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wctomb_r.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .text.quorem   0x00000000      0x1d8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .text._dtoa_r  0x00000000     0x16e8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .rodata.str1.4
-                0x00000000       0x14 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-dtoa.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .text._malloc_trim_r
-                0x00000000      0x100 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .text._free_r  0x00000000      0x2ec /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-freer.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.__get_locale_env
-                0x00000000       0x94 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.loadlocale
-                0x00000000      0x8a4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.currentlocale
-                0x00000000       0x90 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text._setlocale_r
-                0x00000000      0x308 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.__locale_charset
-                0x00000000        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.__locale_mb_cur_max
-                0x00000000       0x10 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.__locale_msgcharset
-                0x00000000        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.__locale_cjk_lang
-                0x00000000       0x10 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text._localeconv_r
-                0x00000000        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.setlocale
-                0x00000000       0x20 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text.localeconv
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data.lc_message_charset
-                0x00000000       0x20 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss._PathLocale
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss.__nlocale_changed
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss.__mlocale_changed
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss.lc_ctype_cjk_lang
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data.lconv    0x00000000       0x38 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data.current_categories
-                0x00000000       0xe0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data.lc_ctype_charset
-                0x00000000       0x20 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .rodata.str1.4
-                0x00000000      0x130 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss.new_categories
-                0x00000000       0xe0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data.__default_locale
-                0x00000000       0x20 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .rodata.categories
-                0x00000000       0x1c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .data.__mb_cur_max
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss.current_locale_string
-                0x00000000       0xe8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .bss.saved_categories
-                0x00000000       0xe0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-locale.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .text._malloc_r
-                0x00000000      0x7a8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .data.__malloc_av_
-                0x00000000      0x408 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .data.__malloc_trim_threshold
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .bss.__malloc_max_total_mem
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .bss.__malloc_max_sbrked_mem
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .bss.__malloc_top_pad
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .bss.__malloc_current_mallinfo
-                0x00000000       0x28 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .data.__malloc_sbrk_base
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mallocr.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text.__utf8_mbtowc
-                0x00000000      0x304 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text._mbtowc_r
-                0x00000000       0x54 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text.__ascii_mbtowc
-                0x00000000       0x4c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text.__sjis_mbtowc
-                0x00000000       0xdc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text.__eucjp_mbtowc
-                0x00000000      0x150 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text.__jis_mbtowc
-                0x00000000      0x1b8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .rodata.JIS_state_table
-                0x00000000       0x48 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .rodata.JIS_action_table
-                0x00000000       0x48 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .data.__mbtowc
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mbtowc_r.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
- .text.memchr   0x00000000      0x10c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memchr.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
- .text.memcpy   0x00000000       0xf0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memcpy.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
- .text.memset   0x00000000       0xf4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memset.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .text.__malloc_lock
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .text.__malloc_unlock
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .data.__malloc_lock_object
-                0x00000000        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mlock.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text._Balloc  0x00000000       0x90 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text._Bfree   0x00000000       0x1c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__multadd
-                0x00000000       0xdc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__s2b    0x00000000       0xe8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__hi0bits
-                0x00000000       0x5c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__lo0bits
-                0x00000000       0x94 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__i2b    0x00000000       0x24 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__multiply
-                0x00000000      0x1f0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__pow5mult
-                0x00000000      0x104 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__lshift
-                0x00000000       0xf4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__mcmp   0x00000000       0x64 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__mdiff  0x00000000      0x1b0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__ulp    0x00000000       0x68 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__b2d    0x00000000       0xf8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__d2b    0x00000000      0x10c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__ratio  0x00000000       0x98 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text._mprec_log10
-                0x00000000       0x54 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__copybits
-                0x00000000       0x70 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text.__any_on
-                0x00000000       0x80 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .rodata.p05.5410
-                0x00000000        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .rodata.__mprec_bigtens
-                0x00000000       0x28 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .rodata.__mprec_tinytens
-                0x00000000       0x28 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .rodata.__mprec_tens
-                0x00000000       0xc8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-mprec.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
- .text.__fpclassifyd
-                0x00000000       0x6c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_fpclassify.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
- .text.frexp    0x00000000       0xa8 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-s_frexp.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
- .text.strcasecmp
-                0x00000000       0x74 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcasecmp.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
- .text.strcat   0x00000000       0x84 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcat.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
- .text.strchr   0x00000000      0x160 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strchr.o)
- .text          0x00000000      0x224 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcmp.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcmp.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcmp.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
- .text.strcpy   0x00000000       0xf0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcpy.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
- .text.strlcpy  0x00000000       0x48 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlcpy.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
- .text.strlen   0x00000000       0x60 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strlen.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
- .text.strncasecmp
-                0x00000000       0x94 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncasecmp.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
- .text.strncmp  0x00000000      0x124 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncmp.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
- .text.strncpy  0x00000000       0xe4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strncpy.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .text._strtol_r
-                0x00000000      0x1d4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .text.strtol   0x00000000       0x28 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strtol.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .text.get_arg  0x00000000     0x1630 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .text.__ssprint_r
-                0x00000000      0x1b0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .text._svfiprintf_r
-                0x00000000     0x3438 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .rodata.__state_table
-                0x00000000       0x6c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .rodata.zeroes.7100
-                0x00000000       0x10 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .rodata.__chclass
-                0x00000000      0x100 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .rodata.str1.4
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .rodata.__action_table
-                0x00000000       0x6c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .rodata.blanks.7099
-                0x00000000       0x10 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-svfiprintf.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .text._wcsnrtombs_r
-                0x00000000      0x1a4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .text.wcsnrtombs
-                0x00000000       0x44 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-wcsnrtombs.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
- .text._calloc_r
-                0x00000000       0x98 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-callocr.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .text.__set_ctype
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .data.__ctype_ptr__
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .rodata._ctype_
-                0x00000000      0x104 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-ctype_.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .text._findenv_r
-                0x00000000       0xd0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .text._getenv_r
-                0x00000000       0x1c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-getenv_r.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
- .text.memmove  0x00000000      0x12c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-memmove.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
- .text._realloc_r
-                0x00000000      0x580 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-reallocr.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .data.environ  0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .bss.initial_env
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-environ.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .text.__env_lock
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .text.__env_unlock
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .data.__env_lock_object
-                0x00000000        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-envlock.o)
- .text          0x00000000       0x70 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o)
- .bss           0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(sbrk.o)
  .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(malloc_vars.o)
  .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(malloc_vars.o)
- .text          0x00000000      0x100 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(syscall_support.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(syscall_support.o)
- .bss           0x00000000       0x38 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(syscall_support.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(syscall_support.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(syscall_support.o)
- .text          0x00000000       0x24 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(getreent.o)
- .text          0x00000000      0x114 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivsi3.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivsi3.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivsi3.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivsi3.o)
- .text          0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_dvmd_tls.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_dvmd_tls.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_dvmd_tls.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_dvmd_tls.o)
- .text          0x00000000      0x41c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_addsubdf3.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_addsubdf3.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_addsubdf3.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_addsubdf3.o)
- .text          0x00000000      0x49c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_muldivdf3.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_muldivdf3.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_muldivdf3.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_muldivdf3.o)
- .text          0x00000000      0x144 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_cmpdf2.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_cmpdf2.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_cmpdf2.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_cmpdf2.o)
- .text          0x00000000       0x5c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_fixdfsi.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_fixdfsi.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_fixdfsi.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_arm_fixdfsi.o)
- .text          0x00000000       0x3c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_aeabi_uldivmod.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_aeabi_uldivmod.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_aeabi_uldivmod.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_aeabi_uldivmod.o)
- .text          0x00000000      0x12c /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_udivmoddi4.o)
- .text          0x00000000       0x28 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzdi2.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzdi2.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzdi2.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzdi2.o)
- .text          0x00000000       0x48 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzsi2.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzsi2.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzsi2.o)
- .ARM.attributes
-                0x00000000       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/libgcc.a(_clzsi2.o)
- .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .data.impure_data
-                0x00000000      0x440 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .data._impure_ptr
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .rodata.str1.4
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .rodata._global_impure_ptr
-                0x00000000        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .comment       0x00000000       0x23 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
- .ARM.attributes
-                0x00000000       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-impure.o)
  .text          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
  .data          0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
  .bss           0x00000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
@@ -700,116 +64,116 @@ Linker script and memory map
  *(.plt)
                 0x02000228                . = ALIGN (0x4)
 
-.text           0x02000228      0x204
+.text           0x02000228      0x244
  *(EXCLUDE_FILE(*.iwram*) .text)
  .text          0x02000228      0x108 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
  *(.text .stub .text.* .gnu.linkonce.t.*)
- .text.startup  0x02000330       0x7c main.o
+ .text.startup  0x02000330       0xbc main.o
                 0x02000330                main
  .text.__libc_init_array
-                0x020003ac       0x80 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
-                0x020003ac                __libc_init_array
+                0x020003ec       0x80 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
+                0x020003ec                __libc_init_array
  *(.text.*personality*)
  *(.gnu.warning)
  *(.glue_7t)
- .glue_7t       0x0200042c        0x0 linker stubs
+ .glue_7t       0x0200046c        0x0 linker stubs
  *(.glue_7)
- .glue_7        0x0200042c        0x0 linker stubs
+ .glue_7        0x0200046c        0x0 linker stubs
  *(.vfp11_veneer)
- .vfp11_veneer  0x0200042c        0x0 linker stubs
-                0x0200042c                . = ALIGN (0x4)
-                0x0200042c                __text_end = .
+ .vfp11_veneer  0x0200046c        0x0 linker stubs
+                0x0200046c                . = ALIGN (0x4)
+                0x0200046c                __text_end = .
 
-.v4_bx          0x0200042c        0x0
- .v4_bx         0x0200042c        0x0 linker stubs
+.v4_bx          0x0200046c        0x0
+ .v4_bx         0x0200046c        0x0 linker stubs
 
-.iplt           0x0200042c        0x0
- .iplt          0x0200042c        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/gba_crt0.o
+.iplt           0x0200046c        0x0
+ .iplt          0x0200046c        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/gba_crt0.o
 
-.fini           0x0200042c       0x18
+.fini           0x0200046c       0x18
  *(.fini)
- .fini          0x0200042c        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crti.o
-                0x0200042c                _fini
- .fini          0x02000438        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtn.o
-                0x02000444                . = ALIGN (0x4)
+ .fini          0x0200046c        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crti.o
+                0x0200046c                _fini
+ .fini          0x02000478        0xc /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtn.o
+                0x02000484                . = ALIGN (0x4)
 
-.rodata         0x02000444        0x0
+.rodata         0x02000484       0x28
  *(.rodata)
  *all.rodata*(*)
  *(.roda)
  *(.rodata.*)
+ .rodata.str1.4
+                0x02000484       0x28 main.o
  *(.gnu.linkonce.r*)
-                0x02000444                . = ALIGN (0x4)
+                0x020004ac                . = ALIGN (0x4)
 
 .ARM.extab
  *(.ARM.extab* .gnu.linkonce.armextab.*)
-                0x02000444                __exidx_start = .
+                0x020004ac                __exidx_start = .
 
 .ARM.exidx
  *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-                0x02000444                __exidx_end = .
-                0x02000444                . = ALIGN (0x4)
-                0x02000444                PROVIDE (__preinit_array_start, .)
+                0x020004ac                __exidx_end = .
+                0x020004ac                . = ALIGN (0x4)
+                0x020004ac                PROVIDE (__preinit_array_start, .)
 
 .preinit_array
  *(.preinit_array)
-                0x02000444                PROVIDE (__preinit_array_end, .)
-                0x02000444                PROVIDE (__init_array_start, .)
+                0x020004ac                PROVIDE (__preinit_array_end, .)
+                0x020004ac                PROVIDE (__init_array_start, .)
 
-.init_array     0x02000444        0x4
+.init_array     0x020004ac        0x4
  *(.init_array)
- .init_array    0x02000444        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
-                0x02000448                PROVIDE (__init_array_end, .)
+ .init_array    0x020004ac        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
+                0x020004b0                PROVIDE (__init_array_end, .)
                 [!provide]                PROVIDE (__fini_array_start, .)
 
-.fini_array     0x02000448        0x4
+.fini_array     0x020004b0        0x4
  *(.fini_array)
- .fini_array    0x02000448        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
+ .fini_array    0x020004b0        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
                 [!provide]                PROVIDE (__fini_array_end, .)
 
-.ctors          0x0200044c        0x0
+.ctors          0x020004b4        0x0
  *crtbegin.o(.ctors)
  *(EXCLUDE_FILE(*crtend.o) .ctors)
  *(SORT(.ctors.*))
  *(.ctors)
-                0x0200044c                . = ALIGN (0x4)
+                0x020004b4                . = ALIGN (0x4)
 
-.dtors          0x0200044c        0x0
+.dtors          0x020004b4        0x0
  *crtbegin.o(.dtors)
  *(EXCLUDE_FILE(*crtend.o) .dtors)
  *(SORT(.dtors.*))
  *(.dtors)
-                0x0200044c                . = ALIGN (0x4)
+                0x020004b4                . = ALIGN (0x4)
 
-.jcr            0x0200044c        0x4
+.jcr            0x020004b4        0x4
  *(.jcr)
- .jcr           0x0200044c        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
- .jcr           0x0200044c        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
+ .jcr           0x020004b4        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
+ .jcr           0x020004b4        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
 
-.eh_frame       0x02000450        0x4
+.eh_frame       0x020004b8        0x4
  *(.eh_frame)
- .eh_frame      0x02000450        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
- .eh_frame      0x02000450        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcmp.o)
-                                 0x44 (size before relaxing)
- .eh_frame      0x02000450        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
-                0x02000454                . = ALIGN (0x4)
+ .eh_frame      0x020004b8        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtbegin.o
+ .eh_frame      0x020004b8        0x4 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
+                0x020004bc                . = ALIGN (0x4)
 
-.rel.dyn        0x02000454        0x0
- .rel.iplt      0x02000454        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/gba_crt0.o
+.rel.dyn        0x020004bc        0x0
+ .rel.iplt      0x020004bc        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/gba_crt0.o
 
 .gcc_except_table
-                0x02000454        0x0
+                0x020004bc        0x0
  *(.gcc_except_table)
-                0x02000454                . = ALIGN (0x4)
-                0x02000454                __iwram_lma = .
+                0x020004bc                . = ALIGN (0x4)
+                0x020004bc                __iwram_lma = .
 
-.iwram          0x03000000        0x0 load address 0x02000454
+.iwram          0x03000000        0x0 load address 0x020004bc
                 0x03000000                __iwram_start__ = ABSOLUTE (.)
  *(.iwram)
  *iwram.*(.text)
                 0x03000000                . = ALIGN (0x4)
                 0x03000000                __iwram_end__ = ABSOLUTE (.)
-                0x02000454                __data_lma = (__iwram_lma + SIZEOF (.iwram))
+                0x020004bc                __data_lma = (__iwram_lma + SIZEOF (.iwram))
 
 .bss            0x03000000       0x24
                 0x03000000                __bss_start__ = ABSOLUTE (.)
@@ -824,14 +188,14 @@ Linker script and memory map
                 0x03000024                . = ALIGN (0x4)
                 0x03000024                __bss_end__ = ABSOLUTE (.)
 
-.data           0x03000024        0x0 load address 0x02000454
+.data           0x03000024        0x0 load address 0x020004bc
                 0x03000024                __data_start__ = ABSOLUTE (.)
  *(.data)
  *(.data.*)
  *(.gnu.linkonce.d*)
                 0x03000024                . = ALIGN (0x4)
                 0x03000024                __data_end__ = ABSOLUTE (.)
-                0x02000454                __iwram_overlay_lma = (__data_lma + SIZEOF (.data))
+                0x020004bc                __iwram_overlay_lma = (__data_lma + SIZEOF (.data))
                 [!provide]                PROVIDE (edata, .)
                 0x03000024                __iwram_overlay_start = .
 
@@ -845,11 +209,11 @@ Linker script and memory map
  .tm_clone_table
                 0x03000000        0x0 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
 
-.iwram0         0x03000024        0x0 load address 0x02000454
+.iwram0         0x03000024        0x0 load address 0x020004bc
  *(.iwram0)
                 0x03000024                . = ALIGN (0x4)
-                0x02000454                PROVIDE (__load_start_iwram0, LOADADDR (.iwram0))
-                0x02000454                PROVIDE (__load_stop_iwram0, (LOADADDR (.iwram0) + SIZEOF (.iwram0)))
+                0x020004bc                PROVIDE (__load_start_iwram0, LOADADDR (.iwram0))
+                0x020004bc                PROVIDE (__load_stop_iwram0, (LOADADDR (.iwram0) + SIZEOF (.iwram0)))
 
 .iwram1         0x03000024        0x0
  *(.iwram1)
@@ -904,88 +268,88 @@ Linker script and memory map
                 0x03000024                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_iwram9, LOADADDR (.iwram9))
                 [!provide]                PROVIDE (__load_stop_iwram9, (LOADADDR (.iwram9) + SIZEOF (.iwram9)))
-                0x02000454                __ewram_lma = ((((((((((LOADADDR (.iwram0) + SIZEOF (.iwram0)) + SIZEOF (.iwram1)) + SIZEOF (.iwram2)) + SIZEOF (.iwram3)) + SIZEOF (.iwram4)) + SIZEOF (.iwram5)) + SIZEOF (.iwram6)) + SIZEOF (.iwram7)) + SIZEOF (.iwram8)) + SIZEOF (.iwram9))
-                0x02000454                __iwram_overlay_end = __ewram_lma
-                0x02000454                __ewram_start = __ewram_lma
+                0x020004bc                __ewram_lma = ((((((((((LOADADDR (.iwram0) + SIZEOF (.iwram0)) + SIZEOF (.iwram1)) + SIZEOF (.iwram2)) + SIZEOF (.iwram3)) + SIZEOF (.iwram4)) + SIZEOF (.iwram5)) + SIZEOF (.iwram6)) + SIZEOF (.iwram7)) + SIZEOF (.iwram8)) + SIZEOF (.iwram9))
+                0x020004bc                __iwram_overlay_end = __ewram_lma
+                0x020004bc                __ewram_start = __ewram_lma
 
-.ewram          0x02000454        0x0
+.ewram          0x020004bc        0x0
  *(.ewram)
-                0x02000454                . = ALIGN (0x4)
-                0x02000454                __ewram_end = ABSOLUTE (.)
-                0x02000454                __ewram_overlay_lma = (__ewram_lma + SIZEOF (.ewram))
+                0x020004bc                . = ALIGN (0x4)
+                0x020004bc                __ewram_end = ABSOLUTE (.)
+                0x020004bc                __ewram_overlay_lma = (__ewram_lma + SIZEOF (.ewram))
 
-.sbss           0x02000454        0x0
-                0x02000454                __sbss_start__ = ABSOLUTE (.)
+.sbss           0x020004bc        0x0
+                0x020004bc                __sbss_start__ = ABSOLUTE (.)
  *(.sbss)
-                0x02000454                . = ALIGN (0x4)
-                0x02000454                __sbss_end__ = ABSOLUTE (.)
-                0x02000454                __end__ = ABSOLUTE (.)
-                0x02000454                __eheap_start = ABSOLUTE (.)
+                0x020004bc                . = ALIGN (0x4)
+                0x020004bc                __sbss_end__ = ABSOLUTE (.)
+                0x020004bc                __end__ = ABSOLUTE (.)
+                0x020004bc                __eheap_start = ABSOLUTE (.)
 
-.ewram0         0x02000454        0x0
+.ewram0         0x020004bc        0x0
  *(.ewram0)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram0, LOADADDR (.ewram0))
                 [!provide]                PROVIDE (__load_stop_ewram0, (LOADADDR (.ewram0) + SIZEOF (.ewram0)))
 
-.ewram1         0x02000454        0x0
+.ewram1         0x020004bc        0x0
  *(.ewram1)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram1, LOADADDR (.ewram1))
                 [!provide]                PROVIDE (__load_stop_ewram1, (LOADADDR (.ewram1) + SIZEOF (.ewram1)))
 
-.ewram2         0x02000454        0x0
+.ewram2         0x020004bc        0x0
  *(.ewram2)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram2, LOADADDR (.ewram2))
                 [!provide]                PROVIDE (__load_stop_ewram2, (LOADADDR (.ewram2) + SIZEOF (.ewram2)))
 
-.ewram3         0x02000454        0x0
+.ewram3         0x020004bc        0x0
  *(.ewram3)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram3, LOADADDR (.ewram3))
                 [!provide]                PROVIDE (__load_stop_ewram3, (LOADADDR (.ewram3) + SIZEOF (.ewram3)))
 
-.ewram4         0x02000454        0x0
+.ewram4         0x020004bc        0x0
  *(.ewram4)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram4, LOADADDR (.ewram4))
                 [!provide]                PROVIDE (__load_stop_ewram4, (LOADADDR (.ewram4) + SIZEOF (.ewram4)))
 
-.ewram5         0x02000454        0x0
+.ewram5         0x020004bc        0x0
  *(.ewram5)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram5, LOADADDR (.ewram5))
                 [!provide]                PROVIDE (__load_stop_ewram5, (LOADADDR (.ewram5) + SIZEOF (.ewram5)))
 
-.ewram6         0x02000454        0x0
+.ewram6         0x020004bc        0x0
  *(.ewram6)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram6, LOADADDR (.ewram6))
                 [!provide]                PROVIDE (__load_stop_ewram6, (LOADADDR (.ewram6) + SIZEOF (.ewram6)))
 
-.ewram7         0x02000454        0x0
+.ewram7         0x020004bc        0x0
  *(.ewram7)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram7, LOADADDR (.ewram7))
                 [!provide]                PROVIDE (__load_stop_ewram7, (LOADADDR (.ewram7) + SIZEOF (.ewram7)))
 
-.ewram8         0x02000454        0x0
+.ewram8         0x020004bc        0x0
  *(.ewram8)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram8, LOADADDR (.ewram8))
                 [!provide]                PROVIDE (__load_stop_ewram8, (LOADADDR (.ewram8) + SIZEOF (.ewram8)))
 
-.ewram9         0x02000454        0x0
+.ewram9         0x020004bc        0x0
  *(.ewram9)
-                0x02000454                . = ALIGN (0x4)
+                0x020004bc                . = ALIGN (0x4)
                 [!provide]                PROVIDE (__load_start_ewram9, LOADADDR (.ewram9))
                 [!provide]                PROVIDE (__load_stop_ewram9, (LOADADDR (.ewram9) + SIZEOF (.ewram9)))
-                0x02000454                __ewram_overlay_end = ABSOLUTE (.)
-                0x02000454                __eheap_start = __ewram_overlay_end
-                0x02000454                _end = __ewram_overlay_end
-                0x02000454                __end__ = __ewram_overlay_end
-                0x02000454                __rom_end__ = __ewram_overlay_end
+                0x020004bc                __ewram_overlay_end = ABSOLUTE (.)
+                0x020004bc                __eheap_start = __ewram_overlay_end
+                0x020004bc                _end = __ewram_overlay_end
+                0x020004bc                __end__ = __ewram_overlay_end
+                0x020004bc                __rom_end__ = __ewram_overlay_end
 
 .stab
  *(.stab)
@@ -1027,13 +391,11 @@ Linker script and memory map
  .ARM.attributes
                 0x00000088       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-init.o)
  .ARM.attributes
-                0x000000b8       0x16 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libg.a(lib_a-strcmp.o)
+                0x000000b8       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(malloc_vars.o)
  .ARM.attributes
-                0x000000ce       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/../../../../arm-none-eabi/lib/libsysbase.a(malloc_vars.o)
+                0x000000e8       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
  .ARM.attributes
-                0x000000fe       0x30 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtend.o
- .ARM.attributes
-                0x0000012e       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtn.o
+                0x00000118       0x18 /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtn.o
 
 .debug
  *(.debug)
@@ -1055,30 +417,30 @@ Linker script and memory map
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000      0x332
+.debug_info     0x00000000      0x379
  *(.debug_info)
- .debug_info    0x00000000      0x332 main.o
+ .debug_info    0x00000000      0x379 main.o
 
-.debug_abbrev   0x00000000      0x1e6
+.debug_abbrev   0x00000000      0x1a3
  *(.debug_abbrev)
- .debug_abbrev  0x00000000      0x1e6 main.o
+ .debug_abbrev  0x00000000      0x1a3 main.o
 
-.debug_line     0x00000000      0x28a
+.debug_line     0x00000000      0x232
  *(.debug_line)
- .debug_line    0x00000000      0x28a main.o
+ .debug_line    0x00000000      0x232 main.o
 
-.debug_frame    0x00000000       0x8c
+.debug_frame    0x00000000       0x7c
  *(.debug_frame)
- .debug_frame   0x00000000       0x8c main.o
+ .debug_frame   0x00000000       0x7c main.o
 
-.debug_str      0x00000000      0x1bd
+.debug_str      0x00000000      0x1a0
  *(.debug_str)
- .debug_str     0x00000000      0x1bd main.o
-                                0x21c (size before relaxing)
+ .debug_str     0x00000000      0x1a0 main.o
+                                0x1f0 (size before relaxing)
 
-.debug_loc      0x00000000      0x165
+.debug_loc      0x00000000      0x26a
  *(.debug_loc)
- .debug_loc     0x00000000      0x165 main.o
+ .debug_loc     0x00000000      0x26a main.o
 
 .debug_macinfo
  *(.debug_macinfo)
@@ -1113,5 +475,5 @@ LOAD /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi
 LOAD /Users/adolphcelestin/dist/devkitPRO/devkitARM/bin/../lib/gcc/arm-none-eabi/5.3.0/crtn.o
 OUTPUT(/Users/adolphcelestin/projects/pyrite/roms/custom/custom_mb.elf elf32-littlearm)
 
-.debug_ranges   0x00000000       0x88
- .debug_ranges  0x00000000       0x88 main.o
+.debug_ranges   0x00000000       0xa0
+ .debug_ranges  0x00000000       0xa0 main.o
