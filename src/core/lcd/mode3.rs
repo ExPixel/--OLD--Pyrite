@@ -17,15 +17,12 @@ use super::super::memory::*;
 /// The background occupies 75 KBytes (06000000-06012BFF), most of the 80 Kbytes BG area, 
 /// not allowing to redraw an invisible second frame in background, 
 /// so this mode is mostly recommended for still images only.
-pub fn render_mode_3(dispcnt: u16, memory: &mut GbaMemory, line: u16, line_buffer: &mut [u8]) {
+pub fn render_mode_3(dispcnt: u16, memory: &mut GbaMemory, line: u16, line_buffer: &mut [GbaPixel]) {
 	let vram = memory.get_region(MEM_VRAM);
 	let frame_line_offset = 480 * line as usize;
 	for col in 0..240 {
 		let col_offset = frame_line_offset + col * 2;
 		let pixel = convert_rgb5_to_rgb8(vram.direct_read16(col_offset));
-		let lbcol = col * 3;
-		line_buffer[lbcol] = pixel.0;
-		line_buffer[lbcol + 1] = pixel.1;
-		line_buffer[lbcol + 2] = pixel.2;
+		line_buffer[col] = pixel;
 	}
 }

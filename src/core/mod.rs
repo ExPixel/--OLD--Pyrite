@@ -4,14 +4,13 @@ pub mod lcd;
 pub mod joypad;
 pub mod device;
 
+use glium;
+
 use self::memory::*;
 use self::cpu::registers;
 use self::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::lcd::GbaLcd;
-
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -55,14 +54,14 @@ pub const INT_KEYPAD: u16 = 0x1000;
 /// Game Pak (external IRQ source) Interrupt
 pub const INT_GAMEPAK: u16 = 0x2000;
 
-pub struct Gba<'a> {
+pub struct Gba {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
-	pub device: GbaDevice<'a>
+	pub device: GbaDevice
 }
 
-impl<'a> Gba<'a> {
-	pub fn new<'b>() -> Gba<'b> {
+impl Gba {
+	pub fn new() -> Gba {
 		Gba {
 			cpu: ArmCpu::new(),
 			lcd: GbaLcd::new(),
@@ -87,17 +86,17 @@ impl<'a> Gba<'a> {
 
 	pub fn run(&mut self) {
 		self.init();
-		self.device.render();
+		// self.device.render();
 		'running: loop {
 			self.frame();
-			self.device.render();
+			self.device.render(&self.lcd.screen_buffer);
 			if self.poll_device_events() { break 'running; }
 
-			{
-				let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
-				let title = format!("Pyrite - {} FPS - {:04x}", self.device.fps_counter.fps, self.cpu.memory.get_reg(ioreg::DISPCNT));
-				window.set_title(&title);
-			}
+			// {
+			// 	let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
+			// 	let title = format!("Pyrite - {} FPS - {:04x}", self.device.fps_counter.fps, self.cpu.memory.get_reg(ioreg::DISPCNT));
+			// 	window.set_title(&title);
+			// }
 		}
 		println!("-- Shutdown successfully.");
 	}
@@ -110,19 +109,11 @@ impl<'a> Gba<'a> {
 			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 		}
 
-		unsafe {
-			// #TODO The borrow checker got annoying, will fix this at some point.
-			let dd = &mut self.device as *mut GbaDevice;
-			(*dd).gba_screen.with_lock(None, |buffer: &mut [u8], pitch: usize| {		
-				for vcount in 0..160 {
-					self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
-					self.check_line_coincidence(vcount);
-
-					let line_data_off = (vcount as usize) * pitch;
-
-					self.do_vdraw_line(vcount, &mut buffer[line_data_off..(line_data_off + pitch)]);
-				}
-			}).expect("Failed to aquire texture lock.");
+	
+		for vcount in 0..160 {
+			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
+			self.check_line_coincidence(vcount);
+			self.do_vdraw_line(vcount);
 		}
 
 		// Sets the VBlank flag.
@@ -189,9 +180,9 @@ impl<'a> Gba<'a> {
 	///   Total       228 lines, 16.743 ms, 280896 cycles - ca. 59.737 Hz
 	/// All VRAM, OAM, and Palette RAM may be accessed during V-Blanking.
 	/// Note that no H-Blank interrupts are generated within V-Blank period.
-	fn do_vdraw_line(&mut self, line: u16, line_buffer: &mut [u8]) {
+	fn do_vdraw_line(&mut self, line: u16) {
 		self.do_hdraw();
-		self.lcd.render_line(&mut self.cpu.memory, line, line_buffer);
+		self.lcd.render_line(&mut self.cpu.memory, line);
 		self.do_hblank();
 	}
 
@@ -260,11 +251,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	/// Polls for and handles events from the device.
 	/// returns true if this should quit.
 	fn poll_device_events(&mut self) -> bool {
-		for event in self.device.event_pump.poll_iter() {
+		for event in self.device.display.poll_events() {
 			match event {
-				Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-					return true;
-				},
+				glium::glutin::Event::Closed => return true,
 				_ => {}
 			}
 		}

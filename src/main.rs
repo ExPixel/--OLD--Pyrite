@@ -3,7 +3,7 @@ pub mod debug;
 pub mod util;
 
 extern crate time;
-extern crate sdl2;
+#[macro_use] extern crate glium;
 
 use std::io::prelude::*;
 use std::env;
