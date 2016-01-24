@@ -17,10 +17,6 @@ macro_rules! gen_dproc {
 		$operation:ident
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-			// When Rd is R15 and the S flag is set the result of the operation is placed in R15 and the 
-			// SPSR corresponding to the current mode is moved to the CPSR. 
-			// This allows state changes which atomically restore both PC and CPSR. 
-			// This form of instruction should not be used in User mode.
 			let rn = (instr >> 16) & 0xf;
 			let rd = (instr >> 12) & 0xf;
 			let rn_value = cpu.rget(rn);
@@ -56,11 +52,12 @@ macro_rules! gen_dproc_sf {
 			// This allows state changes which atomically restore both PC and CPSR. 
 			// This form of instruction should not be used in User mode.
 			if rd == 15 { 
+				cpu.rset(15, result);
 				cpu.registers.set_cpsr(saved_cpsr); // to make it seem as if there was no changes to the flags.
 				cpu.registers.spsr_to_cpsr();
+			} else {
+				cpu.rset(rd, result);
 			}
-
-			cpu.rset(rd, result);
 		}
 	)
 }
