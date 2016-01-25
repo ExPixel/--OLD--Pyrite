@@ -82,31 +82,31 @@ pub fn arm_alu_bics(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn set_nz_flags64(cpu: &mut ArmCpu, res: u64) {
-	cpu.registers.putf_n((res as i64) < 0);
+	cpu.registers.putf_n(((res >> 63) & 1) == 1);
 	cpu.registers.putf_z(res == 0);
 }
 
 pub fn set_nz_flags(cpu: &mut ArmCpu, res: u32) {
-	cpu.registers.putf_n((res as i32) < 0);
+	cpu.registers.putfi_n((res >> 31) & 1);
 	cpu.registers.putf_z(res == 0);
 }
 
 pub fn set_add_flags(cpu: &mut ArmCpu, lhs: u32, rhs: u32, res: u32) {
-	cpu.registers.putf_n((res as i32) < 0);
+	cpu.registers.putfi_n((res >> 31) & 1);
 	cpu.registers.putf_z(res == 0);
-	// The following is ported from VBA
+	// The following is ported from CowBite
 	// Theirs seems to work well.
-	cpu.registers.putfi_v(((neg!(lhs) & neg!(rhs) & pos!(res)) | (pos!(lhs) & pos!(rhs) & neg!(res))));
-	cpu.registers.putfi_c(((neg!(lhs) & neg!(rhs)) | (neg!(lhs) & pos!(res)) | (neg!(rhs) & pos!(res))));
+	cpu.registers.putfi_c(((lhs&rhs)|(lhs&(!res))|(rhs&(!res)))>>31);
+	cpu.registers.putfi_v(((lhs&rhs&(!res))|((!lhs)&(!rhs)&res))>>31);
 }
 
 pub fn set_sub_flags(cpu: &mut ArmCpu, lhs: u32, rhs: u32, res: u32) {
-	cpu.registers.putf_n((res as i32) < 0);
+	cpu.registers.putfi_n((res >> 31) & 1);
 	cpu.registers.putf_z(res == 0);
-	// The following is ported from VBA
+	// The following is ported from CowBite
 	// Theirs seems to work well.
-	cpu.registers.putfi_v(((neg!(lhs) & pos!(rhs) & pos!(res)) | (pos!(lhs) & neg!(rhs) & neg!(res))));
-	cpu.registers.putfi_c(((neg!(lhs) & pos!(rhs)) | (neg!(lhs) & pos!(res)) | (pos!(rhs) & pos!(res))));
+	cpu.registers.putfi_c(((lhs&(!rhs))|(lhs&(!res))|((!rhs)&(!res)))>>31);
+	cpu.registers.putfi_v(((lhs&!(rhs|res))|((rhs&res)&!lhs))>>31);
 }
 
 
