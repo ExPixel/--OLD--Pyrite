@@ -335,6 +335,7 @@ pub fn disasm_arm_into(ret: &mut String, offset: u32, memory: &GbaMemory, flags:
 						if sdw != 0 || opcode & 0x10 != 0 || shi != 0 {
 							ret.push(',');
 							ret.push(' ');
+							ret.push_str(SHIFTS[shi as usize]);
 							if opcode & 0x10 != 0 {
 								ret.push(' ');
 								ret.push_str(REGS[(opcodei >> 8) & 15]);
