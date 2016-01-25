@@ -185,7 +185,7 @@ pub fn arm_alu_rrr(lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn arm_alu_rrx(cpu: &ArmCpu, lhs: u32) -> u32 {
-	let carry = cpu.registers.getf_c();
+	let carry = cpu.registers.getfi_c();
 	lhs.arm_rrx(carry)
 }
 
@@ -215,11 +215,17 @@ pub fn arm_alu_llr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn arm_alu_lri_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
-	// The form of the shift field which might be expected to 
-	// correspond to LSR #0 is used to encode LSR #32
-	let rhs = if rhs == 0 { 32 } else { rhs };
-	cpu.registers.putfi_c((lhs >> (rhs - 1)) & 1);
-	lhs.arm_lsr(rhs)
+	// The form of the shift field which might be expected to correspond to LSR #0 is used to encode LSR #32, 
+	// which has a zero result with bit 31 of Rm as the carry output. 
+	// Logical shift right zero is redundant as it is the same as logical shift left zero, 
+	// so the assembler will convert LSR #0 (and ASR #0 and ROR #0) into LSL #0, and allow LSR #32 to be specified.
+	if rhs == 0 {
+		cpu.registers.putfi_c(lhs & 0x80000000);
+		0
+	} else {
+		cpu.registers.putfi_c((lhs >> (rhs - 1)) & 1);
+		lhs.arm_lsr(rhs)
+	}
 }
 
 pub fn arm_alu_lrr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
@@ -237,8 +243,9 @@ pub fn arm_alu_lrr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn arm_alu_ari_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
-	// The form of the shift field which might be expected to give ASR #0 
-	// is used to encode ASR #32
+	// The form of the shift field which might be expected to give ASR #0 is used to encode ASR #32. 
+	// Bit 31 of Rm is again used as the carry output, and each bit of operand 2 is also equal to bit 31 of Rm. 
+	// The result is therefore all ones or all zeros, according to the value of bit 31 of Rm.
 	if rhs == 0 {
 		cpu.registers.putfi_c(lhs & 0x80000000);
 		if (lhs & 0x80000000) == 0 { 0x00000000 }
@@ -267,7 +274,7 @@ pub fn arm_alu_arr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 pub fn arm_alu_rri_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	// The form of the shift field which might be expected to give ROR #0 
 	// is used to encode a special function of the barrel shifter, rotate right extended (RRX)
-	if rhs == 0 { return arm_alu_rrx(cpu, lhs) }
+	if rhs == 0 { return arm_alu_rrx_s(cpu, lhs) }
 	lhs.arm_ror(rhs)
 }
 
@@ -287,7 +294,7 @@ pub fn arm_alu_rrr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn arm_alu_rrx_s(cpu: &mut ArmCpu, lhs: u32) -> u32 {
-	let carry = cpu.registers.getf_c();
+	let carry = cpu.registers.getfi_c();
 	cpu.registers.putfi_c(lhs & 1);
 	lhs.arm_rrx(carry)
 }
@@ -312,7 +319,7 @@ pub trait ClearArmShifts {
 
 	/// Rotate Right Extended
 	#[inline(always)]
-	fn arm_rrx(self, carry: bool) -> Self;
+	fn arm_rrx(self, carry: Self) -> Self;
 }
 
 impl ClearArmShifts for u32 {
@@ -338,8 +345,7 @@ impl ClearArmShifts for u32 {
 
 	/// Rotate Right Extended
 	#[inline(always)]
-	fn arm_rrx(self, carry: bool) -> u32 {
-		let carry_shift = if carry { 1 } else { 0 };
-		((self << (32 - carry_shift)) | (self >> carry_shift))
+	fn arm_rrx(self, carry: u32) -> u32 {
+		(self >> 1) | (carry << 31)
 	}
 }
