@@ -13,7 +13,7 @@ fn dataproc_reg_operands(cpu: &ArmCpu, instr: u32) -> (u32, u32) {
 	let _rm = if rm == 15 { cpu.rget(15) + 4 } else { cpu.rget(rm) };
 	// Only the least significant byte of the contents of Rs is used to determine the shift amount. 
 	// Rs can be any general register other than R15.
-	let _rs = cpu.rget((instr >> 8) & 0xf) & 0xf;
+	let _rs = cpu.rget((instr >> 8) & 0xf) & 0xff;
 	(_rm, _rs)
 }
 

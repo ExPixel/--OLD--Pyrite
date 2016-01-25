@@ -421,7 +421,7 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address < 0x40000 {
 	// 	println!("% {}", cpu.disasm_exec());
 	// }
-	// if address == 0x8000500 {
+	// if address == 0x08000be8 {
 	// 	println!("BEFORE");
 	// 	cpu.reg_dump_pretty();
 	// 	println!("============");
@@ -431,7 +431,7 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	// if address == 0x8000500 {
+	// if address == 0x08000be8 {
 	// 	println!("============");
 	// 	println!("AFTER");
 	// 	cpu.reg_dump_pretty();

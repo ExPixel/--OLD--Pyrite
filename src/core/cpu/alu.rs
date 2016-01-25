@@ -239,9 +239,14 @@ pub fn arm_alu_lrr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 pub fn arm_alu_ari_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	// The form of the shift field which might be expected to give ASR #0 
 	// is used to encode ASR #32
-	let rhs = if rhs == 0 { 32 } else { rhs };
-	cpu.registers.putfi_c((lhs >> (rhs - 1)) & 1);
-	lhs.arm_asr(rhs)
+	if rhs == 0 {
+		cpu.registers.putfi_c(lhs & 0x80000000);
+		if (lhs & 0x80000000) == 0 { 0x00000000 }
+		else { 0xffffffff }
+	} else {
+		cpu.registers.putfi_c((lhs >> (rhs - 1)) & 1);
+		lhs.arm_asr(rhs)
+	}
 }
 
 pub fn arm_alu_arr_s(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
