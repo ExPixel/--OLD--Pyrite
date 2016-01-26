@@ -51,7 +51,7 @@ pub fn thumb_lsl_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
 	let _rs = cpu.rget(rs);
-	let result = arm_alu_lli_s(cpu, _rs, offset5);
+	let result = thumb_fn_lli(cpu, _rs, offset5);
 	cpu.rset(rd.into(), result);
 }
 
@@ -63,7 +63,7 @@ pub fn thumb_lsr_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
 	let _rs = cpu.rget(rs);
-	let result = arm_alu_lri_s(cpu, _rs, offset5);
+	let result = thumb_fn_lri(cpu, _rs, offset5);
 	cpu.rset(rd, result);
 }
 
@@ -75,7 +75,7 @@ pub fn thumb_asr_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
 	let _rs = cpu.rget(rs);
-	let result = arm_alu_ari_s(cpu, _rs, offset5);
+	let result = thumb_fn_ari(cpu, _rs, offset5);
 	cpu.rset(rd, result);
 }
 

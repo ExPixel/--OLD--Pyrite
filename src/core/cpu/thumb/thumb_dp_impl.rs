@@ -1,8 +1,7 @@
 use super::super::ArmCpu;
 // use super::super::super::memory::GbaMemory;
 use super::super::arm::functions::*;
-use super::functions::thumb_fn_neg;
-use super::functions::thumb_fn_mul;
+use super::functions::*;
 use super::super::alu::*;
 
 /// Generates a THUMB ALU operation.
@@ -50,15 +49,15 @@ gen_alu!(thumb_dp_eor, arm_fn_eor_s);
 
 /// LSL 
 /// Logical Left-shift
-gen_alu!(thumb_dp_lsl, arm_alu_llr_s);
+gen_alu!(thumb_dp_lsl, thumb_fn_llr);
 
 /// LSR 
 /// Logical Right-shift
-gen_alu!(thumb_dp_lsr, arm_alu_lrr_s);
+gen_alu!(thumb_dp_lsr, thumb_fn_lrr);
 
 /// ASR 
 /// Arithmetic Right-shift
-gen_alu!(thumb_dp_asr, arm_alu_arr_s);
+gen_alu!(thumb_dp_asr, thumb_fn_arr);
 
 /// ADD 
 /// Add
@@ -70,7 +69,7 @@ gen_alu!(thumb_dp_sub, arm_fn_sub_s);
 
 /// ROR 
 /// Rotate right
-gen_alu!(thumb_dp_ror, arm_alu_rrr_s);
+gen_alu!(thumb_dp_ror, thumb_fn_rrr);
 
 /// TST 
 /// Test Bits (Logical And)

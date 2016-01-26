@@ -1,4 +1,55 @@
 use super::super::ArmCpu;
+use super::super::alu::*;
+
+pub fn thumb_fn_llr(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_llr_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+pub fn thumb_fn_lrr(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_lrr_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+pub fn thumb_fn_arr(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_arr_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+pub fn thumb_fn_rrr(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_rrr_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+
+
+pub fn thumb_fn_lli(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_lli_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+pub fn thumb_fn_lri(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_lri_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+pub fn thumb_fn_ari(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_ari_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
+
+pub fn thumb_fn_rri(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
+	let result = arm_alu_rri_s(cpu, lhs, rhs);
+	set_nz_flags(cpu, result);
+	result
+}
 
 pub fn thumb_fn_neg(cpu: &mut ArmCpu, _: u32, rhs: u32) -> u32 {
 	super::super::arm::functions::arm_fn_sub_s(cpu, 0, rhs)
