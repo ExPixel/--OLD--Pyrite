@@ -415,28 +415,30 @@ impl ArmCpu {
 	}
 }
 
+const DEBUG_STOP: bool = false;
+const DEBUG_ADDR: u32 = 0x08000d74;
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address < 0x40000 {
 	// 	println!("% {}", cpu.disasm_exec());
 	// }
-	// if address == 0x08000c40 {
-	// 	println!("BEFORE");
-	// 	cpu.reg_dump_pretty();
-	// 	println!("============");
-	// }
+	if DEBUG_STOP && address == 0x08000d74 {
+		println!("BEFORE");
+		cpu.reg_dump_pretty();
+		println!("============");
+	}
 }
 
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	// if address == 0x08000c40 {
-	// 	println!("============");
-	// 	println!("AFTER");
-	// 	cpu.reg_dump_pretty();
-	// 	panic!("picnic");
-	// }
+	if DEBUG_STOP && address == DEBUG_ADDR {
+		println!("============");
+		println!("AFTER");
+		cpu.reg_dump_pretty();
+		panic!("picnic");
+	}
 }
 
 // r0 = 0xea048f43;
