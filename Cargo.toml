@@ -3,6 +3,13 @@ name = "pyrite"
 version = "0.1.0"
 authors = ["Adolph C. <adolph.celestin@gmail.com>"]
 
+[features]
+default = ["emulate-swi"]
+
+# The CPU will emulate software interrupts rather than
+# jumping to the code in the BIOS.
+emulate-swi = []
+
 [profile.dev]
 opt-level=3
 # Ideally I would just like to turn overflow checking off

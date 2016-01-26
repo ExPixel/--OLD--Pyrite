@@ -3,12 +3,13 @@ pub mod thumb;
 pub mod alu;
 pub mod clock;
 pub mod registers;
-
+pub mod swi;
 use super::memory::*;
 use self::registers::*;
 use self::arm::execute_arm;
 use self::thumb::execute_thumb;
 use self::clock::*;
+use self::swi::*;
 
 const SWI_VECTOR: u32 = 0x08;
 const HWI_VECTOR: u32 = 0x18;
@@ -35,7 +36,9 @@ impl<T : Copy> Pipeline<T> {
 	pub fn next(&mut self, instr: T) {
 		self.decoded = self.fetched;
 		self.fetched = instr;
-		self.count += 1;
+		if !self.ready() {
+			self.count += 1;
+		}
 	}
 
 	/// Returns true if this pipeline is ready to execute.
@@ -49,7 +52,11 @@ pub struct ArmCpu {
 	arm_pipeline: Pipeline<u32>,
 	pub registers: ArmRegisters,
 	pub memory: GbaMemory,
-	pub clock: ArmCpuClock
+	pub clock: ArmCpuClock,
+	pub halted: bool,
+	pub swi_state: ArmCpuSwiState,
+	pub emulate_swi: bool,
+	pub branched: bool,
 }
 
 impl ArmCpu {
@@ -59,14 +66,28 @@ impl ArmCpu {
 			arm_pipeline: Pipeline::new(0u32),
 			registers: ArmRegisters::new(),
 			memory: GbaMemory::new(),
-			clock: ArmCpuClock::new()
+			clock: ArmCpuClock::new(),
+			halted: false,
+			swi_state: ArmCpuSwiState::new(),
+			emulate_swi: true,
+			branched: false
 		}
 	}
 
 	/// Advances the ARM pipeline.
 	/// executes, decodes, and then fetches the next instruction.
 	pub fn tick(&mut self) {
-		let thumb_mode = self.registers.getf_t();
+		if self.halted {
+			if self.emulate_swi {
+				if self.swi_state.check_if_continue_halt(&self.memory) {
+					return
+				}
+			} else {
+				return
+			}
+		}
+
+		let thumb_mode = self.thumb_mode();
 		if thumb_mode { self.thumb_tick(); }
 		else { self.arm_tick(); }
 
@@ -79,7 +100,12 @@ impl ArmCpu {
 		return self.registers.get(register)
 	}
 
+	pub fn thumb_mode(&self) -> bool {
+		self.registers.getf_t()
+	}
+
 	pub fn rset(&mut self, register: u32, value: u32) {
+		if !self.branched && register == 15 { self.branched = true }
 		return self.registers.set(register, value);
 	}
 
@@ -108,10 +134,7 @@ impl ArmCpu {
 	}
 
 	fn arm_tick(&mut self) {
-		let branched;
-
 		if self.arm_pipeline.ready() {
-			let saved_pc = self.registers.get(REG_PC);
 			let decoded = self.arm_pipeline.decoded;
 			let condition = (decoded >> 28) & 0xf;
 
@@ -127,15 +150,13 @@ impl ArmCpu {
 				execute_arm(self, decoded);
 				after_execution(exec_addr, self); // #TODO remove this debug code.
 			} /* #TODO else increase the clock by 1S cycle. */
-			branched = saved_pc != self.registers.get(REG_PC);
-		} else {
-			branched = false;
 		}
 
-		if branched {
+		if self.branched {
 			// #FIXME I should probably be doing this in the instructions themselves.
 			self.align_pc(); // word aligning the program counter for ARM mode.
 			self.arm_pipeline.flush();
+			self.branched = false;
 		} else {
 			let pc = self.registers.get(REG_PC);
 			let next = self.memory.read32(pc);
@@ -145,10 +166,7 @@ impl ArmCpu {
 	}
 
 	fn thumb_tick(&mut self) {
-		let branched;
-
 		if self.thumb_pipeline.ready() {
-			let saved_pc = self.registers.get(REG_PC);
 			let decoded = self.thumb_pipeline.decoded as u32;
 
 
@@ -163,15 +181,13 @@ impl ArmCpu {
 			before_execution(exec_addr, self); // #TODO remove this debug code.
 			execute_thumb(self, decoded);
 			after_execution(exec_addr, self); // #TODO remove this debug code.
-			branched = saved_pc != self.registers.get(REG_PC);
-		} else {
-			branched = false;
 		}
 
-		if branched {
+		if self.branched {
 			// #FIXME I should probably be doing this in the instructions themselves.
 			self.align_pc(); // half-word aligning the program counter for THUMB mode.
 			self.thumb_pipeline.flush();
+			self.branched = false;
 		} else {
 			let pc = self.registers.get(REG_PC);
 			let next = self.memory.read16(pc);
@@ -182,7 +198,7 @@ impl ArmCpu {
 
 	pub fn align_pc(&mut self) {
 		let pc = self.rget(15);
-		if self.registers.getf_t() {
+		if self.thumb_mode() {
 			self.rset(15, pc & 0xFFFFFFFE);
 		} else {
 			self.rset(15, pc & 0xFFFFFFFC);
@@ -235,7 +251,7 @@ impl ArmCpu {
 	/// Returns true if the program counter is at an executable
 	/// location.
 	pub fn executable(&self) -> bool {
-		let ready = if self.registers.getf_t() {
+		let ready = if self.thumb_mode() {
 			self.thumb_pipeline.ready()
 		} else {
 			self.arm_pipeline.ready()
@@ -268,14 +284,17 @@ impl ArmCpu {
 	// Perform Software Interrupt:
 	// Move the address of the next instruction into LR, move CPSR to SPSR, 
 	// load the SWI vector address (0x8) into the PC. Switch to ARM state and enter SVC mode.
-	pub fn thumb_swi(&mut self, _: u32) {
-		// #TODO add my own implementation of BIOS functions.
-		self.registers.set_mode(MODE_SVC);
-		self.registers.cpsr_to_spsr();
-		let next_pc = self.rget(15) - 2;
-		self.rset(REG_LR, next_pc);
-		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
-		self.registers.clearf_t(); // Enters ARM mode.
+	pub fn thumb_swi(&mut self, instr: u32) {
+		if self.emulate_swi { 
+			handle_thumb_swi(self, instr);
+		} else {
+			self.registers.set_mode(MODE_SVC);
+			self.registers.cpsr_to_spsr();
+			let next_pc = self.rget(15) - 2;
+			self.rset(REG_LR, next_pc);
+			self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+			self.registers.clearf_t(); // Enters ARM mode.
+		}
 	}
 
 	// The software interrupt instruction is used to enter Supervisor mode in a controlled manner. 
@@ -291,13 +310,16 @@ impl ArmCpu {
 	// Note that the link mechanism is not re-entrant, 
 	// so if the supervisor code wishes to use software interrupts within itself it 
 	// must first save a copy of the return address and SPSR.
-	pub fn arm_swi(&mut self, _: u32) {
-		// #TODO add my own implementation of BIOS functions.
-		self.registers.set_mode(MODE_SVC);
-		self.registers.cpsr_to_spsr();
-		let next_pc = self.rget(15) - 4;
-		self.rset(REG_LR, next_pc);
-		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+	pub fn arm_swi(&mut self, instr: u32) {
+		if self.emulate_swi { 
+			handle_arm_swi(self, instr);
+		} else {
+			self.registers.set_mode(MODE_SVC);
+			self.registers.cpsr_to_spsr();
+			let next_pc = self.rget(15) - 4;
+			self.rset(REG_LR, next_pc);
+			self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+		}
 	}
 
 
@@ -333,7 +355,7 @@ impl ArmCpu {
 	fn hardware_interrupt_branch(&mut self) {
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.cpsr_to_spsr();
-		let next_pc = if self.registers.getf_t() {
+		let next_pc = if self.thumb_mode() {
 			self.rget(15) - 2
 		} else {
 			self.rget(15) - 4
@@ -352,11 +374,11 @@ impl ArmCpu {
 	/// Returns the address of the instruction currently
 	/// being executed.
 	pub fn get_exec_address(&self) -> u32 {
-		if self.registers.getf_t() {
-			let c = if self.thumb_pipeline.count > 2 { 2 } else { self.thumb_pipeline.count as u32 };
+		if self.thumb_mode() {
+			let c = self.thumb_pipeline.count as u32; //if self.thumb_pipeline.count > 2 { 2 } else { self.thumb_pipeline.count as u32 };
 			self.registers.get(15) - (c * 2)
 		} else {
-			let c = if self.arm_pipeline.count > 2 { 2 } else { self.arm_pipeline.count as u32 };
+			let c = self.arm_pipeline.count as u32; //if self.arm_pipeline.count > 2 { 2 } else { self.arm_pipeline.count as u32 };
 			self.registers.get(15) - (c * 4)
 		}
 	}
@@ -364,7 +386,7 @@ impl ArmCpu {
 
 	/// Disasssembly of the instruction currently being executed.
 	pub fn disasm_exec(&self) -> String {
-		if self.registers.getf_t() {
+		if self.thumb_mode() {
 			super::super::debug::armdis::disasm_thumb(self.get_exec_address(), &self.memory, 0b11111111)
 		} else {
 			super::super::debug::armdis::disasm_arm(self.get_exec_address(), &self.memory, 0b11111111)
@@ -396,7 +418,7 @@ impl ArmCpu {
 		if self.registers.getf_v() { print!("v "); }
 		if self.registers.getf_i() { print!("i "); }
 		if self.registers.getf_f() { print!("f "); }
-		if self.registers.getf_t() { print!("t "); }
+		if self.thumb_mode() { print!("t "); }
 		print!("] ");
 
 		match self.registers.get_mode() {
@@ -417,7 +439,9 @@ impl ArmCpu {
 
 const DEBUG_STOP: bool = false;
 const DEBUG_THUMB: Option<bool> = Some(true);
-const DEBUG_ADDR: u32 = 0x08003e6a;
+const DEBUG_ITERATIONS: u32 = 0;
+const DEBUG_ADDR: u32 = 0x080043a4;
+static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
@@ -425,9 +449,10 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// 	println!("% {}", cpu.disasm_exec());
 	// }
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
-		println!("BEFORE");
+		unsafe { debug_current_iterations += 1; if debug_current_iterations < DEBUG_ITERATIONS { return; }}
+		println!("============BEFORE============");
 		cpu.reg_dump_pretty();
-		println!("============");
+		println!("==============================");
 	}
 }
 
@@ -435,29 +460,12 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
-		println!("============");
-		println!("AFTER");
+		unsafe { if debug_current_iterations < DEBUG_ITERATIONS { return; } }
+		// println!("==============================");
+		println!("=============AFTER============");
 		cpu.reg_dump_pretty();
 		panic!("picnic");
 	}
 }
 
-// r0 = 0xea048f43;
-// r1 = 0x00008008;
-// r2 = 0x00000080;
-// r3 = 0x00000003;
-// r4 = 0xfffffff3;
-// r5 = 0x00000004;
-// r6 = 0x00000004;
-// r7 = 0x0624c850;
-// r8 = 0x00000000;
-// r9 = 0x0624c498;
-// r10 = 0x0800220a;
-// r11 = 0x00000000;
-// r12 = 0x00000000;
-// sp = 0x03007cd8;
-// lr = 0x08000998;
-// pc = 0x0800055c
-// cpsr = 0x0000001f [ ] [SYS]
-// spsr = 0x00000000
 

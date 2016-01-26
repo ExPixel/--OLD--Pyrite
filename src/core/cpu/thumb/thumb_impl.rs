@@ -16,6 +16,8 @@ const SP: u32 = 13;
 
 const ADDR_REG: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_reg;
 const ADDR_IMM5: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_imm5;
+const ADDR_IMM6: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_imm6;
+const ADDR_IMM7: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_imm7;
 
 const LDR: fn(&mut ArmCpu, u32, u32) = thumb_fn_ldr;
 const LDRB: fn(&mut ArmCpu, u32, u32) = thumb_fn_ldrb;
@@ -634,12 +636,12 @@ gen_sdt!(thumb_ldrsh_reg, LDRSH, ADDR_REG);
 /// STR imm5
 /// Store word
 /// 5-bit immediate offset
-gen_sdt!(thumb_str_imm5, STR, ADDR_IMM5);
+gen_sdt!(thumb_str_imm5, STR, ADDR_IMM7);
 
 /// LDR imm5
 /// Load word
 /// 5-bit immediate offset
-gen_sdt!(thumb_ldr_imm5, LDR, ADDR_IMM5);
+gen_sdt!(thumb_ldr_imm5, LDR, ADDR_IMM7);
 
 /// STRB imm5
 /// Store byte
@@ -654,12 +656,12 @@ gen_sdt!(thumb_ldrb_imm5, LDRB, ADDR_IMM5);
 /// STRH imm5
 /// Store halfword
 /// 5-bit immediate offset
-gen_sdt!(thumb_strh_imm5, STRH, ADDR_IMM5);
+gen_sdt!(thumb_strh_imm5, STRH, ADDR_IMM6);
 
 /// LDRH imm5
 /// Load halfword
 /// 5-bit immediate offset
-gen_sdt!(thumb_ldrh_imm5, LDRH, ADDR_IMM5);
+gen_sdt!(thumb_ldrh_imm5, LDRH, ADDR_IMM6);
 
 /// Common strsp function.
 fn thumb_strsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
@@ -1157,8 +1159,10 @@ pub fn thumb_ldmia_r7(cpu: &mut ArmCpu, instr: u32) {
 /// conditional branch passes.
 #[inline(always)]
 fn thumb_b_cond_passed(cpu: &mut ArmCpu, instr: u32) {
-	let soffset9 = ((((instr & 0xff) as i32) << 24) >> 23) as u32;
-	let pc = cpu.rget(15) + soffset9;
+	let mut offset = instr & 0xff;
+	offset = (((offset as i32) << 24) >> 24) as u32;
+	offset <<= 1;
+	let pc = cpu.rget(15) + offset;
 	cpu.rset(15, pc);
 }
 
