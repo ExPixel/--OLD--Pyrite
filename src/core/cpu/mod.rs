@@ -416,14 +416,15 @@ impl ArmCpu {
 }
 
 const DEBUG_STOP: bool = false;
-const DEBUG_ADDR: u32 = 0x08000d74;
+const DEBUG_THUMB: Option<bool> = Some(true);
+const DEBUG_ADDR: u32 = 0x08003e6a;
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address < 0x40000 {
 	// 	println!("% {}", cpu.disasm_exec());
 	// }
-	if DEBUG_STOP && address == 0x08000d74 {
+	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		println!("BEFORE");
 		cpu.reg_dump_pretty();
 		println!("============");
@@ -433,7 +434,7 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	if DEBUG_STOP && address == DEBUG_ADDR {
+	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		println!("============");
 		println!("AFTER");
 		cpu.reg_dump_pretty();
