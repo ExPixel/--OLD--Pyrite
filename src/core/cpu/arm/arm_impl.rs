@@ -184,10 +184,8 @@ const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
 const LDM: fn(&mut ArmCpu, u32, u32) = arm_fn_ldm_single;
 const STM: fn(&mut ArmCpu, u32, u32) = arm_fn_stm_single;
 
-// #TODO complete the remaining work on corner cases and the like,
-// such as the use of r15 in SDT instructions.
 /// Generates a single data transfer instruction.
-macro_rules! gen_sdt {
+macro_rules! gen_str {
 	(
 		$instr_name:ident,	// the name of the instruction
 		$transfer: ident,	// the function being used by the instruction to transfer data.
@@ -208,18 +206,20 @@ macro_rules! gen_sdt {
 			let _rn = cpu.rget(rn); // base
 			let offset = $offset_fn(cpu, instr);
 
-			let address = if $index_pre {
-				if $index_inc { _rn + offset }
-				else { _rn - offset }
-			} else { _rn };
+			let mut address = _rn;
+			if $index_pre {
+				if $index_inc { address += offset; }
+				else { address -= offset; }
+			}
+
 			$transfer(cpu, address, rd);
+
 			if $writeback || $user || !($index_pre) {
-				cpu.rset(rn,
-					if !($index_pre) {
-						if $index_inc { address + offset }
-						else { address - offset }
-					} else { address }
-				);
+				if !($index_pre) {
+					if $index_inc { address += offset; }
+					else { address -= offset; }
+				}
+				cpu.rset(rn, address);
 			}
 
 			if $user {
@@ -229,9 +229,56 @@ macro_rules! gen_sdt {
 	)
 }
 
-// #TODO Work on corner cases.
-/// Generates a Half Word Data Transfer instruction
-macro_rules! gen_hdt {
+
+/// Generates a single data transfer instruction.
+macro_rules! gen_ldr {
+	(
+		$instr_name:ident,	// the name of the instruction
+		$transfer: ident,	// the function being used by the instruction to transfer data.
+		$index_pre: expr,	// boolean - true if this is pre-indexed, false otherwise
+		$index_inc: expr,	// boolean - true if this is incrementing, false if decrementing
+		$offset_fn: ident,	// the function used to generate an offset.
+		$writeback: expr,	// boolean - true if this should writeback (still writes back if post indexed or user mode)
+		$user: expr			// boolean - true if this should force user mode registers.
+	) => (
+		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			let last_mode = cpu.registers.get_mode();
+			if $user {
+				cpu.registers.set_mode(registers::MODE_USR);
+			}
+
+			let rn = (instr >> 16) & 0xf;
+			let rd = (instr >> 12) & 0xf;
+			let _rn = cpu.rget(rn); // base
+			let offset = $offset_fn(cpu, instr);
+
+			let mut address = _rn;
+			if $index_pre {
+				if $index_inc { address += offset; }
+				else { address -= offset; }
+			}
+
+			$transfer(cpu, address, rd);
+
+			if $writeback || $user || !($index_pre) {
+				if rn != rd { // LDR data overrides the writeback data.
+					if !($index_pre) {
+						if $index_inc { address += offset; }
+						else { address -= offset; }
+					}
+					cpu.rset(rn, address);
+				}
+			}
+
+			if $user {
+				cpu.registers.set_mode(last_mode);
+			}
+		}
+	)
+}
+
+/// Generates a Half Word Load instruction
+macro_rules! gen_hldr {
 	(
 		$instr_name:ident,	// the name of the instruction
 		$transfer: ident,	// the function being used by the instruction to transfer data.
@@ -240,7 +287,22 @@ macro_rules! gen_hdt {
 		$offset_fn: ident,	// the function used to generate an offset.
 		$writeback: expr	// boolean - true if this should writeback (still writes back if post indexed)
 	) => (
-		gen_sdt!($instr_name, $transfer, $index_pre, $index_inc, $offset_fn, $writeback, false);
+		gen_ldr!($instr_name, $transfer, $index_pre, $index_inc, $offset_fn, $writeback, false);
+	)
+}
+
+
+/// Generates a Half Word Store instruction
+macro_rules! gen_hstr {
+	(
+		$instr_name:ident,	// the name of the instruction
+		$transfer: ident,	// the function being used by the instruction to transfer data.
+		$index_pre: expr,	// boolean - true if this is pre-indexed, false otherwise
+		$index_inc: expr,	// boolean - true if this is incrementing, false if decrementing
+		$offset_fn: ident,	// the function used to generate an offset.
+		$writeback: expr	// boolean - true if this should writeback (still writes back if post indexed)
+	) => (
+		gen_str!($instr_name, $transfer, $index_pre, $index_inc, $offset_fn, $writeback, false);
 	)
 }
 
@@ -544,7 +606,7 @@ gen_mul!(arm_mul, arm_fn_mul, false);
 /// STRH ptrm
 /// Store halfword
 /// Register offset, post-decrement
-gen_hdt!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
+gen_hstr!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
 
 
 /// UNDEFINED
@@ -600,17 +662,17 @@ gen_mul!(arm_muls, arm_fn_mul, true);
 /// LDRH ptrm
 /// Load halfword
 /// Register offset, post-decrement
-gen_hdt!(arm_ldrh_ptrm, LDRH, POST, DEC, HDT_REG, false);
+gen_hldr!(arm_ldrh_ptrm, LDRH, POST, DEC, HDT_REG, false);
 
 /// LDRSB ptrm
 /// Load signed byte
 /// Register offset, post-decrement
-gen_hdt!(arm_ldrsb_ptrm, LDRSB, POST, DEC, HDT_REG, false);
+gen_hldr!(arm_ldrsb_ptrm, LDRSB, POST, DEC, HDT_REG, false);
 
 /// LDRSH ptrm
 /// Load signed halfword
 /// Register offset, post-decrement
-gen_hdt!(arm_ldrsh_ptrm, LDRSH, POST, DEC, HDT_REG, false);
+gen_hldr!(arm_ldrsh_ptrm, LDRSH, POST, DEC, HDT_REG, false);
 
 /// EOR lli
 /// Logical Exclusive-or
@@ -743,7 +805,7 @@ gen_dproc!(arm_sub_rrr, arm_fn_op2_rrr, arm_fn_sub);
 /// STRH ptim
 /// Store halfword
 /// Immediate offset, post-decrement
-gen_hdt!(arm_strh_ptim, STRH, POST, DEC, HDT_IMM, false);
+gen_hstr!(arm_strh_ptim, STRH, POST, DEC, HDT_IMM, false);
 
 /// SUBS lli
 /// Subtract, setting flags
@@ -788,17 +850,17 @@ gen_dproc_sf!(arm_subs_rrr, arm_fn_op2_rrr_s, arm_fn_sub_s);
 /// LDRH ptim
 /// Load halfword
 /// Immediate offset, post-decrement
-gen_hdt!(arm_ldrh_ptim, LDRH, POST, DEC, HDT_IMM, false);
+gen_hldr!(arm_ldrh_ptim, LDRH, POST, DEC, HDT_IMM, false);
 
 /// LDRSB ptim
 /// Load signed byte
 /// Immediate offset, post-decrement
-gen_hdt!(arm_ldrsb_ptim, LDRSB, POST, DEC, HDT_IMM, false);
+gen_hldr!(arm_ldrsb_ptim, LDRSB, POST, DEC, HDT_IMM, false);
 
 /// LDRSH ptim
 /// Load signed halfword
 /// Immediate offset, post-decrement
-gen_hdt!(arm_ldrsh_ptim, LDRSH, POST, DEC, HDT_IMM, false);
+gen_hldr!(arm_ldrsh_ptim, LDRSH, POST, DEC, HDT_IMM, false);
 
 /// RSB lli
 /// Subtract register from value
@@ -927,7 +989,7 @@ gen_mull!(arm_umull, arm_fn_umull, false);
 /// STRH ptrp
 /// Store halfword
 /// Register offset, post-increment
-gen_hdt!(arm_strh_ptrp, STRH, POST, INC, HDT_REG, false);
+gen_hstr!(arm_strh_ptrp, STRH, POST, INC, HDT_REG, false);
 
 /// ADDS lli
 /// Add to register, setting flags
@@ -976,17 +1038,17 @@ gen_mull!(arm_umulls, arm_fn_umull, true);
 /// LDRH ptrp
 /// Load halfword
 /// Register offset, post-increment
-gen_hdt!(arm_ldrh_ptrp, LDRH, POST, INC, HDT_REG, false);
+gen_hldr!(arm_ldrh_ptrp, LDRH, POST, INC, HDT_REG, false);
 
 /// LDRSB ptrp
 /// Load signed byte
 /// Register offset, post-increment
-gen_hdt!(arm_ldrsb_ptrp, LDRSB, POST, INC, HDT_REG, false);
+gen_hldr!(arm_ldrsb_ptrp, LDRSB, POST, INC, HDT_REG, false);
 
 /// LDRSH ptrp
 /// Load signed halfword
 /// Register offset, post-increment
-gen_hdt!(arm_ldrsh_ptrp, LDRSH, POST, INC, HDT_REG, false);
+gen_hldr!(arm_ldrsh_ptrp, LDRSH, POST, INC, HDT_REG, false);
 
 /// ADC lli
 /// Add to register with carry
@@ -1123,7 +1185,7 @@ gen_mull!(arm_smull, arm_fn_smull, false);
 /// STRH ptip
 /// Store halfword
 /// Immediate offset, post-increment
-gen_hdt!(arm_strh_ptip, STRH, POST, INC, HDT_IMM, false);
+gen_hstr!(arm_strh_ptip, STRH, POST, INC, HDT_IMM, false);
 
 /// SBCS lli
 /// Subtract from register with borrow, setting flags
@@ -1172,17 +1234,17 @@ gen_mull!(arm_smulls, arm_fn_smull, true);
 /// LDRH ptip
 /// Load halfword
 /// Immediate offset, post-increment
-gen_hdt!(arm_ldrh_ptip, LDRH, POST, INC, HDT_IMM, false);
+gen_hldr!(arm_ldrh_ptip, LDRH, POST, INC, HDT_IMM, false);
 
 /// LDRSB ptip
 /// Load signed byte
 /// Immediate offset, post-increment
-gen_hdt!(arm_ldrsb_ptip, LDRSB, POST, INC, HDT_IMM, false);
+gen_hldr!(arm_ldrsb_ptip, LDRSB, POST, INC, HDT_IMM, false);
 
 /// LDRSH ptip
 /// Load signed halfword
 /// Immediate offset, post-increment
-gen_hdt!(arm_ldrsh_ptip, LDRSH, POST, INC, HDT_IMM, false);
+gen_hldr!(arm_ldrsh_ptip, LDRSH, POST, INC, HDT_IMM, false);
 
 /// RSC lli
 /// Subtract register from value with borrow
@@ -1297,7 +1359,7 @@ pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ofrm
 /// Store halfword
 /// Negative register offset
-gen_hdt!(arm_strh_ofrm, STRH, PRE, DEC, HDT_REG, false);
+gen_hstr!(arm_strh_ofrm, STRH, PRE, DEC, HDT_REG, false);
 
 /// TSTS lli
 /// Test bits in register (Logical And), setting flags
@@ -1342,17 +1404,17 @@ gen_dproc_nw!(arm_tsts_rrr, arm_fn_op2_rrr_s, arm_fn_tst_s);
 /// LDRH ofrm
 /// Load halfword
 /// Negative register offset
-gen_hdt!(arm_ldrh_ofrm, LDRH, PRE, DEC, HDT_REG, false);
+gen_hldr!(arm_ldrh_ofrm, LDRH, PRE, DEC, HDT_REG, false);
 
 /// LDRSB ofrm
 /// Load signed byte
 /// Negative register offset
-gen_hdt!(arm_ldrsb_ofrm, LDRSB, PRE, DEC, HDT_REG, false);
+gen_hldr!(arm_ldrsb_ofrm, LDRSB, PRE, DEC, HDT_REG, false);
 
 /// LDRSH ofrm
 /// Load signed halfword
 /// Negative register offset
-gen_hdt!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
+gen_hldr!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
 
 /// MSR rc
 /// Move value to status word
@@ -1388,7 +1450,7 @@ pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
 /// STRH prrm
 /// Store halfword
 /// Register offset, pre-decrement
-gen_hdt!(arm_strh_prrm, STRH, PRE, DEC, HDT_REG, true);
+gen_hstr!(arm_strh_prrm, STRH, PRE, DEC, HDT_REG, true);
 
 /// TEQS lli
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
@@ -1433,17 +1495,17 @@ gen_dproc_nw!(arm_teqs_rrr, arm_fn_op2_rrr_s, arm_fn_teq_s);
 /// LDRH prrm
 /// Load halfword
 /// Register offset, pre-decrement
-gen_hdt!(arm_ldrh_prrm, LDRH, PRE, DEC, HDT_REG, true);
+gen_hldr!(arm_ldrh_prrm, LDRH, PRE, DEC, HDT_REG, true);
 
 /// LDRSB prrm
 /// Load signed byte
 /// Register offset, pre-decrement
-gen_hdt!(arm_ldrsb_prrm, LDRSB, PRE, DEC, HDT_REG, true);
+gen_hldr!(arm_ldrsb_prrm, LDRSB, PRE, DEC, HDT_REG, true);
 
 /// LDRSH prrm
 /// Load signed halfword
 /// Register offset, pre-decrement
-gen_hdt!(arm_ldrsh_prrm, LDRSH, PRE, DEC, HDT_REG, true);
+gen_hldr!(arm_ldrsh_prrm, LDRSH, PRE, DEC, HDT_REG, true);
 
 /// MRS rs
 /// Move status word to register
@@ -1470,7 +1532,7 @@ pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
 /// STRH ofim
 /// Store halfword
 /// Negative immediate offset
-gen_hdt!(arm_strh_ofim, STRH, PRE, DEC, HDT_IMM, false);
+gen_hstr!(arm_strh_ofim, STRH, PRE, DEC, HDT_IMM, false);
 
 /// CMPS lli
 /// Compare register to value (Subtract), setting flags
@@ -1515,17 +1577,17 @@ gen_dproc_nw!(arm_cmps_rrr, arm_fn_op2_rrr_s, arm_fn_cmp_s);
 /// LDRH ofim
 /// Load halfword
 /// Negative immediate offset
-gen_hdt!(arm_ldrh_ofim, LDRH, PRE, DEC, HDT_IMM, false);
+gen_hldr!(arm_ldrh_ofim, LDRH, PRE, DEC, HDT_IMM, false);
 
 /// LDRSB ofim
 /// Load signed byte
 /// Negative immediate offset
-gen_hdt!(arm_ldrsb_ofim, LDRSB, PRE, DEC, HDT_IMM, false);
+gen_hldr!(arm_ldrsb_ofim, LDRSB, PRE, DEC, HDT_IMM, false);
 
 /// LDRSH ofim
 /// Load signed halfword
 /// Negative immediate offset
-gen_hdt!(arm_ldrsh_ofim, LDRSH, PRE, DEC, HDT_IMM, false);
+gen_hldr!(arm_ldrsh_ofim, LDRSH, PRE, DEC, HDT_IMM, false);
 
 /// MSR rs
 /// Move value to status word
@@ -1545,7 +1607,7 @@ pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
 /// STRH prim
 /// Store halfword
 /// Immediate offset, pre-decrement
-gen_hdt!(arm_strh_prim, STRH, PRE, DEC, HDT_IMM, true);
+gen_hstr!(arm_strh_prim, STRH, PRE, DEC, HDT_IMM, true);
 
 /// CMNS lli
 /// Compare register to negation of value (Add), setting flags
@@ -1590,17 +1652,17 @@ gen_dproc_nw!(arm_cmns_rrr, arm_fn_op2_rrr_s, arm_fn_cmn_s);
 /// LDRH prim
 /// Load halfword
 /// Immediate offset, pre-decrement
-gen_hdt!(arm_ldrh_prim, LDRH, PRE, DEC, HDT_IMM, true);
+gen_hldr!(arm_ldrh_prim, LDRH, PRE, DEC, HDT_IMM, true);
 
 /// LDRSB prim
 /// Load signed byte
 /// Immediate offset, pre-decrement
-gen_hdt!(arm_ldrsb_prim, LDRSB, PRE, DEC, HDT_IMM, true);
+gen_hldr!(arm_ldrsb_prim, LDRSB, PRE, DEC, HDT_IMM, true);
 
 /// LDRSH prim
 /// Load signed halfword
 /// Immediate offset, pre-decrement
-gen_hdt!(arm_ldrsh_prim, LDRSH, PRE, DEC, HDT_IMM, true);
+gen_hldr!(arm_ldrsh_prim, LDRSH, PRE, DEC, HDT_IMM, true);
 
 /// ORR lli
 /// Logical Or
@@ -1645,7 +1707,7 @@ gen_dproc!(arm_orr_rrr, arm_fn_op2_rrr, arm_fn_orr);
 /// STRH ofrp
 /// Store halfword
 /// Positive register offset
-gen_hdt!(arm_strh_ofrp, STRH, PRE, INC, HDT_REG, false);
+gen_hstr!(arm_strh_ofrp, STRH, PRE, INC, HDT_REG, false);
 
 /// ORRS lli
 /// Logical Or, setting flags
@@ -1690,17 +1752,17 @@ gen_dproc_sf!(arm_orrs_rrr, arm_fn_op2_rrr_s, arm_fn_orr_s);
 /// LDRH ofrp
 /// Load halfword
 /// Positive register offset
-gen_hdt!(arm_ldrh_ofrp, LDRH, PRE, INC, HDT_REG, false);
+gen_hldr!(arm_ldrh_ofrp, LDRH, PRE, INC, HDT_REG, false);
 
 /// LDRSB ofrp
 /// Load signed byte
 /// Positive register offset
-gen_hdt!(arm_ldrsb_ofrp, LDRSB, PRE, INC, HDT_REG, false);
+gen_hldr!(arm_ldrsb_ofrp, LDRSB, PRE, INC, HDT_REG, false);
 
 /// LDRSH ofrp
 /// Load signed halfword
 /// Positive register offset
-gen_hdt!(arm_ldrsh_ofrp, LDRSH, PRE, INC, HDT_REG, false);
+gen_hldr!(arm_ldrsh_ofrp, LDRSH, PRE, INC, HDT_REG, false);
 
 /// MOV lli
 /// Move value to a register
@@ -1745,7 +1807,7 @@ gen_dproc!(arm_mov_rrr, arm_fn_op2_rrr, arm_fn_mov);
 /// STRH prrp
 /// Store halfword
 /// Register offset, pre-increment
-gen_hdt!(arm_strh_prrp, STRH, PRE, INC, HDT_REG, true);
+gen_hstr!(arm_strh_prrp, STRH, PRE, INC, HDT_REG, true);
 
 /// MOVS lli
 /// Move value to a register, setting flags
@@ -1790,17 +1852,17 @@ gen_dproc_sf!(arm_movs_rrr, arm_fn_op2_rrr_s, arm_fn_mov_s);
 /// LDRH prrp
 /// Load halfword
 /// Register offset, pre-increment
-gen_hdt!(arm_ldrh_prrp, LDRH, PRE, INC, HDT_REG, true);
+gen_hldr!(arm_ldrh_prrp, LDRH, PRE, INC, HDT_REG, true);
 
 /// LDRSB prrp
 /// Load signed byte
 /// Register offset, pre-increment
-gen_hdt!(arm_ldrsb_prrp, LDRSB, PRE, INC, HDT_REG, true);
+gen_hldr!(arm_ldrsb_prrp, LDRSB, PRE, INC, HDT_REG, true);
 
 /// LDRSH prrp
 /// Load signed halfword
 /// Register offset, pre-increment
-gen_hdt!(arm_ldrsh_prrp, LDRSH, PRE, INC, HDT_REG, true);
+gen_hldr!(arm_ldrsh_prrp, LDRSH, PRE, INC, HDT_REG, true);
 
 /// BIC lli
 /// Clear bits in register (NAND)
@@ -1845,7 +1907,7 @@ gen_dproc!(arm_bic_rrr, arm_fn_op2_rrr, arm_fn_bic);
 /// STRH ofip
 /// Store halfword
 /// Positive immediate offset
-gen_hdt!(arm_strh_ofip, STRH, PRE, INC, HDT_IMM, false);
+gen_hstr!(arm_strh_ofip, STRH, PRE, INC, HDT_IMM, false);
 
 /// BICS lli
 /// Clear bits in register (NAND), setting flags
@@ -1890,17 +1952,17 @@ gen_dproc_sf!(arm_bics_rrr, arm_fn_op2_rrr_s, arm_fn_bic_s);
 /// LDRH ofip
 /// Load halfword
 /// Positive immediate offset
-gen_hdt!(arm_ldrh_ofip, LDRH, PRE, INC, HDT_IMM, false);
+gen_hldr!(arm_ldrh_ofip, LDRH, PRE, INC, HDT_IMM, false);
 
 /// LDRSB ofip
 /// Load signed byte
 /// Positive immediate offset
-gen_hdt!(arm_ldrsb_ofip, LDRSB, PRE, INC, HDT_IMM, false);
+gen_hldr!(arm_ldrsb_ofip, LDRSB, PRE, INC, HDT_IMM, false);
 
 /// LDRSH ofip
 /// Load signed halfword
 /// Positive immediate offset
-gen_hdt!(arm_ldrsh_ofip, LDRSH, PRE, INC, HDT_IMM, false);
+gen_hldr!(arm_ldrsh_ofip, LDRSH, PRE, INC, HDT_IMM, false);
 
 /// MVN lli
 /// Move negation of value to a register
@@ -1945,7 +2007,7 @@ gen_dproc!(arm_mvn_rrr, arm_fn_op2_rrr, arm_fn_mvn);
 /// STRH prip
 /// Store halfword
 /// Immediate offset, pre-increment
-gen_hdt!(arm_strh_prip, STRH, PRE, INC, HDT_IMM, true);
+gen_hstr!(arm_strh_prip, STRH, PRE, INC, HDT_IMM, true);
 
 /// MVNS lli
 /// Move negation of value to a register, setting flags
@@ -1990,17 +2052,17 @@ gen_dproc_sf!(arm_mvns_rrr, arm_fn_op2_rrr_s, arm_fn_mvn_s);
 /// LDRH prip
 /// Load halfword
 /// Immediate offset, pre-increment
-gen_hdt!(arm_ldrh_prip, LDRH, PRE, INC, HDT_IMM, true);
+gen_hldr!(arm_ldrh_prip, LDRH, PRE, INC, HDT_IMM, true);
 
 /// LDRSB prip
 /// Load signed byte
 /// Immediate offset, pre-increment
-gen_hdt!(arm_ldrsb_prip, LDRSB, PRE, INC, HDT_IMM, true);
+gen_hldr!(arm_ldrsb_prip, LDRSB, PRE, INC, HDT_IMM, true);
 
 /// LDRSH prip
 /// Load signed halfword
 /// Immediate offset, pre-increment
-gen_hdt!(arm_ldrsh_prip, LDRSH, PRE, INC, HDT_IMM, true);
+gen_hldr!(arm_ldrsh_prip, LDRSH, PRE, INC, HDT_IMM, true);
 
 /// AND imm
 /// Logical And
@@ -2159,484 +2221,484 @@ gen_dproc!(arm_mvn_imm, arm_fn_op2_imm, arm_fn_mvn);
 gen_dproc_sf!(arm_mvns_imm, arm_fn_op2_imm_s, arm_fn_mvn_s);
 
 /// STR ptim
-gen_sdt!(arm_str_ptim, STR, POST, DEC, SDT_IMM, false, false);
+gen_str!(arm_str_ptim, STR, POST, DEC, SDT_IMM, false, false);
 
 /// LDR ptim
-gen_sdt!(arm_ldr_ptim, LDR, POST, DEC, SDT_IMM, false, false);
+gen_ldr!(arm_ldr_ptim, LDR, POST, DEC, SDT_IMM, false, false);
 
 /// STRT ptim
-gen_sdt!(arm_strt_ptim, STR, POST, DEC, SDT_IMM, false, true);
+gen_str!(arm_strt_ptim, STR, POST, DEC, SDT_IMM, false, true);
 
 /// LDRT ptim
-gen_sdt!(arm_ldrt_ptim, LDR, POST, DEC, SDT_IMM, false, true);
+gen_ldr!(arm_ldrt_ptim, LDR, POST, DEC, SDT_IMM, false, true);
 
 /// STRB ptim
-gen_sdt!(arm_strb_ptim, STRB, POST, DEC, SDT_IMM, false, false);
+gen_str!(arm_strb_ptim, STRB, POST, DEC, SDT_IMM, false, false);
 
 /// LDRB ptim
-gen_sdt!(arm_ldrb_ptim, LDRB, POST, DEC, SDT_IMM, false, false);
+gen_ldr!(arm_ldrb_ptim, LDRB, POST, DEC, SDT_IMM, false, false);
 
 /// STRBT ptim
-gen_sdt!(arm_strbt_ptim, STRB, POST, DEC, SDT_IMM, false, true);
+gen_str!(arm_strbt_ptim, STRB, POST, DEC, SDT_IMM, false, true);
 
 /// LDRBT ptim
-gen_sdt!(arm_ldrbt_ptim, LDRB, POST, DEC, SDT_IMM, false, true);
+gen_ldr!(arm_ldrbt_ptim, LDRB, POST, DEC, SDT_IMM, false, true);
 
 /// STR ptip
-gen_sdt!(arm_str_ptip, STR, POST, INC, SDT_IMM, false, false);
+gen_str!(arm_str_ptip, STR, POST, INC, SDT_IMM, false, false);
 
 /// LDR ptip
-gen_sdt!(arm_ldr_ptip, LDR, POST, INC, SDT_IMM, false, false);
+gen_ldr!(arm_ldr_ptip, LDR, POST, INC, SDT_IMM, false, false);
 
 /// STRT ptip
-gen_sdt!(arm_strt_ptip, STR, POST, INC, SDT_IMM, false, true);
+gen_str!(arm_strt_ptip, STR, POST, INC, SDT_IMM, false, true);
 
 /// LDRT ptip
-gen_sdt!(arm_ldrt_ptip, LDR, POST, INC, SDT_IMM, false, true);
+gen_ldr!(arm_ldrt_ptip, LDR, POST, INC, SDT_IMM, false, true);
 
 /// STRB ptip
-gen_sdt!(arm_strb_ptip, STRB, POST, INC, SDT_IMM, false, false);
+gen_str!(arm_strb_ptip, STRB, POST, INC, SDT_IMM, false, false);
 
 /// LDRB ptip
-gen_sdt!(arm_ldrb_ptip, LDRB, POST, INC, SDT_IMM, false, false);
+gen_ldr!(arm_ldrb_ptip, LDRB, POST, INC, SDT_IMM, false, false);
 
 /// STRBT ptip
-gen_sdt!(arm_strbt_ptip, STRB, POST, INC, SDT_IMM, false, true);
+gen_str!(arm_strbt_ptip, STRB, POST, INC, SDT_IMM, false, true);
 
 /// LDRBT ptip
-gen_sdt!(arm_ldrbt_ptip, LDRB, POST, INC, SDT_IMM, false, true);
+gen_ldr!(arm_ldrbt_ptip, LDRB, POST, INC, SDT_IMM, false, true);
 
 /// STR ofim
-gen_sdt!(arm_str_ofim, STR, PRE, DEC, SDT_NEG_IMM, false, false);
+gen_str!(arm_str_ofim, STR, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// LDR ofim
-gen_sdt!(arm_ldr_ofim, LDR, PRE, DEC, SDT_NEG_IMM, false, false);
+gen_ldr!(arm_ldr_ofim, LDR, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// STR prim
-gen_sdt!(arm_str_prim, STR, PRE, DEC, SDT_IMM, true, false);
+gen_str!(arm_str_prim, STR, PRE, DEC, SDT_IMM, true, false);
 
 /// LDR prim
-gen_sdt!(arm_ldr_prim, LDR, PRE, DEC, SDT_IMM, true, false);
+gen_ldr!(arm_ldr_prim, LDR, PRE, DEC, SDT_IMM, true, false);
 
 /// STRB ofim
-gen_sdt!(arm_strb_ofim, STRB, PRE, DEC, SDT_NEG_IMM, false, false);
+gen_str!(arm_strb_ofim, STRB, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// LDRB ofim
-gen_sdt!(arm_ldrb_ofim, LDRB, PRE, DEC, SDT_NEG_IMM, false, false);
+gen_ldr!(arm_ldrb_ofim, LDRB, PRE, DEC, SDT_NEG_IMM, false, false);
 
 /// STRB prim
-gen_sdt!(arm_strb_prim, STRB, PRE, DEC, SDT_IMM, true, false);
+gen_str!(arm_strb_prim, STRB, PRE, DEC, SDT_IMM, true, false);
 
 /// LDRB prim
-gen_sdt!(arm_ldrb_prim, LDRB, PRE, DEC, SDT_IMM, true, false);
+gen_ldr!(arm_ldrb_prim, LDRB, PRE, DEC, SDT_IMM, true, false);
 
 /// STR ofip
-gen_sdt!(arm_str_ofip, STR, PRE, INC, SDT_POS_IMM, false, false);
+gen_str!(arm_str_ofip, STR, PRE, INC, SDT_POS_IMM, false, false);
 
 /// LDR ofip
-gen_sdt!(arm_ldr_ofip, LDR, PRE, INC, SDT_POS_IMM, false, false);
+gen_ldr!(arm_ldr_ofip, LDR, PRE, INC, SDT_POS_IMM, false, false);
 
 /// STR prip
-gen_sdt!(arm_str_prip, STR, PRE, INC, SDT_IMM, true, false);
+gen_str!(arm_str_prip, STR, PRE, INC, SDT_IMM, true, false);
 
 /// LDR prip
-gen_sdt!(arm_ldr_prip, LDR, PRE, INC, SDT_IMM, true, false);
+gen_ldr!(arm_ldr_prip, LDR, PRE, INC, SDT_IMM, true, false);
 
 /// STRB ofip
-gen_sdt!(arm_strb_ofip, STRB, PRE, INC, SDT_POS_IMM, false, false);
+gen_str!(arm_strb_ofip, STRB, PRE, INC, SDT_POS_IMM, false, false);
 
 /// LDRB ofip
-gen_sdt!(arm_ldrb_ofip, LDRB, PRE, INC, SDT_POS_IMM, false, false);
+gen_ldr!(arm_ldrb_ofip, LDRB, PRE, INC, SDT_POS_IMM, false, false);
 
 /// STRB prip
-gen_sdt!(arm_strb_prip, STRB, PRE, INC, SDT_IMM, true, false);
+gen_str!(arm_strb_prip, STRB, PRE, INC, SDT_IMM, true, false);
 
 /// LDRB prip
-gen_sdt!(arm_ldrb_prip, LDRB, PRE, INC, SDT_IMM, true, false);
+gen_ldr!(arm_ldrb_prip, LDRB, PRE, INC, SDT_IMM, true, false);
 
 /// STR ptrmll
-gen_sdt!(arm_str_ptrmll, STR, POST, DEC, SDT_LSL, false, false);
+gen_str!(arm_str_ptrmll, STR, POST, DEC, SDT_LSL, false, false);
 
 /// STR ptrmlr
-gen_sdt!(arm_str_ptrmlr, STR, POST, DEC, SDT_LSR, false, false);
+gen_str!(arm_str_ptrmlr, STR, POST, DEC, SDT_LSR, false, false);
 
 /// STR ptrmar
-gen_sdt!(arm_str_ptrmar, STR, POST, DEC, SDT_ASR, false, false);
+gen_str!(arm_str_ptrmar, STR, POST, DEC, SDT_ASR, false, false);
 
 /// STR ptrmrr
-gen_sdt!(arm_str_ptrmrr, STR, POST, DEC, SDT_ROR, false, false);
+gen_str!(arm_str_ptrmrr, STR, POST, DEC, SDT_ROR, false, false);
 
 /// LDR ptrmll
-gen_sdt!(arm_ldr_ptrmll, LDR, POST, DEC, SDT_LSL, false, false);
+gen_ldr!(arm_ldr_ptrmll, LDR, POST, DEC, SDT_LSL, false, false);
 
 /// LDR ptrmlr
-gen_sdt!(arm_ldr_ptrmlr, LDR, POST, DEC, SDT_LSR, false, false);
+gen_ldr!(arm_ldr_ptrmlr, LDR, POST, DEC, SDT_LSR, false, false);
 
 /// LDR ptrmar
-gen_sdt!(arm_ldr_ptrmar, LDR, POST, DEC, SDT_ASR, false, false);
+gen_ldr!(arm_ldr_ptrmar, LDR, POST, DEC, SDT_ASR, false, false);
 
 /// LDR ptrmrr
-gen_sdt!(arm_ldr_ptrmrr, LDR, POST, DEC, SDT_ROR, false, false);
+gen_ldr!(arm_ldr_ptrmrr, LDR, POST, DEC, SDT_ROR, false, false);
 
 /// STRT ptrmll
-gen_sdt!(arm_strt_ptrmll, STR, POST, DEC, SDT_LSL, false, true);
+gen_str!(arm_strt_ptrmll, STR, POST, DEC, SDT_LSL, false, true);
 
 /// STRT ptrmlr
-gen_sdt!(arm_strt_ptrmlr, STR, POST, DEC, SDT_LSR, false, true);
+gen_str!(arm_strt_ptrmlr, STR, POST, DEC, SDT_LSR, false, true);
 
 /// STRT ptrmar
-gen_sdt!(arm_strt_ptrmar, STR, POST, DEC, SDT_ASR, false, true);
+gen_str!(arm_strt_ptrmar, STR, POST, DEC, SDT_ASR, false, true);
 
 /// STRT ptrmrr
-gen_sdt!(arm_strt_ptrmrr, STR, POST, DEC, SDT_ROR, false, true);
+gen_str!(arm_strt_ptrmrr, STR, POST, DEC, SDT_ROR, false, true);
 
 /// LDRT ptrmll
-gen_sdt!(arm_ldrt_ptrmll, LDR, POST, DEC, SDT_LSL, false, true);
+gen_ldr!(arm_ldrt_ptrmll, LDR, POST, DEC, SDT_LSL, false, true);
 
 /// LDRT ptrmlr
-gen_sdt!(arm_ldrt_ptrmlr, LDR, POST, DEC, SDT_LSR, false, true);
+gen_ldr!(arm_ldrt_ptrmlr, LDR, POST, DEC, SDT_LSR, false, true);
 
 /// LDRT ptrmar
-gen_sdt!(arm_ldrt_ptrmar, LDR, POST, DEC, SDT_ASR, false, true);
+gen_ldr!(arm_ldrt_ptrmar, LDR, POST, DEC, SDT_ASR, false, true);
 
 /// LDRT ptrmrr
-gen_sdt!(arm_ldrt_ptrmrr, LDR, POST, DEC, SDT_ROR, false, true);
+gen_ldr!(arm_ldrt_ptrmrr, LDR, POST, DEC, SDT_ROR, false, true);
 
 /// STRB ptrmll
-gen_sdt!(arm_strb_ptrmll, STRB, POST, DEC, SDT_LSL, false, false);
+gen_str!(arm_strb_ptrmll, STRB, POST, DEC, SDT_LSL, false, false);
 
 /// STRB ptrmlr
-gen_sdt!(arm_strb_ptrmlr, STRB, POST, DEC, SDT_LSR, false, false);
+gen_str!(arm_strb_ptrmlr, STRB, POST, DEC, SDT_LSR, false, false);
 
 /// STRB ptrmar
-gen_sdt!(arm_strb_ptrmar, STRB, POST, DEC, SDT_ASR, false, false);
+gen_str!(arm_strb_ptrmar, STRB, POST, DEC, SDT_ASR, false, false);
 
 /// STRB ptrmrr
-gen_sdt!(arm_strb_ptrmrr, STRB, POST, DEC, SDT_ROR, false, false);
+gen_str!(arm_strb_ptrmrr, STRB, POST, DEC, SDT_ROR, false, false);
 
 /// LDRB ptrmll
-gen_sdt!(arm_ldrb_ptrmll, LDRB, POST, DEC, SDT_LSL, false, false);
+gen_ldr!(arm_ldrb_ptrmll, LDRB, POST, DEC, SDT_LSL, false, false);
 
 /// LDRB ptrmlr
-gen_sdt!(arm_ldrb_ptrmlr, LDRB, POST, DEC, SDT_LSR, false, false);
+gen_ldr!(arm_ldrb_ptrmlr, LDRB, POST, DEC, SDT_LSR, false, false);
 
 /// LDRB ptrmar
-gen_sdt!(arm_ldrb_ptrmar, LDRB, POST, DEC, SDT_ASR, false, false);
+gen_ldr!(arm_ldrb_ptrmar, LDRB, POST, DEC, SDT_ASR, false, false);
 
 /// LDRB ptrmrr
-gen_sdt!(arm_ldrb_ptrmrr, LDRB, POST, DEC, SDT_ROR, false, false);
+gen_ldr!(arm_ldrb_ptrmrr, LDRB, POST, DEC, SDT_ROR, false, false);
 
 /// STRBT ptrmll
-gen_sdt!(arm_strbt_ptrmll, STRB, POST, DEC, SDT_LSL, false, true);
+gen_str!(arm_strbt_ptrmll, STRB, POST, DEC, SDT_LSL, false, true);
 
 /// STRBT ptrmlr
-gen_sdt!(arm_strbt_ptrmlr, STRB, POST, DEC, SDT_LSR, false, true);
+gen_str!(arm_strbt_ptrmlr, STRB, POST, DEC, SDT_LSR, false, true);
 
 /// STRBT ptrmar
-gen_sdt!(arm_strbt_ptrmar, STRB, POST, DEC, SDT_ASR, false, true);
+gen_str!(arm_strbt_ptrmar, STRB, POST, DEC, SDT_ASR, false, true);
 
 /// STRBT ptrmrr
-gen_sdt!(arm_strbt_ptrmrr, STRB, POST, DEC, SDT_ROR, false, true);
+gen_str!(arm_strbt_ptrmrr, STRB, POST, DEC, SDT_ROR, false, true);
 
 /// LDRBT ptrmll
-gen_sdt!(arm_ldrbt_ptrmll, LDRB, POST, DEC, SDT_LSL, false, true);
+gen_ldr!(arm_ldrbt_ptrmll, LDRB, POST, DEC, SDT_LSL, false, true);
 
 /// LDRBT ptrmlr
-gen_sdt!(arm_ldrbt_ptrmlr, LDRB, POST, DEC, SDT_LSR, false, true);
+gen_ldr!(arm_ldrbt_ptrmlr, LDRB, POST, DEC, SDT_LSR, false, true);
 
 /// LDRBT ptrmar
-gen_sdt!(arm_ldrbt_ptrmar, LDRB, POST, DEC, SDT_ASR, false, true);
+gen_ldr!(arm_ldrbt_ptrmar, LDRB, POST, DEC, SDT_ASR, false, true);
 
 /// LDRBT ptrmrr
-gen_sdt!(arm_ldrbt_ptrmrr, LDRB, POST, DEC, SDT_ROR, false, true);
+gen_ldr!(arm_ldrbt_ptrmrr, LDRB, POST, DEC, SDT_ROR, false, true);
 
 /// STR ptrpll
-gen_sdt!(arm_str_ptrpll, STR, POST, INC, SDT_LSL, false, false);
+gen_str!(arm_str_ptrpll, STR, POST, INC, SDT_LSL, false, false);
 
 /// STR ptrplr
-gen_sdt!(arm_str_ptrplr, STR, POST, INC, SDT_LSR, false, false);
+gen_str!(arm_str_ptrplr, STR, POST, INC, SDT_LSR, false, false);
 
 /// STR ptrpar
-gen_sdt!(arm_str_ptrpar, STR, POST, INC, SDT_ASR, false, false);
+gen_str!(arm_str_ptrpar, STR, POST, INC, SDT_ASR, false, false);
 
 /// STR ptrprr
-gen_sdt!(arm_str_ptrprr, STR, POST, INC, SDT_ROR, false, false);
+gen_str!(arm_str_ptrprr, STR, POST, INC, SDT_ROR, false, false);
 
 /// LDR ptrpll
-gen_sdt!(arm_ldr_ptrpll, LDR, POST, INC, SDT_LSL, false, false);
+gen_ldr!(arm_ldr_ptrpll, LDR, POST, INC, SDT_LSL, false, false);
 
 /// LDR ptrplr
-gen_sdt!(arm_ldr_ptrplr, LDR, POST, INC, SDT_LSR, false, false);
+gen_ldr!(arm_ldr_ptrplr, LDR, POST, INC, SDT_LSR, false, false);
 
 /// LDR ptrpar
-gen_sdt!(arm_ldr_ptrpar, LDR, POST, INC, SDT_ASR, false, false);
+gen_ldr!(arm_ldr_ptrpar, LDR, POST, INC, SDT_ASR, false, false);
 
 /// LDR ptrprr
-gen_sdt!(arm_ldr_ptrprr, LDR, POST, INC, SDT_ROR, false, false);
+gen_ldr!(arm_ldr_ptrprr, LDR, POST, INC, SDT_ROR, false, false);
 
 /// STRT ptrpll
-gen_sdt!(arm_strt_ptrpll, STR, POST, INC, SDT_LSL, false, true);
+gen_str!(arm_strt_ptrpll, STR, POST, INC, SDT_LSL, false, true);
 
 /// STRT ptrplr
-gen_sdt!(arm_strt_ptrplr, STR, POST, INC, SDT_LSR, false, true);
+gen_str!(arm_strt_ptrplr, STR, POST, INC, SDT_LSR, false, true);
 
 /// STRT ptrpar
-gen_sdt!(arm_strt_ptrpar, STR, POST, INC, SDT_ASR, false, true);
+gen_str!(arm_strt_ptrpar, STR, POST, INC, SDT_ASR, false, true);
 
 /// STRT ptrprr
-gen_sdt!(arm_strt_ptrprr, STR, POST, INC, SDT_ROR, false, true);
+gen_str!(arm_strt_ptrprr, STR, POST, INC, SDT_ROR, false, true);
 
 /// LDRT ptrpll
-gen_sdt!(arm_ldrt_ptrpll, LDR, POST, INC, SDT_LSL, false, true);
+gen_ldr!(arm_ldrt_ptrpll, LDR, POST, INC, SDT_LSL, false, true);
 
 /// LDRT ptrplr
-gen_sdt!(arm_ldrt_ptrplr, LDR, POST, INC, SDT_LSR, false, true);
+gen_ldr!(arm_ldrt_ptrplr, LDR, POST, INC, SDT_LSR, false, true);
 
 /// LDRT ptrpar
-gen_sdt!(arm_ldrt_ptrpar, LDR, POST, INC, SDT_ASR, false, true);
+gen_ldr!(arm_ldrt_ptrpar, LDR, POST, INC, SDT_ASR, false, true);
 
 /// LDRT ptrprr
-gen_sdt!(arm_ldrt_ptrprr, LDR, POST, INC, SDT_ROR, false, true);
+gen_ldr!(arm_ldrt_ptrprr, LDR, POST, INC, SDT_ROR, false, true);
 
 /// STRB ptrpll
-gen_sdt!(arm_strb_ptrpll, STRB, POST, INC, SDT_LSL, false, false);
+gen_str!(arm_strb_ptrpll, STRB, POST, INC, SDT_LSL, false, false);
 
 /// STRB ptrplr
-gen_sdt!(arm_strb_ptrplr, STRB, POST, INC, SDT_LSR, false, false);
+gen_str!(arm_strb_ptrplr, STRB, POST, INC, SDT_LSR, false, false);
 
 /// STRB ptrpar
-gen_sdt!(arm_strb_ptrpar, STRB, POST, INC, SDT_ASR, false, false);
+gen_str!(arm_strb_ptrpar, STRB, POST, INC, SDT_ASR, false, false);
 
 /// STRB ptrprr
-gen_sdt!(arm_strb_ptrprr, STRB, POST, INC, SDT_ROR, false, false);
+gen_str!(arm_strb_ptrprr, STRB, POST, INC, SDT_ROR, false, false);
 
 /// LDRB ptrpll
-gen_sdt!(arm_ldrb_ptrpll, LDRB, POST, INC, SDT_LSL, false, false);
+gen_ldr!(arm_ldrb_ptrpll, LDRB, POST, INC, SDT_LSL, false, false);
 
 /// LDRB ptrplr
-gen_sdt!(arm_ldrb_ptrplr, LDRB, POST, INC, SDT_LSR, false, false);
+gen_ldr!(arm_ldrb_ptrplr, LDRB, POST, INC, SDT_LSR, false, false);
 
 /// LDRB ptrpar
-gen_sdt!(arm_ldrb_ptrpar, LDRB, POST, INC, SDT_ASR, false, false);
+gen_ldr!(arm_ldrb_ptrpar, LDRB, POST, INC, SDT_ASR, false, false);
 
 /// LDRB ptrprr
-gen_sdt!(arm_ldrb_ptrprr, LDRB, POST, INC, SDT_ROR, false, false);
+gen_ldr!(arm_ldrb_ptrprr, LDRB, POST, INC, SDT_ROR, false, false);
 
 /// STRBT ptrpll
-gen_sdt!(arm_strbt_ptrpll, STRB, POST, INC, SDT_LSL, false, true);
+gen_str!(arm_strbt_ptrpll, STRB, POST, INC, SDT_LSL, false, true);
 
 /// STRBT ptrplr
-gen_sdt!(arm_strbt_ptrplr, STRB, POST, INC, SDT_LSR, false, true);
+gen_str!(arm_strbt_ptrplr, STRB, POST, INC, SDT_LSR, false, true);
 
 /// STRBT ptrpar
-gen_sdt!(arm_strbt_ptrpar, STRB, POST, INC, SDT_ASR, false, true);
+gen_str!(arm_strbt_ptrpar, STRB, POST, INC, SDT_ASR, false, true);
 
 /// STRBT ptrprr
-gen_sdt!(arm_strbt_ptrprr, STRB, POST, INC, SDT_ROR, false, true);
+gen_str!(arm_strbt_ptrprr, STRB, POST, INC, SDT_ROR, false, true);
 
 /// LDRBT ptrpll
-gen_sdt!(arm_ldrbt_ptrpll, LDRB, POST, INC, SDT_LSL, false, true);
+gen_ldr!(arm_ldrbt_ptrpll, LDRB, POST, INC, SDT_LSL, false, true);
 
 /// LDRBT ptrplr
-gen_sdt!(arm_ldrbt_ptrplr, LDRB, POST, INC, SDT_LSR, false, true);
+gen_ldr!(arm_ldrbt_ptrplr, LDRB, POST, INC, SDT_LSR, false, true);
 
 /// LDRBT ptrpar
-gen_sdt!(arm_ldrbt_ptrpar, LDRB, POST, INC, SDT_ASR, false, true);
+gen_ldr!(arm_ldrbt_ptrpar, LDRB, POST, INC, SDT_ASR, false, true);
 
 /// LDRBT ptrprr
-gen_sdt!(arm_ldrbt_ptrprr, LDRB, POST, INC, SDT_ROR, false, true);
+gen_ldr!(arm_ldrbt_ptrprr, LDRB, POST, INC, SDT_ROR, false, true);
 
 /// STR ofrmll
-gen_sdt!(arm_str_ofrmll, STR, PRE, DEC, SDT_NEG_LSL, false, false);
+gen_str!(arm_str_ofrmll, STR, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// STR ofrmlr
-gen_sdt!(arm_str_ofrmlr, STR, PRE, DEC, SDT_NEG_LSR, false, false);
+gen_str!(arm_str_ofrmlr, STR, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// STR ofrmar
-gen_sdt!(arm_str_ofrmar, STR, PRE, DEC, SDT_NEG_ASR, false, false);
+gen_str!(arm_str_ofrmar, STR, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// STR ofrmrr
-gen_sdt!(arm_str_ofrmrr, STR, PRE, DEC, SDT_NEG_ROR, false, false);
+gen_str!(arm_str_ofrmrr, STR, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// LDR ofrmll
-gen_sdt!(arm_ldr_ofrmll, LDR, PRE, DEC, SDT_NEG_LSL, false, false);
+gen_ldr!(arm_ldr_ofrmll, LDR, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// LDR ofrmlr
-gen_sdt!(arm_ldr_ofrmlr, LDR, PRE, DEC, SDT_NEG_LSR, false, false);
+gen_ldr!(arm_ldr_ofrmlr, LDR, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// LDR ofrmar
-gen_sdt!(arm_ldr_ofrmar, LDR, PRE, DEC, SDT_NEG_ASR, false, false);
+gen_ldr!(arm_ldr_ofrmar, LDR, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// LDR ofrmrr
-gen_sdt!(arm_ldr_ofrmrr, LDR, PRE, DEC, SDT_NEG_ROR, false, false);
+gen_ldr!(arm_ldr_ofrmrr, LDR, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// STR prrmll
-gen_sdt!(arm_str_prrmll, STR, PRE, DEC, SDT_LSL, true, false);
+gen_str!(arm_str_prrmll, STR, PRE, DEC, SDT_LSL, true, false);
 
 /// STR prrmlr
-gen_sdt!(arm_str_prrmlr, STR, PRE, DEC, SDT_LSR, true, false);
+gen_str!(arm_str_prrmlr, STR, PRE, DEC, SDT_LSR, true, false);
 
 /// STR prrmar
-gen_sdt!(arm_str_prrmar, STR, PRE, DEC, SDT_ASR, true, false);
+gen_str!(arm_str_prrmar, STR, PRE, DEC, SDT_ASR, true, false);
 
 /// STR prrmrr
-gen_sdt!(arm_str_prrmrr, STR, PRE, DEC, SDT_ROR, true, false);
+gen_str!(arm_str_prrmrr, STR, PRE, DEC, SDT_ROR, true, false);
 
 /// LDR prrmll
-gen_sdt!(arm_ldr_prrmll, LDR, PRE, DEC, SDT_LSL, true, false);
+gen_ldr!(arm_ldr_prrmll, LDR, PRE, DEC, SDT_LSL, true, false);
 
 /// LDR prrmlr
-gen_sdt!(arm_ldr_prrmlr, LDR, PRE, DEC, SDT_LSR, true, false);
+gen_ldr!(arm_ldr_prrmlr, LDR, PRE, DEC, SDT_LSR, true, false);
 
 /// LDR prrmar
-gen_sdt!(arm_ldr_prrmar, LDR, PRE, DEC, SDT_ASR, true, false);
+gen_ldr!(arm_ldr_prrmar, LDR, PRE, DEC, SDT_ASR, true, false);
 
 /// LDR prrmrr
-gen_sdt!(arm_ldr_prrmrr, LDR, PRE, DEC, SDT_ROR, true, false);
+gen_ldr!(arm_ldr_prrmrr, LDR, PRE, DEC, SDT_ROR, true, false);
 
 /// STRB ofrmll
-gen_sdt!(arm_strb_ofrmll, STRB, PRE, DEC, SDT_NEG_LSL, false, false);
+gen_str!(arm_strb_ofrmll, STRB, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// STRB ofrmlr
-gen_sdt!(arm_strb_ofrmlr, STRB, PRE, DEC, SDT_NEG_LSR, false, false);
+gen_str!(arm_strb_ofrmlr, STRB, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// STRB ofrmar
-gen_sdt!(arm_strb_ofrmar, STRB, PRE, DEC, SDT_NEG_ASR, false, false);
+gen_str!(arm_strb_ofrmar, STRB, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// STRB ofrmrr
-gen_sdt!(arm_strb_ofrmrr, STRB, PRE, DEC, SDT_NEG_ROR, false, false);
+gen_str!(arm_strb_ofrmrr, STRB, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// LDRB ofrmll
-gen_sdt!(arm_ldrb_ofrmll, LDRB, PRE, DEC, SDT_NEG_LSL, false, false);
+gen_ldr!(arm_ldrb_ofrmll, LDRB, PRE, DEC, SDT_NEG_LSL, false, false);
 
 /// LDRB ofrmlr
-gen_sdt!(arm_ldrb_ofrmlr, LDRB, PRE, DEC, SDT_NEG_LSR, false, false);
+gen_ldr!(arm_ldrb_ofrmlr, LDRB, PRE, DEC, SDT_NEG_LSR, false, false);
 
 /// LDRB ofrmar
-gen_sdt!(arm_ldrb_ofrmar, LDRB, PRE, DEC, SDT_NEG_ASR, false, false);
+gen_ldr!(arm_ldrb_ofrmar, LDRB, PRE, DEC, SDT_NEG_ASR, false, false);
 
 /// LDRB ofrmrr
-gen_sdt!(arm_ldrb_ofrmrr, LDRB, PRE, DEC, SDT_NEG_ROR, false, false);
+gen_ldr!(arm_ldrb_ofrmrr, LDRB, PRE, DEC, SDT_NEG_ROR, false, false);
 
 /// STRB prrmll
-gen_sdt!(arm_strb_prrmll, STRB, PRE, DEC, SDT_LSL, true, false);
+gen_str!(arm_strb_prrmll, STRB, PRE, DEC, SDT_LSL, true, false);
 
 /// STRB prrmlr
-gen_sdt!(arm_strb_prrmlr, STRB, PRE, DEC, SDT_LSR, true, false);
+gen_str!(arm_strb_prrmlr, STRB, PRE, DEC, SDT_LSR, true, false);
 
 /// STRB prrmar
-gen_sdt!(arm_strb_prrmar, STRB, PRE, DEC, SDT_ASR, true, false);
+gen_str!(arm_strb_prrmar, STRB, PRE, DEC, SDT_ASR, true, false);
 
 /// STRB prrmrr
-gen_sdt!(arm_strb_prrmrr, STRB, PRE, DEC, SDT_ROR, true, false);
+gen_str!(arm_strb_prrmrr, STRB, PRE, DEC, SDT_ROR, true, false);
 
 /// LDRB prrmll
-gen_sdt!(arm_ldrb_prrmll, LDRB, PRE, DEC, SDT_LSL, true, false);
+gen_ldr!(arm_ldrb_prrmll, LDRB, PRE, DEC, SDT_LSL, true, false);
 
 /// LDRB prrmlr
-gen_sdt!(arm_ldrb_prrmlr, LDRB, PRE, DEC, SDT_LSR, true, false);
+gen_ldr!(arm_ldrb_prrmlr, LDRB, PRE, DEC, SDT_LSR, true, false);
 
 /// LDRB prrmar
-gen_sdt!(arm_ldrb_prrmar, LDRB, PRE, DEC, SDT_ASR, true, false);
+gen_ldr!(arm_ldrb_prrmar, LDRB, PRE, DEC, SDT_ASR, true, false);
 
 /// LDRB prrmrr
-gen_sdt!(arm_ldrb_prrmrr, LDRB, PRE, DEC, SDT_ROR, true, false);
+gen_ldr!(arm_ldrb_prrmrr, LDRB, PRE, DEC, SDT_ROR, true, false);
 
 /// STR ofrpll
-gen_sdt!(arm_str_ofrpll, STR, PRE, INC, SDT_POS_LSL, false, false);
+gen_str!(arm_str_ofrpll, STR, PRE, INC, SDT_POS_LSL, false, false);
 
 /// STR ofrplr
-gen_sdt!(arm_str_ofrplr, STR, PRE, INC, SDT_POS_LSR, false, false);
+gen_str!(arm_str_ofrplr, STR, PRE, INC, SDT_POS_LSR, false, false);
 
 /// STR ofrpar
-gen_sdt!(arm_str_ofrpar, STR, PRE, INC, SDT_POS_ASR, false, false);
+gen_str!(arm_str_ofrpar, STR, PRE, INC, SDT_POS_ASR, false, false);
 
 /// STR ofrprr
-gen_sdt!(arm_str_ofrprr, STR, PRE, INC, SDT_POS_ROR, false, false);
+gen_str!(arm_str_ofrprr, STR, PRE, INC, SDT_POS_ROR, false, false);
 
 /// LDR ofrpll
-gen_sdt!(arm_ldr_ofrpll, LDR, PRE, INC, SDT_POS_LSL, false, false);
+gen_ldr!(arm_ldr_ofrpll, LDR, PRE, INC, SDT_POS_LSL, false, false);
 
 /// LDR ofrplr
-gen_sdt!(arm_ldr_ofrplr, LDR, PRE, INC, SDT_POS_LSR, false, false);
+gen_ldr!(arm_ldr_ofrplr, LDR, PRE, INC, SDT_POS_LSR, false, false);
 
 /// LDR ofrpar
-gen_sdt!(arm_ldr_ofrpar, LDR, PRE, INC, SDT_POS_ASR, false, false);
+gen_ldr!(arm_ldr_ofrpar, LDR, PRE, INC, SDT_POS_ASR, false, false);
 
 /// LDR ofrprr
-gen_sdt!(arm_ldr_ofrprr, LDR, PRE, INC, SDT_POS_ROR, false, false);
+gen_ldr!(arm_ldr_ofrprr, LDR, PRE, INC, SDT_POS_ROR, false, false);
 
 /// STR prrpll
-gen_sdt!(arm_str_prrpll, STR, PRE, INC, SDT_LSL, true, false);
+gen_str!(arm_str_prrpll, STR, PRE, INC, SDT_LSL, true, false);
 
 /// STR prrplr
-gen_sdt!(arm_str_prrplr, STR, PRE, INC, SDT_LSR, true, false);
+gen_str!(arm_str_prrplr, STR, PRE, INC, SDT_LSR, true, false);
 
 /// STR prrpar
-gen_sdt!(arm_str_prrpar, STR, PRE, INC, SDT_ASR, true, false);
+gen_str!(arm_str_prrpar, STR, PRE, INC, SDT_ASR, true, false);
 
 /// STR prrprr
-gen_sdt!(arm_str_prrprr, STR, PRE, INC, SDT_ROR, true, false);
+gen_str!(arm_str_prrprr, STR, PRE, INC, SDT_ROR, true, false);
 
 /// LDR prrpll
-gen_sdt!(arm_ldr_prrpll, LDR, PRE, INC, SDT_LSL, true, false);
+gen_ldr!(arm_ldr_prrpll, LDR, PRE, INC, SDT_LSL, true, false);
 
 /// LDR prrplr
-gen_sdt!(arm_ldr_prrplr, LDR, PRE, INC, SDT_LSR, true, false);
+gen_ldr!(arm_ldr_prrplr, LDR, PRE, INC, SDT_LSR, true, false);
 
 /// LDR prrpar
-gen_sdt!(arm_ldr_prrpar, LDR, PRE, INC, SDT_ASR, true, false);
+gen_ldr!(arm_ldr_prrpar, LDR, PRE, INC, SDT_ASR, true, false);
 
 /// LDR prrprr
-gen_sdt!(arm_ldr_prrprr, LDR, PRE, INC, SDT_ROR, true, false);
+gen_ldr!(arm_ldr_prrprr, LDR, PRE, INC, SDT_ROR, true, false);
 
 /// STRB ofrpll
-gen_sdt!(arm_strb_ofrpll, STRB, PRE, INC, SDT_POS_LSL, false, false);
+gen_str!(arm_strb_ofrpll, STRB, PRE, INC, SDT_POS_LSL, false, false);
 
 /// STRB ofrplr
-gen_sdt!(arm_strb_ofrplr, STRB, PRE, INC, SDT_POS_LSR, false, false);
+gen_str!(arm_strb_ofrplr, STRB, PRE, INC, SDT_POS_LSR, false, false);
 
 /// STRB ofrpar
-gen_sdt!(arm_strb_ofrpar, STRB, PRE, INC, SDT_POS_ASR, false, false);
+gen_str!(arm_strb_ofrpar, STRB, PRE, INC, SDT_POS_ASR, false, false);
 
 /// STRB ofrprr
-gen_sdt!(arm_strb_ofrprr, STRB, PRE, INC, SDT_POS_ROR, false, false);
+gen_str!(arm_strb_ofrprr, STRB, PRE, INC, SDT_POS_ROR, false, false);
 
 /// LDRB ofrpll
-gen_sdt!(arm_ldrb_ofrpll, LDRB, PRE, INC, SDT_POS_LSL, false, false);
+gen_ldr!(arm_ldrb_ofrpll, LDRB, PRE, INC, SDT_POS_LSL, false, false);
 
 /// LDRB ofrplr
-gen_sdt!(arm_ldrb_ofrplr, LDRB, PRE, INC, SDT_POS_LSR, false, false);
+gen_ldr!(arm_ldrb_ofrplr, LDRB, PRE, INC, SDT_POS_LSR, false, false);
 
 /// LDRB ofrpar
-gen_sdt!(arm_ldrb_ofrpar, LDRB, PRE, INC, SDT_POS_ASR, false, false);
+gen_ldr!(arm_ldrb_ofrpar, LDRB, PRE, INC, SDT_POS_ASR, false, false);
 
 /// LDRB ofrprr
-gen_sdt!(arm_ldrb_ofrprr, LDRB, PRE, INC, SDT_POS_ROR, false, false);
+gen_ldr!(arm_ldrb_ofrprr, LDRB, PRE, INC, SDT_POS_ROR, false, false);
 
 /// STRB prrpll
-gen_sdt!(arm_strb_prrpll, STRB, PRE, INC, SDT_LSL, true, false);
+gen_str!(arm_strb_prrpll, STRB, PRE, INC, SDT_LSL, true, false);
 
 /// STRB prrplr
-gen_sdt!(arm_strb_prrplr, STRB, PRE, INC, SDT_LSR, true, false);
+gen_str!(arm_strb_prrplr, STRB, PRE, INC, SDT_LSR, true, false);
 
 /// STRB prrpar
-gen_sdt!(arm_strb_prrpar, STRB, PRE, INC, SDT_ASR, true, false);
+gen_str!(arm_strb_prrpar, STRB, PRE, INC, SDT_ASR, true, false);
 
 /// STRB prrprr
-gen_sdt!(arm_strb_prrprr, STRB, PRE, INC, SDT_ROR, true, false);
+gen_str!(arm_strb_prrprr, STRB, PRE, INC, SDT_ROR, true, false);
 
 /// LDRB prrpll
-gen_sdt!(arm_ldrb_prrpll, LDRB, PRE, INC, SDT_LSL, true, false);
+gen_ldr!(arm_ldrb_prrpll, LDRB, PRE, INC, SDT_LSL, true, false);
 
 /// LDRB prrplr
-gen_sdt!(arm_ldrb_prrplr, LDRB, PRE, INC, SDT_LSR, true, false);
+gen_ldr!(arm_ldrb_prrplr, LDRB, PRE, INC, SDT_LSR, true, false);
 
 /// LDRB prrpar
-gen_sdt!(arm_ldrb_prrpar, LDRB, PRE, INC, SDT_ASR, true, false);
+gen_ldr!(arm_ldrb_prrpar, LDRB, PRE, INC, SDT_ASR, true, false);
 
 /// LDRB prrprr
-gen_sdt!(arm_ldrb_prrprr, LDRB, PRE, INC, SDT_ROR, true, false);
+gen_ldr!(arm_ldrb_prrprr, LDRB, PRE, INC, SDT_ROR, true, false);
 
 /// STMDA 
 /// Store multiple words, decrement after
