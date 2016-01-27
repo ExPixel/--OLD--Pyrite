@@ -1289,7 +1289,7 @@ pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
 	let rn = (instr >> 16) & 0xf;
 	let source = cpu.rget(rm);
 	let address = cpu.rget(rn);
-	let temp = cpu.mread32(address);
+	let temp = cpu.mread32_al(address);
 	cpu.mwrite32(address, source);
 	cpu.rset(rd, temp);
 }
@@ -1462,9 +1462,9 @@ pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
 	let rn = (instr >> 16) & 0xf;
 	let source = cpu.rget(rm);
 	let address = cpu.rget(rn);
-	let temp = cpu.mread8(address);
+	let temp = cpu.mread8_al(address);
 	cpu.mwrite8(address, (source & 0xff) as u8);
-	cpu.rset(rd, temp as u32);
+	cpu.rset(rd, temp);
 }
 
 /// STRH ofim

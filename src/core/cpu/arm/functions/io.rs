@@ -12,12 +12,12 @@ fn sdt_reg_operands(cpu: &ArmCpu, instr: u32) -> (u32, u32) {
 }
 
 pub fn arm_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = cpu.mread8(address) as u32;
+	let data = cpu.mread8_al(address) as u32;
 	cpu.rset(rd, data);
 }
 
 pub fn arm_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = cpu.mread32(address);
+	let data = cpu.mread32_al(address);
 	cpu.rset(rd, data);
 }
 
@@ -47,7 +47,7 @@ pub fn arm_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
 }
 
 pub fn arm_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = cpu.mread16(address) as u32;
+	let data = cpu.mread16_al(address) as u32;
 	cpu.rset(rd, data);
 }
 
@@ -64,17 +64,17 @@ pub fn arm_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 }
 
 pub fn arm_fn_ldrsb(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = ((cpu.mread8(address) as i8) as i32) as u32; // This is just a sign extension.
+	let data = cpu.mread8_signed_al(address); // This is just a sign extension.
 	cpu.rset(rd, data);
 }
 
 pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = ((cpu.mread16(address) as i16) as i32) as u32; // This is just a sign extension.
+	let data = cpu.mread16_signed_al(address); // This is just a sign extension.
 	cpu.rset(rd, data);
 }
 
 pub fn arm_fn_ldm_single(cpu: &mut ArmCpu, address: u32, dest_reg: u32) {
-	let data = cpu.mread32(address);
+	let data = cpu.mread32(address); // #TODO should this be aligned?
 	cpu.rset(dest_reg, data);
 	// println!("loading [0x{:08x}]={:08x} into r{}", address, data, dest_reg);
 }

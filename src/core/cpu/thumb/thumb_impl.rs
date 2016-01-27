@@ -1,7 +1,6 @@
 use super::super::ArmCpu;
 // use super::super::super::memory::GbaMemory;
 use super::functions::*;
-use super::super::alu::*;
 use super::super::arm::functions::*;
 use std::convert::Into;
 
@@ -533,7 +532,7 @@ fn thumb_ldrpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let pc = cpu.rget(15) & 0xFFFFFFFC; // Has to be word aligned.
 	let offset = (instr & 0xff) << 2;
 	let address = pc + offset;
-	let data = cpu.mread32(address);
+	let data = cpu.mread32_al(address);
 	cpu.rset(rd, data);
 }
 
@@ -733,7 +732,7 @@ fn thumb_ldrsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let offset = (instr & 0xff) << 2;
 	let base = cpu.rget(SP);
 	let address = base + offset;
-	let data = cpu.mread32(address);
+	let data = cpu.mread32_al(address);
 	cpu.rset(rd, data);
 }
 
@@ -930,7 +929,7 @@ fn thumb_stm_single(cpu: &mut ArmCpu, src_reg: u32, address: &mut u32) {
 
 #[inline(always)]
 fn thumb_ldm_single(cpu: &mut ArmCpu, dst_reg: u32, address: &mut u32) {
-	let src_data = cpu.mread32(*address);
+	let src_data = cpu.mread32(*address); // #TODO should I use an aligned read here?
 	cpu.rset(dst_reg, src_data);
 	// println!("<{:08X}> loaded [0x{:08x}]=0x{:08x} to r{}", cpu.get_exec_address(), *address, src_data, dst_reg);
 	*address += 4;

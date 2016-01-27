@@ -2,7 +2,6 @@ use super::super::ArmCpu;
 // use super::super::super::memory::GbaMemory;
 use super::super::arm::functions::*;
 use super::functions::*;
-use super::super::alu::*;
 
 /// Generates a THUMB ALU operation.
 macro_rules! gen_alu {

@@ -62,13 +62,16 @@ pub fn thumb_fn_mul(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn thumb_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = cpu.mread32(address);
+	let data = cpu.mread32_al(address);
+	// if cpu.get_exec_address() == 0x08004120 {
+	// 	println!("Loading 0x{:08x} from [0x{:08x}] into r{}", data, address, rd);
+	// }
 	cpu.rset(rd, data);
 }
 
 pub fn thumb_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = cpu.mread8(address);
-	cpu.rset(rd, data as u32);
+	let data = cpu.mread8_al(address);
+	cpu.rset(rd, data);
 }
 
 pub fn thumb_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
@@ -82,7 +85,7 @@ pub fn thumb_fn_strb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 }
 
 pub fn thumb_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = cpu.mread16(address) as u32;
+	let data = cpu.mread16_al(address);
 	cpu.rset(rd, data);
 }
 
@@ -95,12 +98,12 @@ pub fn thumb_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 }
 
 pub fn thumb_fn_ldrsb(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = ((cpu.mread8(address) as i8) as i32) as u32;
+	let data = cpu.mread8_signed_al(address);
 	cpu.rset(rd, data);
 }
 
 pub fn thumb_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	let data = ((cpu.mread16(address) as i16) as i32) as u32;
+	let data = cpu.mread16_signed_al(address);
 	cpu.rset(rd, data);
 }
 

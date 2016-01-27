@@ -100,6 +100,12 @@ impl Gba {
 			self.device.render(&self.lcd.screen_buffer);
 			if self.poll_device_events() { break 'running; }
 
+			{
+				let fps = self.device.fps_counter.fps;
+				let speed = ((fps as f64) / 60f64) * 100f64;
+				let window = self.device.display.get_window().expect("Failed to get device window.");
+				window.set_title(&format!("Pyrite - {} FPS ({} %)", fps, speed as i64));
+			}
 			// {
 			// 	let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
 			// 	let title = format!("Pyrite - {} FPS - {:04x}", self.device.fps_counter.fps, self.cpu.memory.get_reg(ioreg::DISPCNT));

@@ -8,9 +8,10 @@ Core:
       ☐ Complete Mode 4 Rendering
       ☐ Complete Window Rendering
   CPU:
+    ☐ Clean up leftover debug statements that have been commented out.
     ✔ Complete the CPU's logic. @done (16-01-20 15:26)
     ✔ Complete the CPU's ALU @done (16-01-01 22:36)
-    ☐ Alignment on all data transfer instructions
+    ✔ Alignment on all data transfer instructions @done (16-01-26 22:46)
     ✔ Complete the CPU's ARM instructions (minus swi). @done (16-01-03 23:16)
       ✔ Data processing instructions @done (15-12-24 23:41)
       ✔ PSR transfer instructions @done (16-01-01 18:33)

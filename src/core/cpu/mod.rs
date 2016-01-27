@@ -109,6 +109,42 @@ impl ArmCpu {
 		return self.registers.set(register, value);
 	}
 
+	/// Reads an unsigned 8 bit value from memory and makes sure that
+	/// all of the correct data ends up on the correct data bus (basically byte)
+	pub fn mread8_al(&self, address: u32) -> u32 {
+		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		self.memory.read8(address) as u32
+	}
+
+	/// Reads a signed 8 bit value from memory and makes sure that
+	/// all of the correct data ends up on the correct data bus (basically byte
+	pub fn mread8_signed_al(&self, address: u32) -> u32 {
+		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		((self.memory.read8(address) as i8) as i32) as u32
+	}
+
+	/// Reads an unsigned 16 bit value from memory and makes sure that
+	/// all of the correct data ends up on the correct data bus (basically byte
+	pub fn mread16_al(&self, address: u32) -> u32 {
+		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		self.memory.read16(address) as u32
+	}
+
+	/// Reads a signed 16 bit value from memory and makes sure that
+	/// all of the correct data ends up on the correct data bus (basically byte
+	pub fn mread16_signed_al(&self, address: u32) -> u32 {
+		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		((self.memory.read16(address) as i16) as i32) as u32
+	}
+
+	/// Reads an unsigned 32 bit value from memory and makes sure that
+	/// all of the correct data ends up on the correct data bus (basically byte
+	pub fn mread32_al(&self, address: u32) -> u32 {
+		let data = self.memory.read32(address & 0xFFFFFFFC); // make sure what we retrieve is word aligned.
+		let offset = (address & 0x3) * 8; // offset from the word boundary in bits.
+		(data << (32 - offset)) | (data >> offset) // rotate right by offset.
+	}
+
 	pub fn mread8(&self, address: u32) -> u8 {
 		self.memory.read8(address)
 	}
@@ -130,6 +166,9 @@ impl ArmCpu {
 	}
 
 	pub fn mwrite32(&mut self, address: u32, value: u32) {
+		if address & 0b11 != 0 {
+
+		}
 		self.memory.write32(address, value);
 	}
 
@@ -440,7 +479,7 @@ impl ArmCpu {
 const DEBUG_STOP: bool = false;
 const DEBUG_THUMB: Option<bool> = Some(true);
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x08003ed4;
+const DEBUG_ADDR: u32 = 0x08004120; // 0x0800411e
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]
