@@ -185,7 +185,7 @@ const LDM: fn(&mut ArmCpu, u32, u32) = arm_fn_ldm_single;
 const STM: fn(&mut ArmCpu, u32, u32) = arm_fn_stm_single;
 
 // #TODO complete the remaining work on corner cases and the like,
-/// such as the use of r15 in SDT instructions.
+// such as the use of r15 in SDT instructions.
 /// Generates a single data transfer instruction.
 macro_rules! gen_sdt {
 	(

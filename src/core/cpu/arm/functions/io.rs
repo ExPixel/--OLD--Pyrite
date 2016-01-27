@@ -2,13 +2,9 @@ use super::super::super::ArmCpu;
 use super::super::super::alu::*;
 
 fn sdt_reg_operands(cpu: &ArmCpu, instr: u32) -> (u32, u32) {
-	let rm = instr & 0xf;
-	// If a register is used to specify the shift amount the PC will be 12 bytes ahead.
-	let _rm = if rm == 15 { cpu.rget(15) + 4 } else { cpu.rget(rm) };
-	// Only the least significant byte of the contents of Rs is used to determine the shift amount. 
-	// Rs can be any general register other than R15.
-	let _rs = cpu.rget((instr >> 8) & 0xf) & 0xf;
-	(_rm, _rs)
+	let _rm = cpu.rget(instr & 0xf);
+	let shift_amt = (instr >> 7) & 0x1f;
+	(_rm, shift_amt)
 }
 
 pub fn arm_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
@@ -18,6 +14,11 @@ pub fn arm_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 
 pub fn arm_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread32_al(address);
+
+	// if cpu.get_exec_address() == 0x080011f8 {
+	// 	println!("loading [0x{:08x}]=0x{:08x} into r{}", address, data, rd);
+	// }
+
 	cpu.rset(rd, data);
 }
 
@@ -121,6 +122,7 @@ pub fn arm_fn_sdt_lsl(cpu: &ArmCpu, instr: u32) -> u32 {
 
 pub fn arm_fn_sdt_lsr(cpu: &ArmCpu, instr: u32) -> u32 {
 	let (lhs, rhs) = sdt_reg_operands(cpu, instr);
+	// if cpu.get_exec_address() == 0x080011f8 { println!("{} lsr {}", lhs, rhs); }
 	arm_alu_lri(lhs, rhs)
 }
 

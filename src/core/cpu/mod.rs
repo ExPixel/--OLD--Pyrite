@@ -477,9 +477,9 @@ impl ArmCpu {
 }
 
 const DEBUG_STOP: bool = false;
-const DEBUG_THUMB: Option<bool> = Some(true);
+const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x08004120; // 0x0800411e
+const DEBUG_ADDR: u32 = 0x080011f8; // 0x0800411e
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]

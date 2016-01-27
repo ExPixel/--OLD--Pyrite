@@ -129,10 +129,10 @@ pub fn arm_alu_llr(lhs: u32, rhs: u32) -> u32 {
 }
 
 pub fn arm_alu_lri(lhs: u32, rhs: u32) -> u32 {
-	// The form of the shift field which might be expected to 
-	// correspond to LSR #0 is used to encode LSR #32
-	let rhs = if rhs == 0 { 32 } else { rhs };
-	lhs.arm_lsr(rhs)
+	// The form of the shift field which might be expected to correspond to LSR #0 is used to encode LSR #32, 
+	// which has a zero result with bit 31 of Rm as the carry output.
+	if rhs == 0 { 0 }
+	else { lhs.arm_lsr(rhs) }
 }
 
 pub fn arm_alu_lrr(lhs: u32, rhs: u32) -> u32 {
@@ -148,8 +148,12 @@ pub fn arm_alu_lrr(lhs: u32, rhs: u32) -> u32 {
 pub fn arm_alu_ari(lhs: u32, rhs: u32) -> u32 {
 	// The form of the shift field which might be expected to give ASR #0 
 	// is used to encode ASR #32
-	let rhs = if rhs == 0 { 32 } else { rhs };
-	lhs.arm_asr(rhs)
+	if rhs == 0 {
+		if (lhs & 0x80000000) == 0 { 0x00000000 }
+		else { 0xffffffff }
+	} else {
+		lhs.arm_asr(rhs)
+	}
 }
 
 pub fn arm_alu_arr(lhs: u32, rhs: u32) -> u32 {
