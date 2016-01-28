@@ -336,23 +336,21 @@ macro_rules! gen_stm {
 					}
 				}
 			} else {
-				// First Cycle: Figuring out where we start storing.
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
 						address -= 4;
 					}
 				}
-				if !$index_pre { address -= 4; }
 
-				
+				let ending_addr = address;
+
 				let mut wroteback = false;
-
-				// Second Cycle: Where we actually do the transfer.
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
+						if !$index_pre { address += 4; }
 						STM(cpu, address, r);
-						if $writeback && !wroteback { cpu.rset(rn, address); wroteback = true; } // we only do the writeback once here.
-						address += 4; // we can just index here because we calculate for pre indexing higher up.
+						if $writeback && !wroteback { cpu.rset(rn, ending_addr); wroteback = true; } // writeback at the end of the second cycle.
+						if $index_pre { address += 4; }
 					}
 				}
 			}
@@ -386,33 +384,30 @@ macro_rules! gen_ldm {
 					if ((instr >> r) & 1) == 1 {
 						if $index_pre { address += 4; } // pre index
 						LDM(cpu, address, r);
+						if psr_transfer && r == 15 {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
 						if !$index_pre { address += 4; } // post index
 						if $writeback { cpu.rset(rn, address) } // writeback at the end of the second cycle.
 					}
 				}
 			} else {
-				// First Cycle: Figuring out where we start storing.
+				let mut allow_writeback = true;
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
+						if allow_writeback && r == rn { allow_writeback = false; }
 						address -= 4;
 					}
 				}
-				if !$index_pre { address -= 4; }
+
+				let ending_addr = address;
 
 				let mut wroteback = false;
-
-				// Second Cycle: Where we actually do the transfer.
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
-						if $writeback && !wroteback { cpu.rset(rn, address); wroteback = true; } // writeback at then end of the second cycle.
-						LDM(cpu, address, r); // LDM overwrites the updated base. #FIXME might not be correct.
-
-						// LDM with R15 in transfer list and S bit set (Mode changes)
-						// If the instruction is a LDM then SPSR_<mode> is transferred to 
-						// CPSR at the same time as R15 is loaded.
-						// -- Here we know that the S bit is definitely set.
-						if $user && r == 15 {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
-						address += 4; // we can just index here because we calculate for pre indexing higher up.
+						if !$index_pre { address += 4; }
+						LDM(cpu, address, r);
+						if psr_transfer && r == 15 {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
+						if $writeback && !wroteback && allow_writeback { cpu.rset(rn, ending_addr); wroteback = true; } // writeback at the end of the second cycle.
+						if $index_pre { address += 4; }
 					}
 				}
 			}
@@ -421,6 +416,7 @@ macro_rules! gen_ldm {
 		}
 	)
 }
+
 
 /// This is now obsolete but, I might try to make
 /// the optimization at some point anyways. LDM with
@@ -2773,7 +2769,7 @@ gen_stm!(arm_stmia_uw, POST, INC, true, true);
 /// LDMIA uw
 /// Load multiple words, increment after
 /// Use user-mode registers, with write back
-gen_ldm_u!(arm_ldmia_uw, INC, INC, true);
+gen_ldm_u!(arm_ldmia_uw, POST, INC, true);
 
 /// STMDB 
 /// Store multiple words, decrement before
