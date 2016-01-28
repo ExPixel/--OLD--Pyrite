@@ -1,6 +1,11 @@
+// #FIXME This entire file basically relies on the optimizer removing
+// if false {} blocks and the else blocks of if true {} else {} blocks.
+// That might be entirely okay and if that proves to be the case, I can make
+// some adjustments or run some type of "optimizer" of my own that just expands
+// all of the macros.
+
 use super::super::ArmCpu;
 use super::super::registers;
-// use super::super::super::memory::GbaMemory;
 use super::functions::*;
 use super::super::alu;
 
