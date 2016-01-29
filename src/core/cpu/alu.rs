@@ -23,19 +23,19 @@ pub fn arm_alu_rsc(cpu: &ArmCpu, lhs: u32, rhs: u32) -> u32 {
 
 pub fn arm_alu_adcs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	let res = arm_alu_adc(cpu, lhs, rhs);
-	set_add_flags(cpu, lhs, rhs, res); // #FIXME this might not be right.
+	set_add_flags(cpu, lhs, rhs, res);
 	res
 }
 
 pub fn arm_alu_sbcs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	let res = arm_alu_sbc(cpu, lhs, rhs);
-	set_sub_flags(cpu, lhs, rhs, res); // #FIXME this might not be right.
+	set_sub_flags(cpu, lhs, rhs, res);
 	res
 }
 
 pub fn arm_alu_rscs(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	let res = arm_alu_rsc(cpu, lhs, rhs);
-	set_sub_flags(cpu, lhs, rhs, res); // #FIXME this might not be right.
+	set_sub_flags(cpu, lhs, rhs, res);
 	res
 }
 

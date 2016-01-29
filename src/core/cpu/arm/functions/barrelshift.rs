@@ -73,9 +73,6 @@ pub fn arm_fn_op2_rrr(cpu: &mut ArmCpu, instr: u32) -> u32 {
 /// subject to a rotate right by twice the value in the rotate field. This enables many
 /// common constants to be generated, for example all powers of 2.
 pub fn arm_fn_op2_imm_s(cpu: &mut ArmCpu, instr: u32) -> u32 {
-	// #FIXME I'm not sure if this is actually suppose to set
-	// any flags, so for now this function will exist just in case
-	// I have to make any changes in the future.
 	arm_fn_op2_imm(cpu, instr)
 }
 

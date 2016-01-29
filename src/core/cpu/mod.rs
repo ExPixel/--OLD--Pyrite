@@ -104,6 +104,9 @@ impl ArmCpu {
 		self.registers.getf_t()
 	}
 
+	// #TODO could probably make thumb instructions better by giving them
+	// a rset_lo functions so that they don't have to check PC because
+	// it's impossible for them to change it.
 	pub fn rset(&mut self, register: u32, value: u32) {
 		if !self.branched && register == 15 { self.branched = true }
 		return self.registers.set(register, value);
@@ -176,13 +179,6 @@ impl ArmCpu {
 		if self.arm_pipeline.ready() {
 			let decoded = self.arm_pipeline.decoded;
 			let condition = (decoded >> 28) & 0xf;
-
-			// {
-			// 	// #DEBUG
-			// 	let __pc = self.registers.get(REG_PC) - 8;
-			// 	println!("_arm {}", super::super::debug::armdis::disasm_arm(__pc, &self.memory, 0b11111111));
-			// }
-
 			if self.check_condition(condition) {
 				let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 				before_execution(exec_addr, self); // #TODO remove this debug code.
@@ -192,8 +188,7 @@ impl ArmCpu {
 		}
 
 		if self.branched {
-			// #FIXME I should probably be doing this in the instructions themselves.
-			self.align_pc(); // word aligning the program counter for ARM mode.
+			self.align_pc();
 			self.arm_pipeline.flush();
 			self.branched = false;
 		} else {
@@ -207,15 +202,6 @@ impl ArmCpu {
 	fn thumb_tick(&mut self) {
 		if self.thumb_pipeline.ready() {
 			let decoded = self.thumb_pipeline.decoded as u32;
-
-
-			// {
-			// 	// #DEBUG
-			// 	let __pc = self.registers.get(REG_PC) - 4;
-			// 	println!("thumb {}", super::super::debug::armdis::disasm_thumb(__pc, &self.memory, 0b11111111));
-			// 	// self.reg_dump();
-			// }
-
 			let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 			before_execution(exec_addr, self); // #TODO remove this debug code.
 			execute_thumb(self, decoded);
@@ -414,10 +400,10 @@ impl ArmCpu {
 	/// being executed.
 	pub fn get_exec_address(&self) -> u32 {
 		if self.thumb_mode() {
-			let c = self.thumb_pipeline.count as u32; //if self.thumb_pipeline.count > 2 { 2 } else { self.thumb_pipeline.count as u32 };
+			let c = self.thumb_pipeline.count as u32;
 			self.registers.get(15) - (c * 2)
 		} else {
-			let c = self.arm_pipeline.count as u32; //if self.arm_pipeline.count > 2 { 2 } else { self.arm_pipeline.count as u32 };
+			let c = self.arm_pipeline.count as u32;
 			self.registers.get(15) - (c * 4)
 		}
 	}
@@ -477,9 +463,9 @@ impl ArmCpu {
 }
 
 const DEBUG_STOP: bool = false;
-const DEBUG_THUMB: Option<bool> = Some(true);
+const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x0800031C;
+const DEBUG_ADDR: u32 = 0x0;
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]

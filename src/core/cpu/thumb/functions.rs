@@ -63,9 +63,6 @@ pub fn thumb_fn_mul(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 
 pub fn thumb_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread32_al(address);
-	// if cpu.get_exec_address() == 0x08004120 {
-	// 	println!("Loading 0x{:08x} from [0x{:08x}] into r{}", data, address, rd);
-	// }
 	cpu.rset(rd, data);
 }
 
@@ -90,9 +87,6 @@ pub fn thumb_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 }
 
 pub fn thumb_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {
-	// if address == cpu.rget(7) && rd == 1 {
-	// 	println!("store r{}=0x{:08x} to [{:08x}]; r2=x{:08x}; r3=0x{:08x}", rd, cpu.rget(rd), address, cpu.rget(2), cpu.rget(3));
-	// }
 	let data = cpu.rget(rd) as u16;
 	cpu.mwrite16(address, data);
 }

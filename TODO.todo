@@ -9,6 +9,7 @@ Core:
       ☐ Complete Window Rendering
   CPU:
     ☐ Clean up leftover debug statements that have been commented out.
+    ☐ Complete CPU's Clock.
     ✔ Complete the CPU's logic. @done (16-01-20 15:26)
     ✔ Complete the CPU's ALU @done (16-01-01 22:36)
     ✔ Alignment on all data transfer instructions @done (16-01-26 22:46)
@@ -39,7 +40,7 @@ Core:
       ✔ Block data transfer instructions @done (16-01-01 15:24)
       ✔ Software interrupt instructions @done (16-01-22 12:43)
       ☐ Undefined instruction should go into the correct interrupt vector.
-      ☐ Consider just inlining all of the stuff inside of the ALU.
+      ✔ Consider just inlining all of the stuff inside of the ALU. @done (16-01-28 21:12)
          A lot of the things in the ALU, I was just going to write
          at their call sites anyways. None of them are very large
          so it might be worth forcing them to be inlined. Until I build more

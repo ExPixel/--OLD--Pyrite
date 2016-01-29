@@ -75,9 +75,8 @@ pub fn arm_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 }
 
 pub fn arm_fn_ldm_single(cpu: &mut ArmCpu, address: u32, dest_reg: u32) {
-	let data = cpu.mread32(address); // #TODO should this be aligned?
+	let data = cpu.mread32(address);
 	cpu.rset(dest_reg, data);
-	// println!("loading [0x{:08x}]={:08x} into r{}", address, data, dest_reg);
 }
 
 pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {
@@ -86,7 +85,6 @@ pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {
 	} else {
 		cpu.rget(src_reg)
 	};
-	// println!("storing r{}=0x{:08x} to [0x{:08x}]", src_reg, data, address);
 	cpu.mwrite32(address, data);
 }
 
@@ -122,7 +120,6 @@ pub fn arm_fn_sdt_lsl(cpu: &ArmCpu, instr: u32) -> u32 {
 
 pub fn arm_fn_sdt_lsr(cpu: &ArmCpu, instr: u32) -> u32 {
 	let (lhs, rhs) = sdt_reg_operands(cpu, instr);
-	// if cpu.get_exec_address() == 0x080011f8 { println!("{} lsr {}", lhs, rhs); }
 	arm_alu_lri(lhs, rhs)
 }
 

@@ -156,12 +156,6 @@ const LDRSH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsh;
 
 const HDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_imm;
 const HDT_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_reg;
-// #TODO should consider going back and using these even though
-//       they actually make 0 difference.
-// const HDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_imm;
-// const HDT_NEG_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_neg_reg;
-// const HDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_imm;
-// const HDT_POS_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_pos_reg;
 
 // Functions for calculating the offset of a single data transfer.
 const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
@@ -320,9 +314,6 @@ macro_rules! gen_stm {
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-			// #FIXME not sure if the base register should also be taken from
-			// a user mode register or if it should be taken from the current mode's
-			// registers. So the placement of this change might be wrong.
 			let last_mode = cpu.registers.get_mode();
 			if $user { cpu.registers.set_mode(registers::MODE_USR); }
 
@@ -374,9 +365,6 @@ macro_rules! gen_ldm {
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-			// #FIXME not sure if the base register should also be taken from
-			// a user mode register or if it should be taken from the current mode's
-			// registers. So the placement of this change might be wrong.
 			let psr_transfer = ((instr >> 15) & 1) == 1 && $user; // r15 is in the transfer list and user mode.
 			let last_mode = cpu.registers.get_mode();
 			if $user { cpu.registers.set_mode(registers::MODE_USR); }
@@ -438,126 +426,6 @@ macro_rules! gen_ldm_u {
 	)
 }
 
-// // #TODO Work on corner cases.
-// /// Generates a Block Data Transfer instruction
-// macro_rules! gen_bdt {
-// 	(
-// 		$instr_name:ident,
-// 		$transfer:ident,
-// 		$index_pre: expr,
-// 		$index_inc: expr,
-// 		$writeback: expr,
-// 		$user: expr
-// 	) => (
-// 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-// 			// #FIXME not sure if the base register should also be taken from
-// 			// a user mode register or if it should be taken from the current mode's
-// 			// registers. So the placement of this change might be wrong.
-// 			let last_mode = cpu.registers.get_mode();
-// 			if $user { cpu.registers.set_mode(registers::MODE_USR); }
-
-// 			let register_list = instr & 0xffff;
-// 			let rn = (instr >> 16) & 0xf;
-// 			let mut address = cpu.rget(rn);
-
-// 			// for reg in 0..16 {
-// 			// 	if (register_list & (1 << reg)) != 0 {
-// 			// 		if $index_pre { address += 4; }
-// 			// 		$transfer(cpu, address, reg);
-// 			// 		if !$index_pre { address += 4; }
-
-// 			// 		// #FIXME This should be happening here but I'm not sure so
-// 			// 		// I'm putting a fixme here just in case.
-// 			// 		if $writeback { cpu.rset(rn, address); }
-// 			// 	}
-// 			// }
-
-// 			// The lowest register and/or address is always transferred/transferred to first
-// 			if $index_inc {
-// 				for reg in 0..16 {
-// 					if (register_list & (1 << reg)) != 0 {
-// 						if $index_pre { address += 4; }
-// 						$transfer(cpu, address, reg);
-// 						if !$index_pre { address += 4; }
-// 					}
-// 				} // #TODO(NEXT): how do transferino writeback?
-// 			} else {
-// 				// The first cycle to get to our lowest address.
-// 				for reg in 0..16 {
-// 					if (register_list & (1 << reg)) != 0 {
-// 						address -= 4;
-// 					}
-// 				}
-
-// 				// second cycle where we actually transfer stuff:
-// 				if !$index_pre { address -= 4; }
-
-// 				if $writeback {
-// 					// we do the write back here, because an LDM will always
-// 					// overwrite the base if it is in the transfer list.
-// 					cpu.rset(rn, address);
-// 				}
-
-// 				for reg in 0..16 {
-// 					if (register_list & (1 << reg)) != 0 {
-// 						$transfer(cpu, address, reg);
-// 						address += 4;
-// 					}
-// 				}
-// 			}
-
-// 			if $user { cpu.registers.set_mode(last_mode); }
-// 		}
-// 	)
-// }
-
-// // #TODO(NEXT) split the bdt macro into ldm and stm macros
-// // in order to correctly handle writebacks on the second cycle and shit.
-
-// /// Special macro created for LDM instructions with the
-// /// S bit on. These do something a little bit different in the case
-// /// that R15 is included in the register list, and I don't feel the other
-// /// BDT instructions need to be bogged down with this calculation.
-// macro_rules! gen_ldm_u {
-//     (
-// 		$instr_name:ident,
-// 		$index_pre: expr,
-// 		$index_inc: expr,
-// 		$writeback: expr
-// 	) => (
-// 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-// 			// #FIXME not sure if the base register should also be taken from
-// 			// a user mode register or if it should be taken from the current mode's
-// 			// registers. So the placement of this change might be wrong.
-// 			let psr_transfer = ((instr >> 15) & 1) == 1; // r15 is in the transfer list.
-// 			let last_mode = cpu.registers.get_mode();
-// 			if !psr_transfer { cpu.registers.set_mode(registers::MODE_USR); }
-
-// 			let register_list = instr & 0xffff;
-// 			let rn = (instr >> 16) & 0xf;
-// 			let mut address = cpu.rget(rn);
-
-// 			for reg in 0..16 {
-// 				if (register_list & (1 << reg)) != 0 {
-// 					if $index_pre { address += 4; }
-// 					LDM(cpu, address, reg);
-// 					// LDM with R15 in transfer list and S bit set (Mode changes)
-// 					// If the instruction is a LDM then SPSR_<mode> is transferred to 
-// 					// CPSR at the same time as R15 is loaded.
-// 					// -- Here we know that the S bit is definitely set.
-// 					cpu.registers.spsr_to_cpsr(); // this loads the spsr in to the cpsr.
-// 					if !$index_pre { address += 4; }
-					
-// 					// #FIXME This should be happening here but I'm not sure so
-// 					// I'm putting a fixme here just in case.
-// 					if $writeback { cpu.rset(rn, address); }
-// 				}
-// 			}
-
-// 			if !psr_transfer { cpu.registers.set_mode(last_mode); }
-// 		}
-// 	)
-// }
 
 /// AND lli
 /// Logical And
@@ -1422,9 +1290,6 @@ gen_hldr!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
 pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
 	let rm = instr & 0xf;
 	let _rm = cpu.rget(rm);
-
-	// #FIXME this might be wrong but this is what the documentation looks like
-	// The ARM Opcode Map I'm using doesn't match up however.
 	if ((instr >> 16) & 1) == 1 {
 		cpu.registers.set_cpsr_safe(_rm);
 	} else {
@@ -1595,8 +1460,6 @@ gen_hldr!(arm_ldrsh_ofim, LDRSH, PRE, DEC, HDT_IMM, false);
 pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
 	let rm = instr & 0xf;
 	let _rm = cpu.rget(rm);
-	// #FIXME this might be wrong but this is what the documentation looks like
-	// The ARM Opcode Map I'm using doesn't match up however.
 	if ((instr >> 16) & 1) == 1 {
 		cpu.registers.set_spsr_safe(_rm);
 	} else {

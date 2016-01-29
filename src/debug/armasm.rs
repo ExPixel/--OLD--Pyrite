@@ -92,9 +92,7 @@ fn parse_suffix<'a>(source: &'a str, suffix_index: usize) -> Option<usize> {
 }
 
 /// Parses a mnemonic and a condition field.
-fn parse_mnemonic<'a>(source: &'a str) -> Result<TempRet<'a>, String> { // 269
-	// #TODO consider replacing the other whitespace in the source
-	// with spaces.
+fn parse_mnemonic<'a>(source: &'a str) -> Result<TempRet<'a>, String> {
 	let mut t = source.split(" ");
 	let t0 = t.next().expect("No mnemonic found in input.");
 	let mut ret: TempRet = Default::default();

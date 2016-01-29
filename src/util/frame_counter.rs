@@ -8,7 +8,7 @@ pub struct FrameCounter {
 	pub total_time: u64,
 	pub last_time: u64,
 	pub delta_frames: u64,
-	pub fps: u64 // #FIXME make this a u32?
+	pub fps: u64
 }
 
 impl FrameCounter {
