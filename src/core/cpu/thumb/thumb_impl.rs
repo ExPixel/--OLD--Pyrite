@@ -1272,7 +1272,7 @@ pub fn thumb_bgt(cpu: &mut ArmCpu, instr: u32) {
 /// BLE 
 /// Branch if less than or equal to
 pub fn thumb_ble(cpu: &mut ArmCpu, instr: u32) {
-	if cpu.registers.getf_z() && (cpu.registers.getf_n() != cpu.registers.getf_v()) {
+	if cpu.registers.getf_z() || (cpu.registers.getf_n() != cpu.registers.getf_v()) {
 		thumb_b_cond_passed(cpu, instr);
 	}
 }
