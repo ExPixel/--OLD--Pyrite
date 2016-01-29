@@ -507,16 +507,4 @@ fn after_execution(address: u32, cpu: &mut ArmCpu) {
 	}
 }
 
-/*
-m3_frame(132,  8, 228,  72, CLR_CYAN);
 
-08000562 4b35 ldr r3, [$08000638] (=$00007fe0)
-08000564 2084 mov r0, #0x84
-08000566 9300 str r3, [sp, #0x0]
-08000568 2108 mov r1, #0x8
-0800056a 22e4 mov r2, #0xe4
-0800056c 2348 mov r3, #0x48
-0800056e 9501 str r5, [sp, #0x4]
-08000570 9402 str r4, [sp, #0x8]
-08000572 f7ff bl $08000438
-*/
