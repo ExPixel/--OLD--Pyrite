@@ -26,7 +26,7 @@ pub fn arm_fn_strb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
 	let _src = if rd == 15 {
-		cpu.rget(15) + 4
+		cpu.get_pc() + 4
 	} else {
 		cpu.rget(rd)
 	};
@@ -39,7 +39,7 @@ pub fn arm_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
 	let _src = if rd == 15 {
-		cpu.rget(15) + 4
+		cpu.get_pc() + 4
 	} else {
 		cpu.rget(rd)
 	};
@@ -56,7 +56,7 @@ pub fn arm_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	// When R15 is the source register (Rd) of a register store (STR) instruction, 
 	// the stored value will be address of the instruction plus 12
 	let _src = if rd == 15 {
-		cpu.rget(15) + 4
+		cpu.get_pc() + 4
 	} else {
 		cpu.rget(rd)
 	};
@@ -81,7 +81,7 @@ pub fn arm_fn_ldm_single(cpu: &mut ArmCpu, address: u32, dest_reg: u32) {
 
 pub fn arm_fn_stm_single(cpu: &mut ArmCpu, address: u32, src_reg: u32) {
 	let data = if src_reg == 15 {
-		cpu.rget(15) + 4 // address of STM + 12
+		cpu.get_pc() + 4 // address of STM + 12
 	} else {
 		cpu.rget(src_reg)
 	};

@@ -38,12 +38,12 @@ impl GbaLcd {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
 		match dispcnt & 0x7 {
-			0 => mode0::render_mode_0(dispcnt, memory, line, &mut self.screen_buffer[line as usize].as_mut_slice()),
-			1 => mode1::render_mode_1(dispcnt, memory, line, &mut self.screen_buffer[line as usize].as_mut_slice()),
-			2 => mode2::render_mode_2(dispcnt, memory, line, &mut self.screen_buffer[line as usize].as_mut_slice()),
-			3 => mode3::render_mode_3(dispcnt, memory, line, &mut self.screen_buffer[line as usize].as_mut_slice()),
-			4 => mode4::render_mode_4(dispcnt, memory, line, &mut self.screen_buffer[line as usize].as_mut_slice()),
-			5 => mode5::render_mode_5(dispcnt, memory, line, &mut self.screen_buffer[line as usize].as_mut_slice()),
+			0 => mode0::render_mode_0(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
+			1 => mode1::render_mode_1(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
+			2 => mode2::render_mode_2(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
+			3 => mode3::render_mode_3(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
+			4 => mode4::render_mode_4(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
+			5 => mode5::render_mode_5(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
 			_ => unreachable!()
 		}
 	}

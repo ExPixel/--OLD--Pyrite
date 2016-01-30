@@ -519,17 +519,17 @@ pub fn thumb_bx_reg(cpu: &mut ArmCpu, instr: u32) {
 	let address = cpu.rget(rs);
 	if (address & 1) == 1 {
 		// Branch into thumb mode.
-		cpu.rset(15, address & 0xFFFFFFFE);
+		cpu.set_pc(address & 0xFFFFFFFE);
 	} else {
 		// Branch into arm mode.
 		cpu.registers.clearf_t();
-		cpu.rset(15, address & 0xFFFFFFFC);
+		cpu.set_pc(address & 0xFFFFFFFC);
 	}
 }
 
 /// Common ldrpc function.
 fn thumb_ldrpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
-	let pc = cpu.rget(15) & 0xFFFFFFFC; // Has to be word aligned.
+	let pc = cpu.get_pc() & 0xFFFFFFFC; // Has to be word aligned.
 	let offset = (instr & 0xff) << 2;
 	let address = pc + offset;
 	let data = cpu.mread32_al(address);
@@ -795,7 +795,7 @@ pub fn thumb_ldrsp_r7(cpu: &mut ArmCpu, instr: u32) {
 // Common addpc function.
 fn thumb_addpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let offset = (instr & 0xff) << 2;
-	let pc = cpu.rget(15) & 0xFFFFFFFC; // Has to be word aligned.
+	let pc = cpu.get_pc() & 0xFFFFFFFC; // Has to be word aligned.
 	cpu.rset(rd, pc + offset);
 }
 
@@ -1161,8 +1161,8 @@ fn thumb_b_cond_passed(cpu: &mut ArmCpu, instr: u32) {
 	let mut offset = instr & 0xff;
 	offset = (((offset as i32) << 24) >> 24) as u32;
 	offset <<= 1;
-	let pc = cpu.rget(15) + offset;
-	cpu.rset(15, pc);
+	let pc = cpu.get_pc() + offset;
+	cpu.set_pc(pc);
 }
 
 /// BEQ 
@@ -1287,8 +1287,8 @@ pub fn thumb_swi(cpu: &mut ArmCpu, instr: u32) {
 /// Branch
 pub fn thumb_b(cpu: &mut ArmCpu, instr: u32) {
 	let soffset12 = ((((instr & 0x7ff) as i32) << 21) >> 20) as u32;
-	let pc = cpu.rget(15) + soffset12;
-	cpu.rset(15, pc);
+	let pc = cpu.get_pc() + soffset12;
+	cpu.set_pc(pc);
 }
 
 /// BL setup
@@ -1296,7 +1296,7 @@ pub fn thumb_b(cpu: &mut ArmCpu, instr: u32) {
 /// Two-instruction branch, high 11 bits of offset
 pub fn thumb_bl_setup(cpu: &mut ArmCpu, instr: u32) {
 	let soffset11 = ((((instr & 0x7ff) as i32) << 21) >> 9) as u32;
-	let pc = cpu.rget(15);
+	let pc = cpu.get_pc();
 	cpu.rset(14, pc + soffset11);
 }
 
@@ -1307,8 +1307,8 @@ pub fn thumb_bl_off(cpu: &mut ArmCpu, instr: u32) {
 	let offset12 = (instr & 0x7ff) << 1;
 	let lr = cpu.rget(14);
 	let address = lr + offset12;
-	let next = cpu.rget(15) - 2;
+	let next = cpu.get_pc() - 2;
 	cpu.rset(14, next | 1); // bit 0 of lr must be set.
-	cpu.rset(15, address);
+	cpu.set_pc(address);
 }
 

@@ -100,8 +100,13 @@ impl ArmCpu {
 		return self.registers.get(register)
 	}
 
-	pub fn thumb_mode(&self) -> bool {
-		self.registers.getf_t()
+	pub fn get_pc(&self) -> u32 {
+		self.registers.get_pc()
+	}
+
+	pub fn set_pc(&mut self, value: u32) {
+		self.branched = true;
+		self.registers.set_pc(value);
 	}
 
 	// #TODO could probably make thumb instructions better by giving them
@@ -110,6 +115,10 @@ impl ArmCpu {
 	pub fn rset(&mut self, register: u32, value: u32) {
 		if !self.branched && register == 15 { self.branched = true }
 		return self.registers.set(register, value);
+	}
+
+	pub fn thumb_mode(&self) -> bool {
+		self.registers.getf_t()
 	}
 
 	/// Reads an unsigned 8 bit value from memory and makes sure that
@@ -192,7 +201,7 @@ impl ArmCpu {
 			self.arm_pipeline.flush();
 			self.branched = false;
 		} else {
-			let pc = self.registers.get(REG_PC);
+			let pc = self.get_pc();
 			let next = self.memory.read32(pc);
 			self.registers.set(REG_PC, pc + 4);
 			self.arm_pipeline.next(next);
@@ -214,7 +223,7 @@ impl ArmCpu {
 			self.thumb_pipeline.flush();
 			self.branched = false;
 		} else {
-			let pc = self.registers.get(REG_PC);
+			let pc = self.get_pc();
 			let next = self.memory.read16(pc);
 			self.registers.set(REG_PC, pc + 2);
 			self.thumb_pipeline.next(next);
@@ -222,11 +231,11 @@ impl ArmCpu {
 	}
 
 	pub fn align_pc(&mut self) {
-		let pc = self.rget(15);
+		let pc = self.get_pc();
 		if self.thumb_mode() {
-			self.rset(15, pc & 0xFFFFFFFE);
+			self.set_pc(pc & 0xFFFFFFFE);
 		} else {
-			self.rset(15, pc & 0xFFFFFFFC);
+			self.set_pc(pc & 0xFFFFFFFC);
 		}
 	}
 
@@ -315,7 +324,7 @@ impl ArmCpu {
 		} else {
 			self.registers.set_mode(MODE_SVC);
 			self.registers.cpsr_to_spsr();
-			let next_pc = self.rget(15) - 2;
+			let next_pc = self.get_pc() - 2;
 			self.rset(REG_LR, next_pc);
 			self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 			self.registers.clearf_t(); // Enters ARM mode.
@@ -341,7 +350,7 @@ impl ArmCpu {
 		} else {
 			self.registers.set_mode(MODE_SVC);
 			self.registers.cpsr_to_spsr();
-			let next_pc = self.rget(15) - 4;
+			let next_pc = self.get_pc() - 4;
 			self.rset(REG_LR, next_pc);
 			self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		}
@@ -381,9 +390,9 @@ impl ArmCpu {
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.cpsr_to_spsr();
 		let next_pc = if self.thumb_mode() {
-			self.rget(15) - 2
+			self.get_pc() - 2
 		} else {
-			self.rget(15) - 4
+			self.get_pc() - 4
 		};
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
@@ -424,7 +433,7 @@ impl ArmCpu {
 		}
 		print!("sp = 0x{:08x}; ", self.rget(13));
 		print!("lr = 0x{:08x}; ", self.rget(14));
-		println!("pc = 0x{:08x}", self.rget(15));
+		println!("pc = 0x{:08x}", self.get_pc());
 	}
 
 	pub fn reg_dump_pretty(&self) {
@@ -434,7 +443,7 @@ impl ArmCpu {
 		}
 		println!("sp = 0x{:08x}; ", self.rget(13));
 		println!("lr = 0x{:08x}; ", self.rget(14));
-		println!("pc = 0x{:08x}", self.rget(15));
+		println!("pc = 0x{:08x}", self.get_pc());
 
 		print!("cpsr = 0x{:08x} [ ", self.registers.get_cpsr());
 		if self.registers.getf_n() { print!("n "); }

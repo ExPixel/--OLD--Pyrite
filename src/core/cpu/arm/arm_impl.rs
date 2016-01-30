@@ -57,7 +57,7 @@ macro_rules! gen_dproc_sf {
 			// This allows state changes which atomically restore both PC and CPSR. 
 			// This form of instruction should not be used in User mode.
 			if rd == 15 { 
-				cpu.rset(15, result);
+				cpu.set_pc(result);
 				cpu.registers.set_cpsr(saved_cpsr); // to make it seem as if there was no changes to the flags.
 				cpu.registers.spsr_to_cpsr();
 			} else {
@@ -1305,10 +1305,10 @@ pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
 	if (address & 1) == 1 {
 		// Branch into thumb mode.
 		cpu.registers.setf_t();
-		cpu.rset(15, address & 0xFFFFFFFE);
+		cpu.set_pc(address & 0xFFFFFFFE);
 	} else {
 		// Branch into arm mode.
-		cpu.rset(15, address & 0xFFFFFFFC);
+		cpu.set_pc(address & 0xFFFFFFFC);
 	}
 }
 
@@ -2718,22 +2718,22 @@ gen_ldm_u!(arm_ldmib_uw, PRE, INC, true);
 /// B 
 /// Branch
 pub fn arm_b(cpu: &mut ArmCpu, instr: u32) {
-	let pc = cpu.rget(15);
+	let pc = cpu.get_pc();
 	let mut offset = instr & 0xffffff;
 	offset <<= 2;
 	offset = (((offset as i32) << 6) >> 6) as u32;
-	cpu.rset(15, pc + offset);
+	cpu.set_pc(pc + offset);
 }
 
 /// BL 
 /// Branch and link
 pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
-	let pc = cpu.rget(15);
+	let pc = cpu.get_pc();
 	cpu.rset(14, (pc - 4) & 0xFFFFFFFC);
 	let mut offset = instr & 0xffffff;
 	offset <<= 2;
 	offset = (((offset as i32) << 6) >> 6) as u32;
-	cpu.rset(15, pc + offset);
+	cpu.set_pc(pc + offset);
 }
 
 /// STC ofm

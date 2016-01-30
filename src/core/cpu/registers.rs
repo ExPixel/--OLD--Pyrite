@@ -95,6 +95,14 @@ impl ArmRegisters {
 		}
 	}
 
+	pub fn get_pc(&self) -> u32 {
+		self.internal_registers[15]
+	}
+
+	pub fn set_pc(&mut self, value: u32) {
+		self.internal_registers[15] = value;
+	}
+
 	/// Returns the value of the specified register for the current mode.
 	pub fn get(&self, register: u32) -> u32 {
 		let reg_index = self.get_register_index(register);
@@ -187,7 +195,7 @@ impl ArmRegisters {
 			MODE_ABT => 2,
 			MODE_IRQ => 3,
 			MODE_UND => 4,
-			_ => panic!("BAD SPSR INDEX! CURRENT MODE: {}", self.get_mode())
+			_ => panic!("BAD SPSR INDEX! CURRENT MODE = 0b{:05b}; PC = 0x{:08x}", self.get_mode(), self.get_pc())
 		}
 	}
 
