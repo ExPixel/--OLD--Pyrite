@@ -79,7 +79,7 @@ impl Gba {
 	}
 
 	pub fn init(&mut self) {
-		self.cpu.registers.set(registers::REG_PC, 0x8000000);
+		self.cpu.set_pc(0x8000000);
 
 		self.cpu.registers.set_mode(registers::MODE_SYS);
 
