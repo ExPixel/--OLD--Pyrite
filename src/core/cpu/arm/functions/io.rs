@@ -14,11 +14,6 @@ pub fn arm_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 
 pub fn arm_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread32_al(address);
-
-	// if cpu.get_exec_address() == 0x080011f8 {
-	// 	println!("loading [0x{:08x}]=0x{:08x} into r{}", address, data, rd);
-	// }
-
 	cpu.rset(rd, data);
 }
 

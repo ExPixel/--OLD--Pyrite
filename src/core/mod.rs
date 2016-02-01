@@ -60,7 +60,8 @@ pub struct Gba {
 	pub lcd: GbaLcd,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
-	pub debug: GbaDebug
+	pub debug: GbaDebug,
+	pub request_exit: bool
 }
 
 impl Gba {
@@ -70,7 +71,8 @@ impl Gba {
 			lcd: GbaLcd::new(),
 			device: GbaDevice::new(),
 			joypad: GbaJoypad::new(),
-			debug: GbaDebug::new()
+			debug: GbaDebug::new(),
+			request_exit: false
 		}
 	}
 
@@ -93,13 +95,11 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.init();
-		self.joypad.tick(&mut self.cpu);
 		// self.device.render();
 		'running: loop {
 			self.frame();
+			if self.request_exit { break 'running; }
 			self.device.render(&self.lcd.screen_buffer);
-			if self.poll_device_events() { break 'running; }
-
 			{
 				let fps = self.device.fps_counter.fps;
 				let speed = ((fps as f64) / 60f64) * 100f64;
@@ -112,6 +112,7 @@ impl Gba {
 			// 	window.set_title(&title);
 			// }
 		}
+		self.request_exit = false; // in case we don't actually close here.
 		println!("-- Shutdown successfully.");
 	}
 
@@ -195,6 +196,7 @@ impl Gba {
 	/// All VRAM, OAM, and Palette RAM may be accessed during V-Blanking.
 	/// Note that no H-Blank interrupts are generated within V-Blank period.
 	fn do_vdraw_line(&mut self, line: u16) {
+		self.poll_device_events();
 		self.do_hdraw();
 		self.lcd.render_line(&mut self.cpu.memory, line);
 		self.do_hblank();
@@ -229,8 +231,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	}
 
 	fn do_hblank(&mut self) {
-		self.joypad.tick(&mut self.cpu); // #TODO Not sure if we should update the joypad this often.
-
 		// Sets the HBlank flag:
 		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		dispstat |= 0x2;
@@ -267,10 +267,10 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 
 	/// Polls for and handles events from the device.
 	/// returns true if this should quit.
-	fn poll_device_events(&mut self) -> bool {
+	fn poll_device_events(&mut self) {
 		for event in self.device.display.poll_events() {
 			match event {
-				glium::glutin::Event::Closed => return true,
+				glium::glutin::Event::Closed => self.request_exit = true,
 				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::D)) => {
 					self.cpu.reg_dump_pretty();
 				},
@@ -283,7 +283,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				_ => {}
 			}
 		}
-		return false;
+		self.joypad.tick(&mut self.cpu);
 	}
 }
 

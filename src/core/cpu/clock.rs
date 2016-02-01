@@ -10,202 +10,57 @@ impl ArmCpuClock {
 			cycles: 0
 		}
 	}
-
 	/// Internal cycle
 	pub fn internal(&mut self, cycles: u64) {
 		self.cycles += cycles;
 	}
 
 	/// Sequential 8bit data access
-	pub fn daccess8_seq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn data_access8_seq(&mut self, addr: u32) {
+		self.internal(1); // #TODO make this right.
 	}
 
 	/// Sequential 16 bit data access
-	pub fn daccess16_seq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn data_access16_seq(&mut self, addr: u32) {
+		self.internal(1); // #TODO make this right.
 	}
 
 	/// Sequential 32 bit data access
-	pub fn daccess32_seq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn data_access32_seq(&mut self, addr: u32) {
+		self.internal(1); // #TODO make this right.
 	}
 
 	/// Nonsequential 8bit data access
-	pub fn daccess8_nonseq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn data_access8_nonseq(&mut self, addr: u32) {
+		self.internal(1); // #TODO make this right.
 	}
 
 	/// Nonsequential 16 bit data access
-	pub fn daccess16_nonseq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn data_access16_nonseq(&mut self, addr: u32) {
+		self.internal(1); // #TODO make this right.
 	}
 
 	/// Nonsequential 32 bit data access
-	pub fn daccess32_nonseq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn data_access32_nonseq(&mut self, addr: u32) {
+		self.internal(1); // #TODO make this right.
 	}
 
-	/// Sequential 8bit code access
-	pub fn caccess8_seq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn code_access32_seq(&mut self, addr: u32) {
+		self.internal(1);
 	}
 
-	/// Sequential 16 bit code access
-	pub fn caccess16_seq(&mut self, addr: u32) {
-		unimplemented!();
+
+	pub fn code_access32_nonseq(&mut self, addr: u32) {
+		self.internal(1);
 	}
 
-	/// Sequential 32 bit code access
-	pub fn caccess32_seq(&mut self, addr: u32) {
-		unimplemented!();
+	pub fn code_access16_seq(&mut self, addr: u32) {
+		self.internal(1);
 	}
 
-	/// Nonsequential 8bit code access
-	pub fn caccess8_nonseq(&mut self, addr: u32) {
-		unimplemented!();
-	}
 
-	/// Nonsequential 16 bit code access
-	pub fn caccess16_nonseq(&mut self, addr: u32) {
-		unimplemented!();
-	}
-
-	/// Nonsequential 32 bit code access
-	pub fn caccess32_nonseq(&mut self, addr: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM alu operation.
-	/// `pc_loaded` and `reg_shift` are set to true if the PC was loaded
-	/// during that operation and/or if the ALU operation used a register
-	/// shift respectively.
-	pub fn clock_arm_alu(&mut self, prefetch: u32, pc_loaded: bool, reg_shift: bool) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM MSR instruction.
-	/// `pc_loaded` is set to true if the PC was loaded during the operation.
-	pub fn clock_arm_msr(&mut self, prefetch: u32, pc_loaded: bool) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM MSR instruction.
-	/// `pc_loaded` is set to true if the PC was loaded during the operation.
-	pub fn clock_arm_mrs(&mut self, prefetch: u32, pc_loaded: bool) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM LDR instruction.
-	/// `pc_loaded` is set to true if the PC was loaded during the operation.
-	pub fn clock_arm_ldr(&mut self, prefetch: u32, pc_loaded: bool, address: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM STR instruction.
-	pub fn clock_arm_str(&mut self, prefetch: u32, address: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for the start of an ARM LDM instruction.
-	/// This should be followed by the appropriate number of calls to 
-	/// `clock_arm_ldm_single` or `clock_arm_ldm_single_pc`.
-	pub fn clock_arm_ldm_start(&mut self, prefetch: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for a single transfer in an ARM LDM instruction.
-	///
-	/// Note: If the register being transferred to is the PC, `clock_arm_ldm_single_pc`
-	/// should be used instead.
-	pub fn clock_arm_ldm_single(&mut self, prefetch: u32, address: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for a single transfer in an ARM LDM instruction
-	/// that transfer the data from an address to the PC.
-	pub fn clock_arm_ldm_single_pc(&mut self ,address: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycler counter for the start of an ARM STM instruction.
-	/// This should be followed by the appropriate number of calls to
-	/// `clock_arm_stm_single`.
-	pub fn clock_arm_stm_start(&mut self, prefetch: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for a single transfer in an ARM STM instruction.
-	pub fn clock_arm_stm_single(&mut self, address: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for a single transfer in an ARM  SWP instruction.
-	pub fn clock_arm_swp(&mut self, prefetch: u32, ddress: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM BX instruction.
-	pub fn clock_arm_bx(&mut self, prefetch: u32, address: u32) {
-		
-	}
-
-	/// Increments the cycle counter for an ARM Branch instruction.
-	/// This function should be used for B, BL.
-	/// The address that the branch is jumping should be passed in
-	/// as the `address` argument.
-	pub fn clock_arm_b(&mut self, prefetch: u32, address: u32) {
-		self.daccess32_seq(prefetch); // prefetch of the next instruction is done anyways.
-		self.daccess32_nonseq(address); // non sequential access of the next address.
-
-		// sequential access of the following instruction. 
-		// We just use the same one because chances are they are in the same area.
-		self.daccess32_seq(address); 
-	}
-
-	/// Increments the cycle counter for the first part of the THUMB Long Branch instruction.
-	pub fn clock_thumb_bl_setup(&mut self, prefetch: u32) {
-		self.daccess16_seq(prefetch); // The prefetch is done anyways.
-	}
-
-	/// Increments the cycle counter for the second part of the THUMB Long Branch instruction.
-	/// The address that the branch is jumping to should be passed as 
-	/// the `address` argument. 
-	pub fn clock_thumb_bl_off(&mut self, prefetch: u32, address: u32) {
-		self.daccess16_seq(prefetch); // The prefetch is done anyways.
-		self.daccess16_nonseq(address); // peforms a fetch from the branch destination.
-		self.daccess16_seq(address); // peforms a fetch on the next instruction to fill the pipeline.
-	}
-
-	/// Increments the cycle counter for an ARM SWI instruction.
-	pub fn clock_arm_swi_trap(&mut self, prefetch: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycler counter for a 32-bit ARM MUL instruction.
-	pub fn clock_arm_mul32(&mut self, prefetch: u32, rhs: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycler counter for a 32-bit ARM MLA instruction.
-	pub fn clock_arm_mla32(&mut self, prefetch: u32, rhs: u32) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for a 64-bit ARM MUL instruction.
-	pub fn clock_arm_mul64(&mut self, prefetch: u32, rhs: u64) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for a 64-bit ARM MLA instruction.
-	pub fn clock_arm_mla64(&mut self, prefetch: u32, rhs: u64) {
-		unimplemented!();
-	}
-
-	/// Increments the cycle counter for an ARM instruction 
-	/// with a false condition that that was skipped over.
-	pub fn clock_arm_skipped(&mut self, prefetch: u32) {
-		unimplemented!();
+	pub fn code_access16_nonseq(&mut self, addr: u32) {
+		self.internal(1);
 	}
 }
 

@@ -87,13 +87,8 @@ impl ArmCpu {
 			}
 		}
 
-		let thumb_mode = self.thumb_mode();
-		if thumb_mode { self.thumb_tick(); }
+		if self.thumb_mode() { self.thumb_tick(); }
 		else { self.arm_tick(); }
-
-		// #TODO debug code.
-		// for trying to use cycles.
-		self.clock.internal(2);
 	}
 
 	pub fn rget(&self, register: u32) -> u32 {
@@ -193,7 +188,7 @@ impl ArmCpu {
 				before_execution(exec_addr, self); // #TODO remove this debug code.
 				execute_arm(self, decoded);
 				after_execution(exec_addr, self); // #TODO remove this debug code.
-			} /* #TODO else increase the clock by 1S cycle. */
+			}
 		}
 
 		if self.branched {
@@ -218,7 +213,6 @@ impl ArmCpu {
 		}
 
 		if self.branched {
-			// #FIXME I should probably be doing this in the instructions themselves.
 			self.align_pc(); // half-word aligning the program counter for THUMB mode.
 			self.thumb_pipeline.flush();
 			self.branched = false;
@@ -237,6 +231,29 @@ impl ArmCpu {
 		} else {
 			self.set_pc(pc & 0xFFFFFFFC);
 		}
+	}
+
+	pub fn clock_prefetch_arm(&mut self) {
+		let pc = self.get_pc();
+		self.clock.code_access32_seq(pc);
+	}
+
+	pub fn clock_prefetch_thumb(&mut self) {
+		let pc = self.get_pc();
+		self.clock.code_access16_seq(pc);
+	}
+
+	pub fn clock_branched_arm(&mut self) {
+		let pc = self.get_pc();
+		self.clock.code_access32_nonseq(pc);
+		self.clock.code_access32_seq(pc + 4);
+	}
+
+
+	pub fn clock_branched_thumb(&mut self) {
+		let pc = self.get_pc();
+		self.clock.code_access16_nonseq(pc);
+		self.clock.code_access16_seq(pc + 2);
 	}
 
 	/// ARM Condition Field {cond}
