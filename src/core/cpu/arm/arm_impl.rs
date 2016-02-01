@@ -9,6 +9,55 @@ use super::super::registers;
 use super::functions::*;
 use super::super::alu;
 
+// Used to decide whether IO indexing should be pre/post function.
+const PRE: bool = true;
+const POST: bool = false;
+
+// Used to decide whether IO indexing should increment or decrement.
+const DEC: bool = false;
+const INC: bool = true;
+
+// SDT Functions
+const LDR: fn(&mut ArmCpu, u32, u32) = arm_fn_ldr;
+const LDRB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrb;
+const STR: fn(&mut ArmCpu, u32, u32) = arm_fn_str;
+const STRB: fn(&mut ArmCpu, u32, u32) = arm_fn_strb;
+
+// // HDT Functions
+const LDRH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrh;
+const STRH: fn(&mut ArmCpu, u32, u32) = arm_fn_strh;
+const LDRSB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsb;
+const LDRSH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsh;
+
+const HDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_imm;
+const HDT_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_reg;
+
+// Functions for calculating the offset of a single data transfer.
+const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
+const SDT_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsl;
+const SDT_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsr;
+const SDT_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_asr;
+const SDT_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_ror;
+
+// NEG & POS functions
+// are pre indexed and don't write back.
+// I'm separating them anyways for now though.
+const SDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_imm;
+const SDT_NEG_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsl;
+const SDT_NEG_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsr;
+const SDT_NEG_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_asr;
+const SDT_NEG_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_ror;
+
+const SDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_imm;
+const SDT_POS_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsl;
+const SDT_POS_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsr;
+const SDT_POS_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_asr;
+const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
+
+// Block Data Transfer Functions
+const LDM: fn(&mut ArmCpu, u32, u32) = arm_fn_ldm_single;
+const STM: fn(&mut ArmCpu, u32, u32) = arm_fn_stm_single;
+
 /// Generates a function for a dataprocessing instruction.
 ///
 /// Pass in the name of the instruction to generate,
@@ -228,55 +277,6 @@ macro_rules! gen_mull {
 		gen_mull!($instr_name, $operation, false, $set_condition);
 	);
 }
-
-// Used to decide whether IO indexing should be pre/post function.
-const PRE: bool = true;
-const POST: bool = false;
-
-// Used to decide whether IO indexing should increment or decrement.
-const DEC: bool = false;
-const INC: bool = true;
-
-// SDT Functions
-const LDR: fn(&mut ArmCpu, u32, u32) = arm_fn_ldr;
-const LDRB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrb;
-const STR: fn(&mut ArmCpu, u32, u32) = arm_fn_str;
-const STRB: fn(&mut ArmCpu, u32, u32) = arm_fn_strb;
-
-// // HDT Functions
-const LDRH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrh;
-const STRH: fn(&mut ArmCpu, u32, u32) = arm_fn_strh;
-const LDRSB: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsb;
-const LDRSH: fn(&mut ArmCpu, u32, u32) = arm_fn_ldrsh;
-
-const HDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_imm;
-const HDT_REG: fn(&ArmCpu, u32) -> u32 = arm_fn_hdt_reg;
-
-// Functions for calculating the offset of a single data transfer.
-const SDT_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_imm;
-const SDT_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsl;
-const SDT_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_lsr;
-const SDT_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_asr;
-const SDT_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_ror;
-
-// NEG & POS functions
-// are pre indexed and don't write back.
-// I'm separating them anyways for now though.
-const SDT_NEG_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_imm;
-const SDT_NEG_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsl;
-const SDT_NEG_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_lsr;
-const SDT_NEG_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_asr;
-const SDT_NEG_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_neg_ror;
-
-const SDT_POS_IMM: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_imm;
-const SDT_POS_LSL: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsl;
-const SDT_POS_LSR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_lsr;
-const SDT_POS_ASR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_asr;
-const SDT_POS_ROR: fn(&ArmCpu, u32) -> u32 = arm_fn_sdt_pos_ror;
-
-// Block Data Transfer Functions
-const LDM: fn(&mut ArmCpu, u32, u32) = arm_fn_ldm_single;
-const STM: fn(&mut ArmCpu, u32, u32) = arm_fn_stm_single;
 
 /// Generates a single data transfer instruction.
 macro_rules! gen_str {
@@ -523,6 +523,139 @@ macro_rules! gen_ldm_u {
 	) => ( 
 		gen_ldm!($instr_name, $index_pre, $index_inc, $writeback, true); 
 	)
+}
+
+/// B 
+/// Branch
+pub fn arm_b(cpu: &mut ArmCpu, instr: u32) {
+	let pc = cpu.get_pc();
+	cpu.clock_prefetch_arm();
+
+	let mut offset = instr & 0xffffff;
+	offset <<= 2;
+	offset = (((offset as i32) << 6) >> 6) as u32;
+	let destination = pc + offset;
+	cpu.set_pc(destination);
+
+	cpu.clock_branched_arm();
+}
+
+/// BL 
+/// Branch and link
+pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
+	let pc = cpu.get_pc();
+	cpu.clock_prefetch_arm();
+
+	cpu.rset(14, (pc - 4) & 0xFFFFFFFC);
+	let mut offset = instr & 0xffffff;
+	offset <<= 2;
+	offset = (((offset as i32) << 6) >> 6) as u32;
+	cpu.set_pc(pc + offset);
+	let destination = pc + offset;
+	cpu.set_pc(destination);
+
+	cpu.clock_branched_arm();
+}
+
+/// BX
+/// Branch and switch execution modes
+pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
+
+	let rn = instr & 0xf;
+	let address = cpu.rget(rn);
+	if (address & 1) == 1 {
+		// branch into thumb mode.
+		let destination = address & 0xFFFFFFFE;
+		cpu.registers.setf_t();
+		cpu.set_pc(destination);
+
+		cpu.clock_branched_thumb();
+	} else {
+		// branch into arm mode.
+		let destination = address & 0xFFFFFFFC;
+		cpu.set_pc(destination);
+
+		cpu.clock_branched_arm();
+	}
+}
+
+/// MSR rc
+/// Move value to status word
+/// Register, CPSR
+pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
+	let rm = instr & 0xf;
+	let _rm = cpu.rget(rm);
+	if ((instr >> 16) & 1) == 1 {
+		cpu.registers.set_cpsr_safe(_rm);
+	} else {
+		cpu.registers.set_cpsr_flags(_rm);
+	}
+}
+
+/// MRS rc
+/// Move status word to register
+/// Register, CPSR
+pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
+	let rd = (instr >> 12) & 0xf;
+	let cpsr = cpu.registers.get_cpsr();
+	cpu.rset(rd, cpsr);
+}
+
+/// MRS rs
+/// Move status word to register
+/// Register, SPSR
+pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
+	let rd = (instr >> 12) & 0xf;
+	let spsr = cpu.registers.get_spsr();
+	cpu.rset(rd, spsr);
+}
+
+/// MSR rs
+/// Move value to status word
+/// Register, SPSR
+pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
+	let rm = instr & 0xf;
+	let _rm = cpu.rget(rm);
+	if ((instr >> 16) & 1) == 1 {
+		cpu.registers.set_spsr_safe(_rm);
+	} else {
+		cpu.registers.set_spsr_flags(_rm);
+	}
+}
+
+/// MSR ic
+/// Move value to status word
+/// Immediate, CPSR
+pub fn arm_msr_ic(cpu: &mut ArmCpu, instr: u32) {
+	let immediate = arm_fn_op2_imm(cpu, instr);
+	cpu.registers.set_cpsr_flags(immediate);
+}
+
+/// SWP
+/// Swap registers with memory word
+pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
+	let rm = instr & 0xf;
+	let rd = (instr >> 12) & 0xf;
+	let rn = (instr >> 16) & 0xf;
+	let source = cpu.rget(rm);
+	let address = cpu.rget(rn);
+	let temp = cpu.mread32_al(address);
+	cpu.mwrite32(address, source);
+	cpu.rset(rd, temp);
+}
+
+/// SWPB
+/// Swap registers with memory byte
+pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
+	let rm = instr & 0xf;
+	let rd = (instr >> 12) & 0xf;
+	let rn = (instr >> 16) & 0xf;
+	let source = cpu.rget(rm);
+	let address = cpu.rget(rn);
+	let temp = cpu.mread8_al(address);
+	cpu.mwrite8(address, (source & 0xff) as u8);
+	cpu.rset(rd, temp);
 }
 
 
@@ -1301,28 +1434,6 @@ gen_dproc_sf!(arm_rscs_rrr, arm_fn_op2_rrr_s, true, arm_fn_rsc_s);
 /// Signed long multiply and accumulate, setting flags
 gen_mull!(arm_smlals, arm_fn_smlal, true, true);
 
-/// MRS rc
-/// Move status word to register
-/// Register, CPSR
-pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
-	let rd = (instr >> 12) & 0xf;
-	let cpsr = cpu.registers.get_cpsr();
-	cpu.rset(rd, cpsr);
-}
-
-/// SWP
-/// Swap registers with memory word
-pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
-	let rm = instr & 0xf;
-	let rd = (instr >> 12) & 0xf;
-	let rn = (instr >> 16) & 0xf;
-	let source = cpu.rget(rm);
-	let address = cpu.rget(rn);
-	let temp = cpu.mread32_al(address);
-	cpu.mwrite32(address, source);
-	cpu.rset(rd, temp);
-}
-
 /// STRH ofrm
 /// Store halfword
 /// Negative register offset
@@ -1382,42 +1493,6 @@ gen_hldr!(arm_ldrsb_ofrm, LDRSB, PRE, DEC, HDT_REG, false);
 /// Load signed halfword
 /// Negative register offset
 gen_hldr!(arm_ldrsh_ofrm, LDRSH, PRE, DEC, HDT_REG, false);
-
-/// MSR rc
-/// Move value to status word
-/// Register, CPSR
-pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
-	let rm = instr & 0xf;
-	let _rm = cpu.rget(rm);
-	if ((instr >> 16) & 1) == 1 {
-		cpu.registers.set_cpsr_safe(_rm);
-	} else {
-		cpu.registers.set_cpsr_flags(_rm);
-	}
-}
-
-/// BX
-/// Branch and switch execution modes
-pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_arm();
-
-	let rn = instr & 0xf;
-	let address = cpu.rget(rn);
-	if (address & 1) == 1 {
-		// branch into thumb mode.
-		let destination = address & 0xFFFFFFFE;
-		cpu.registers.setf_t();
-		cpu.set_pc(destination);
-
-		cpu.clock_branched_thumb();
-	} else {
-		// branch into arm mode.
-		let destination = address & 0xFFFFFFFC;
-		cpu.set_pc(destination);
-
-		cpu.clock_branched_arm();
-	}
-}
 
 /// STRH prrm
 /// Store halfword
@@ -1479,28 +1554,6 @@ gen_hldr!(arm_ldrsb_prrm, LDRSB, PRE, DEC, HDT_REG, true);
 /// Register offset, pre-decrement
 gen_hldr!(arm_ldrsh_prrm, LDRSH, PRE, DEC, HDT_REG, true);
 
-/// MRS rs
-/// Move status word to register
-/// Register, SPSR
-pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
-	let rd = (instr >> 12) & 0xf;
-	let spsr = cpu.registers.get_spsr();
-	cpu.rset(rd, spsr);
-}
-
-/// SWPB
-/// Swap registers with memory byte
-pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
-	let rm = instr & 0xf;
-	let rd = (instr >> 12) & 0xf;
-	let rn = (instr >> 16) & 0xf;
-	let source = cpu.rget(rm);
-	let address = cpu.rget(rn);
-	let temp = cpu.mread8_al(address);
-	cpu.mwrite8(address, (source & 0xff) as u8);
-	cpu.rset(rd, temp);
-}
-
 /// STRH ofim
 /// Store halfword
 /// Negative immediate offset
@@ -1560,19 +1613,6 @@ gen_hldr!(arm_ldrsb_ofim, LDRSB, PRE, DEC, HDT_IMM, false);
 /// Load signed halfword
 /// Negative immediate offset
 gen_hldr!(arm_ldrsh_ofim, LDRSH, PRE, DEC, HDT_IMM, false);
-
-/// MSR rs
-/// Move value to status word
-/// Register, SPSR
-pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
-	let rm = instr & 0xf;
-	let _rm = cpu.rget(rm);
-	if ((instr >> 16) & 1) == 1 {
-		cpu.registers.set_spsr_safe(_rm);
-	} else {
-		cpu.registers.set_spsr_flags(_rm);
-	}
-}
 
 /// STRH prim
 /// Store halfword
@@ -2118,14 +2158,6 @@ gen_dproc_sf!(arm_rscs_imm, arm_fn_op2_imm_s, arm_fn_rsc_s);
 /// Test bits in register (Logical And), setting flags
 /// Immediate value
 gen_dproc_nw!(arm_tsts_imm, arm_fn_op2_imm_s, arm_fn_tst_s);
-
-/// MSR ic
-/// Move value to status word
-/// Immediate, CPSR
-pub fn arm_msr_ic(cpu: &mut ArmCpu, instr: u32) {
-	let immediate = arm_fn_op2_imm(cpu, instr);
-	cpu.registers.set_cpsr_flags(immediate);
-}
 
 /// TEQS imm
 /// Test equivalence of bits in register (Logical Exclusive-or), setting flags
@@ -2821,38 +2853,6 @@ gen_stm!(arm_stmib_uw, PRE, INC, true, true);
 /// Load multiple words, increment before
 /// Use user-mode registers, with write back
 gen_ldm_u!(arm_ldmib_uw, PRE, INC, true);
-
-/// B 
-/// Branch
-pub fn arm_b(cpu: &mut ArmCpu, instr: u32) {
-	let pc = cpu.get_pc();
-	cpu.clock_prefetch_arm();
-
-	let mut offset = instr & 0xffffff;
-	offset <<= 2;
-	offset = (((offset as i32) << 6) >> 6) as u32;
-	let destination = pc + offset;
-	cpu.set_pc(destination);
-
-	cpu.clock_branched_arm();
-}
-
-/// BL 
-/// Branch and link
-pub fn arm_bl(cpu: &mut ArmCpu, instr: u32) {
-	let pc = cpu.get_pc();
-	cpu.clock_prefetch_arm();
-
-	cpu.rset(14, (pc - 4) & 0xFFFFFFFC);
-	let mut offset = instr & 0xffffff;
-	offset <<= 2;
-	offset = (((offset as i32) << 6) >> 6) as u32;
-	cpu.set_pc(pc + offset);
-	let destination = pc + offset;
-	cpu.set_pc(destination);
-
-	cpu.clock_branched_arm();
-}
 
 /// STC ofm
 /// Store coprocessor data to memory
