@@ -52,7 +52,8 @@ pub struct ArmCpu {
 	pub registers: ArmRegisters,
 	pub memory: GbaMemory,
 	pub clock: ArmCpuClock,
-	pub branched: bool,
+	pub software_interrupt: Option<u32>,
+	pub branched: bool
 }
 
 impl ArmCpu {
@@ -63,6 +64,7 @@ impl ArmCpu {
 			registers: ArmRegisters::new(),
 			memory: GbaMemory::new(),
 			clock: ArmCpuClock::new(),
+			software_interrupt: None,
 			branched: false
 		}
 	}
@@ -70,8 +72,12 @@ impl ArmCpu {
 	/// Advances the ARM pipeline.
 	/// executes, decodes, and then fetches the next instruction.
 	pub fn tick(&mut self) {
-		if self.thumb_mode() { self.thumb_tick(); }
-		else { self.arm_tick(); }
+		if let Some(_) = self.software_interrupt {
+			self.execute_swi()
+		} else {
+			if self.thumb_mode() { self.thumb_tick(); }
+			else { self.arm_tick(); }
+		}
 	}
 
 	pub fn rget(&self, register: u32) -> u32 {
@@ -156,9 +162,6 @@ impl ArmCpu {
 	}
 
 	pub fn mwrite32(&mut self, address: u32, value: u32) {
-		if address & 0b11 != 0 {
-
-		}
 		self.memory.write32(address, value);
 	}
 
@@ -309,51 +312,70 @@ impl ArmCpu {
 		}
 	}
 
-	// #TODO: look at this later
-	// this is where I think the BIOS
-	// finally jumps to the location of the
-	// swi's function.
-	// 0x0000016c
+	pub fn execute_swi(&mut self) {
+		if self.thumb_mode() {
+			self.handle_thumb_swi();
+		} else {
+			self.handle_arm_swi();
+		}
+		self.software_interrupt = None;
+	}
 
-	// Perform Software Interrupt:
-	// Move the address of the next instruction into LR, move CPSR to SPSR, 
-	// load the SWI vector address (0x8) into the PC. Switch to ARM state and enter SVC mode.
-	pub fn thumb_swi(&mut self, _: u32) {
-		self.clock_prefetch_thumb();
+	/// The software interrupt instruction is used to enter Supervisor mode in a controlled manner. 
+	/// The instruction causes the software interrupt trap to be taken, which effects the mode change. 
+	/// The PC is then forced to a fixed value (0x08) and the CPSR is saved in SPSR_svc. 
+	/// If the SWI vector address is suitably protected (by external memory management hardware) 
+	/// from modification by the user, a fully protected operating system may be constructed.
+
+	/// The PC is saved in R14_svc upon entering the software interrupt trap, 
+	/// with the PC adjusted to point to the word after the SWI instruction. 
+	/// MOVS PC,R14_svc will return to the calling program and restore the CPSR.
+	/// 
+	/// Note that the link mechanism is not re-entrant, 
+	/// so if the supervisor code wishes to use software interrupts within itself it 
+	/// must first save a copy of the return address and SPSR.
+	fn handle_arm_swi(&mut self) {
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
 		self.registers.set_mode(MODE_SVC);
 		self.registers.cpsr_to_spsr();
-		let next_pc = self.get_pc() - 2;
+
+		// because the interrupt is handled on the next call to tick, 
+		// it's actually already at the next instruction.
+		let next_pc = self.get_pc();
+
+		self.rset(REG_LR, next_pc);
+		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+	}
+
+	/// Perform Software Interrupt:
+	/// Move the address of the next instruction into LR, move CPSR to SPSR, 
+	/// load the SWI vector address (0x8) into the PC. Switch to ARM state and enter SVC mode.
+	fn handle_thumb_swi(&mut self) {
+		self.clock.code_access32_nonseq(SWI_VECTOR);
+		self.clock.code_access32_seq(SWI_VECTOR + 4);
+		self.registers.set_mode(MODE_SVC);
+		self.registers.cpsr_to_spsr();
+
+		// because the interrupt is handled on the next call to tick, 
+		// it's actually already at the next instruction.
+		let next_pc = self.get_pc();
+
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		self.registers.clearf_t(); // Enters ARM mode.
 	}
 
-	// The software interrupt instruction is used to enter Supervisor mode in a controlled manner. 
-	// The instruction causes the software interrupt trap to be taken, which effects the mode change. 
-	// The PC is then forced to a fixed value (0x08) and the CPSR is saved in SPSR_svc. 
-	// If the SWI vector address is suitably protected (by external memory management hardware) 
-	// from modification by the user, a fully protected operating system may be constructed.
-
-	// The PC is saved in R14_svc upon entering the software interrupt trap, 
-	// with the PC adjusted to point to the word after the SWI instruction. 
-	// MOVS PC,R14_svc will return to the calling program and restore the CPSR.
-	// 
-	// Note that the link mechanism is not re-entrant, 
-	// so if the supervisor code wishes to use software interrupts within itself it 
-	// must first save a copy of the return address and SPSR.
-	pub fn arm_swi(&mut self, _: u32) {
-		self.clock_prefetch_arm();
-		self.clock.code_access32_nonseq(SWI_VECTOR);
-		self.clock.code_access32_seq(SWI_VECTOR + 4);
-		self.registers.set_mode(MODE_SVC);
-		self.registers.cpsr_to_spsr();
-		let next_pc = self.get_pc() - 4;
-		self.rset(REG_LR, next_pc);
-		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+	pub fn thumb_swi(&mut self, instr: u32) {
+		self.clock_prefetch_thumb();
+		self.software_interrupt = Some(instr);
 	}
-	
+
+	pub fn arm_swi(&mut self, instr: u32) {
+		self.clock_prefetch_arm();
+		self.software_interrupt = Some(instr);
+	}
+
 	pub fn allow_irq_interrupt(&mut self) -> bool {
 		self.registers.getf_i()
 	}

@@ -16,6 +16,10 @@ opt-level=3
 # because overflows happen so frequently, but this is fine I guess.
 debug-assertions = false
 
+[profile.release]
+opt-level=3
+lto = true
+
 [dependencies]
 glium = "*"
 time = "0.1.34"
