@@ -3,13 +3,12 @@ pub mod thumb;
 pub mod alu;
 pub mod clock;
 pub mod registers;
-pub mod swi;
+
 use super::memory::*;
 use self::registers::*;
 use self::arm::execute_arm;
 use self::thumb::execute_thumb;
 use self::clock::*;
-use self::swi::*;
 
 const SWI_VECTOR: u32 = 0x08;
 const HWI_VECTOR: u32 = 0x18;
@@ -53,9 +52,6 @@ pub struct ArmCpu {
 	pub registers: ArmRegisters,
 	pub memory: GbaMemory,
 	pub clock: ArmCpuClock,
-	pub halted: bool,
-	pub swi_state: ArmCpuSwiState,
-	pub emulate_swi: bool,
 	pub branched: bool,
 }
 
@@ -67,9 +63,6 @@ impl ArmCpu {
 			registers: ArmRegisters::new(),
 			memory: GbaMemory::new(),
 			clock: ArmCpuClock::new(),
-			halted: false,
-			swi_state: ArmCpuSwiState::new(),
-			emulate_swi: true,
 			branched: false
 		}
 	}
@@ -77,16 +70,6 @@ impl ArmCpu {
 	/// Advances the ARM pipeline.
 	/// executes, decodes, and then fetches the next instruction.
 	pub fn tick(&mut self) {
-		if self.halted {
-			if self.emulate_swi {
-				if self.swi_state.check_if_continue_halt(&self.memory) {
-					return
-				}
-			} else {
-				return
-			}
-		}
-
 		if self.thumb_mode() { self.thumb_tick(); }
 		else { self.arm_tick(); }
 	}
@@ -335,21 +318,16 @@ impl ArmCpu {
 	// Perform Software Interrupt:
 	// Move the address of the next instruction into LR, move CPSR to SPSR, 
 	// load the SWI vector address (0x8) into the PC. Switch to ARM state and enter SVC mode.
-	pub fn thumb_swi(&mut self, instr: u32) {
+	pub fn thumb_swi(&mut self, _: u32) {
 		self.clock_prefetch_thumb();
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
-
-		if self.emulate_swi { 
-			handle_thumb_swi(self, instr);
-		} else {
-			self.registers.set_mode(MODE_SVC);
-			self.registers.cpsr_to_spsr();
-			let next_pc = self.get_pc() - 2;
-			self.rset(REG_LR, next_pc);
-			self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
-			self.registers.clearf_t(); // Enters ARM mode.
-		}
+		self.registers.set_mode(MODE_SVC);
+		self.registers.cpsr_to_spsr();
+		let next_pc = self.get_pc() - 2;
+		self.rset(REG_LR, next_pc);
+		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
+		self.registers.clearf_t(); // Enters ARM mode.
 	}
 
 	// The software interrupt instruction is used to enter Supervisor mode in a controlled manner. 
@@ -365,37 +343,19 @@ impl ArmCpu {
 	// Note that the link mechanism is not re-entrant, 
 	// so if the supervisor code wishes to use software interrupts within itself it 
 	// must first save a copy of the return address and SPSR.
-	pub fn arm_swi(&mut self, instr: u32) {
+	pub fn arm_swi(&mut self, _: u32) {
 		self.clock_prefetch_arm();
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
-		if self.emulate_swi { 
-			handle_arm_swi(self, instr);
-		} else {
-			self.registers.set_mode(MODE_SVC);
-			self.registers.cpsr_to_spsr();
-			let next_pc = self.get_pc() - 4;
-			self.rset(REG_LR, next_pc);
-			self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
-		}
+		self.registers.set_mode(MODE_SVC);
+		self.registers.cpsr_to_spsr();
+		let next_pc = self.get_pc() - 4;
+		self.rset(REG_LR, next_pc);
+		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 	}
-
-
-	/// Taken From TONC:
-	/// There are three registers specifically for interrupts: REG_IE (0400:0200h), 
-	/// REG_IF (0400:0202h) and REG_IME (0400:0208h). REG_IME is the master interrupt control; 
-	/// unless this is set to ‘1’, interrupts will be ignored completely. 
-	/// To enable a specific interrupt you need to set the appropriate bit in REG_IE. 
-	/// When an interrupt occurs, the corresponding bit in REG_IF will be set.
-	pub fn hardware_interrupt(&mut self, mask: u16) {
-		let reg_ime = self.memory.get_reg(ioreg::IME);
-		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
-		let reg_ie = self.memory.get_reg(ioreg::IE);
-		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
-		let mut reg_if = self.memory.get_reg(ioreg::IF);
-		reg_if |= mask; // set the corresponding bit in IF.
-		self.memory.set_reg(ioreg::IF, reg_if);
-		self.hardware_interrupt_branch();
+	
+	pub fn allow_irq_interrupt(&mut self) -> bool {
+		self.registers.getf_i()
 	}
 
 	/// The branch part of the hardware interrupt with the state
@@ -410,7 +370,7 @@ impl ArmCpu {
 	///    depending on the mode you are in. 
 	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
 	///    (which you, the programmer, never see)
-	fn hardware_interrupt_branch(&mut self) {
+	pub fn irq_interrupt(&mut self) {
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.cpsr_to_spsr();
 		let next_pc = if self.thumb_mode() {

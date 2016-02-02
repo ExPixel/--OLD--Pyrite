@@ -9,7 +9,11 @@ Core:
       ☐ Complete Window Rendering
   CPU:
     ☐ Clean up leftover debug statements that have been commented out.
-    ☐ Complete CPU's Clock.
+    ☐ Add a good way for handling software interrupts outside of the CPU
+       Maybe by adding an optional containing a u32 with the interrupt's instruction
+       in it and if the interrupt variable hasn't been set to none but the time the next
+       cpu tick call, it is then handled by the CPU which then branches into the BIOS.
+    ✔ Complete CPU's Clock. @done (16-02-02 13:27)
     ✔ Complete the CPU's logic. @done (16-01-20 15:26)
     ✔ Complete the CPU's ALU @done (16-01-01 22:36)
     ✔ Alignment on all data transfer instructions @done (16-01-26 22:46)

@@ -158,7 +158,7 @@ impl Gba {
 	fn try_fire_vblank_int(&mut self) {
 		let dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		if ((dispstat >> 3) & 1) != 0 {
-			self.cpu.hardware_interrupt(INT_VBLANK);
+			self.hardware_interrupt(INT_VBLANK);
 		}
 	}
 
@@ -168,8 +168,26 @@ impl Gba {
 	fn try_fire_hblank_int(&mut self) {
 		let dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		if ((dispstat >> 4) & 1) != 0 {
-			self.cpu.hardware_interrupt(INT_HBLANK);
+			self.hardware_interrupt(INT_HBLANK);
 		}
+	}
+
+	/// Taken From TONC:
+	/// There are three registers specifically for interrupts: REG_IE (0400:0200h), 
+	/// REG_IF (0400:0202h) and REG_IME (0400:0208h). REG_IME is the master interrupt control; 
+	/// unless this is set to ‘1’, interrupts will be ignored completely. 
+	/// To enable a specific interrupt you need to set the appropriate bit in REG_IE. 
+	/// When an interrupt occurs, the corresponding bit in REG_IF will be set.
+	fn hardware_interrupt(&mut self, mask: u16) {
+		if !self.cpu.allow_irq_interrupt() { return; }
+		let reg_ime = self.cpu.memory.get_reg(ioreg::IME);
+		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
+		let reg_ie = self.cpu.memory.get_reg(ioreg::IE);
+		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
+		let mut reg_if = self.cpu.memory.get_reg(ioreg::IF);
+		reg_if |= mask; // set the corresponding bit in IF.
+		self.cpu.memory.set_reg(ioreg::IF, reg_if);
+		self.cpu.irq_interrupt();
 	}
 
 	fn check_line_coincidence(&mut self, vcount: u16) {

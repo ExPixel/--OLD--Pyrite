@@ -1126,7 +1126,6 @@ pub fn thumb_pop_pc(cpu: &mut ArmCpu, instr: u32) {
 
 	if first_access {
 		cpu.clock.data_access32_nonseq(address);
-		first_access = false;
 	} else {
 		cpu.clock.data_access32_seq(address);
 	}
