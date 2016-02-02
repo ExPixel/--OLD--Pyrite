@@ -10,6 +10,7 @@ macro_rules! gen_alu {
 		$operation:ident
 	) => (
     	pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			cpu.clock_prefetch_thumb();
 			let rd = instr & 0x7;
 			let rs = (instr >> 3) & 0x7;
 			let _rd = cpu.rget(rd);
@@ -27,6 +28,7 @@ macro_rules! gen_alu_nw {
 		$operation:ident
 	) => (
     	pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			cpu.clock_prefetch_thumb();
 			let rd = instr & 0x7;
 			let rs = (instr >> 3) & 0x7;
 			let _rd = cpu.rget(rd);
@@ -92,7 +94,7 @@ gen_alu!(thumb_dp_orr, arm_fn_orr_s);
 
 /// MUL 
 /// Multiply
-gen_alu!(thumb_dp_mul, thumb_fn_mul);
+gen_alu!(thumb_dp_mul, thumb_fn_mul); // thumb_fn_mul handles the MUL clock stuff on its own.
 
 /// BIC 
 /// Bit Clear (NAND)

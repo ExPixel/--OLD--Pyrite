@@ -244,11 +244,12 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	fn run_cpu_cycles(&mut self, cycles: u64) {
 		let target = self.cpu.clock.cycles + cycles;
 		while self.cpu.clock.cycles < target {
-			if !self.cpu.executable() {
+			if self.cpu.executable() {
+				self.cpu.tick();
+				self.debug.on_tick(&mut self.cpu);
+			} else {
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
-			self.cpu.tick();
-			self.debug.on_tick(&mut self.cpu);
 		}
 	}
 

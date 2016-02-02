@@ -290,6 +290,8 @@ macro_rules! gen_str {
 		$user: expr			// boolean - true if this should force user mode registers.
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			cpu.clock_prefetch_arm();
+
 			let last_mode = cpu.registers.get_mode();
 			if $user {
 				cpu.registers.set_mode(registers::MODE_USR);
@@ -338,6 +340,9 @@ macro_rules! gen_ldr {
 		$user: expr			// boolean - true if this should force user mode registers.
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			cpu.clock_prefetch_arm();
+			cpu.clock.internal(1);
+
 			let last_mode = cpu.registers.get_mode();
 			if $user {
 				cpu.registers.set_mode(registers::MODE_USR);
@@ -364,6 +369,10 @@ macro_rules! gen_ldr {
 					}
 					cpu.rset(rn, address);
 				}
+			}
+
+			if rd == 15 {
+				cpu.clock_branched_arm();
 			}
 
 			if $user {
@@ -413,6 +422,7 @@ macro_rules! gen_stm {
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			cpu.clock_prefetch_arm();
 			let last_mode = cpu.registers.get_mode();
 			if $user { cpu.registers.set_mode(registers::MODE_USR); }
 
@@ -421,11 +431,21 @@ macro_rules! gen_stm {
 
 			// println!("rn: {}", rn);
 
+			let mut first_transfer = true;
+
 			if $index_inc {
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
 						if $index_pre { address += 4; } // pre index
 						STM(cpu, address, r);
+
+						if first_transfer {
+							cpu.clock.data_access32_nonseq(address);
+							first_transfer = false;
+						} else {
+							cpu.clock.data_access32_seq(address);
+						}
+
 						if !$index_pre { address += 4; } // post index
 						if $writeback { cpu.rset(rn, address) } // writeback at the end of the second cycle.
 					}
@@ -444,6 +464,14 @@ macro_rules! gen_stm {
 					if ((instr >> r) & 1) == 1 {
 						if !$index_pre { address += 4; }
 						STM(cpu, address, r);
+
+						if first_transfer {
+							cpu.clock.data_access32_nonseq(address);
+							first_transfer = false;
+						} else {
+							cpu.clock.data_access32_seq(address);
+						}
+
 						if $writeback && !wroteback { cpu.rset(rn, ending_addr); wroteback = true; } // writeback at the end of the second cycle.
 						if $index_pre { address += 4; }
 					}
@@ -464,6 +492,8 @@ macro_rules! gen_ldm {
 		$user: expr
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
+			cpu.clock_prefetch_arm();
+
 			let psr_transfer = ((instr >> 15) & 1) == 1 && $user; // r15 is in the transfer list and user mode.
 			let last_mode = cpu.registers.get_mode();
 			if $user { cpu.registers.set_mode(registers::MODE_USR); }
@@ -471,12 +501,25 @@ macro_rules! gen_ldm {
 			let rn = (instr >> 16) & 0xf;
 			let mut address = cpu.rget(rn);
 
+			let mut first_transfer = true;
+
 			if $index_inc {
 				for r in 0..16 {
 					if ((instr >> r) & 1) == 1 {
 						if $index_pre { address += 4; } // pre index
 						LDM(cpu, address, r);
-						if psr_transfer && r == 15 {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
+						if r == 15 {
+							if psr_transfer {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
+							cpu.clock_branched_arm();
+						}
+
+						if first_transfer {
+							cpu.clock.data_access32_nonseq(address);
+							first_transfer = false;
+						} else {
+							cpu.clock.data_access32_seq(address);
+						}
+
 						if !$index_pre { address += 4; } // post index
 						if $writeback { cpu.rset(rn, address) } // writeback at the end of the second cycle.
 					}
@@ -497,7 +540,18 @@ macro_rules! gen_ldm {
 					if ((instr >> r) & 1) == 1 {
 						if !$index_pre { address += 4; }
 						LDM(cpu, address, r);
-						if psr_transfer && r == 15 {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
+						if r == 15 {
+							if psr_transfer {cpu.registers.spsr_to_cpsr();} // this loads the spsr in to the cpsr.}
+							cpu.clock_branched_arm();
+						}
+
+						if first_transfer {
+							cpu.clock.data_access32_nonseq(address);
+							first_transfer = false;
+						} else {
+							cpu.clock.data_access32_seq(address);
+						}
+
 						if $writeback && !wroteback && allow_writeback { cpu.rset(rn, ending_addr); wroteback = true; } // writeback at the end of the second cycle.
 						if $index_pre { address += 4; }
 					}
@@ -584,6 +638,7 @@ pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to status word
 /// Register, CPSR
 pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let rm = instr & 0xf;
 	let _rm = cpu.rget(rm);
 	if ((instr >> 16) & 1) == 1 {
@@ -597,6 +652,7 @@ pub fn arm_msr_rc(cpu: &mut ArmCpu, instr: u32) {
 /// Move status word to register
 /// Register, CPSR
 pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let rd = (instr >> 12) & 0xf;
 	let cpsr = cpu.registers.get_cpsr();
 	cpu.rset(rd, cpsr);
@@ -606,6 +662,7 @@ pub fn arm_mrs_rc(cpu: &mut ArmCpu, instr: u32) {
 /// Move status word to register
 /// Register, SPSR
 pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let rd = (instr >> 12) & 0xf;
 	let spsr = cpu.registers.get_spsr();
 	cpu.rset(rd, spsr);
@@ -615,6 +672,7 @@ pub fn arm_mrs_rs(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to status word
 /// Register, SPSR
 pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let rm = instr & 0xf;
 	let _rm = cpu.rget(rm);
 	if ((instr >> 16) & 1) == 1 {
@@ -624,10 +682,20 @@ pub fn arm_msr_rs(cpu: &mut ArmCpu, instr: u32) {
 	}
 }
 
+/// MSR is
+/// Move value to status word
+/// Immediate, SPSR
+pub fn arm_msr_is(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
+	let immediate = arm_fn_op2_imm(cpu, instr);
+	cpu.registers.set_spsr_flags(immediate);
+}
+
 /// MSR ic
 /// Move value to status word
 /// Immediate, CPSR
 pub fn arm_msr_ic(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let immediate = arm_fn_op2_imm(cpu, instr);
 	cpu.registers.set_cpsr_flags(immediate);
 }
@@ -635,6 +703,7 @@ pub fn arm_msr_ic(cpu: &mut ArmCpu, instr: u32) {
 /// SWP
 /// Swap registers with memory word
 pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let rm = instr & 0xf;
 	let rd = (instr >> 12) & 0xf;
 	let rn = (instr >> 16) & 0xf;
@@ -643,11 +712,15 @@ pub fn arm_swp(cpu: &mut ArmCpu, instr: u32) {
 	let temp = cpu.mread32_al(address);
 	cpu.mwrite32(address, source);
 	cpu.rset(rd, temp);
+	cpu.clock.internal(1);
+	cpu.clock.data_access32_nonseq(address);
+	cpu.clock.data_access32_nonseq(address);
 }
 
 /// SWPB
 /// Swap registers with memory byte
 pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_arm();
 	let rm = instr & 0xf;
 	let rd = (instr >> 12) & 0xf;
 	let rn = (instr >> 16) & 0xf;
@@ -656,8 +729,22 @@ pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
 	let temp = cpu.mread8_al(address);
 	cpu.mwrite8(address, (source & 0xff) as u8);
 	cpu.rset(rd, temp);
+	cpu.clock.internal(1);
+	cpu.clock.data_access8_nonseq(address);
+	cpu.clock.data_access8_nonseq(address);
 }
 
+/// SWI 
+/// Software interrupt (enter supervisor mode)
+pub fn arm_swi(cpu: &mut ArmCpu, instr: u32) {
+	cpu.arm_swi(instr);
+}
+
+/// UNDEFINED
+/// just increments the clock
+pub fn arm_undefined(cpu: &mut ArmCpu, _: u32) {
+	cpu.on_undefined();
+}
 
 /// AND lli
 /// Logical And
@@ -707,13 +794,6 @@ gen_mul!(arm_mul, arm_fn_mul, false);
 /// Store halfword
 /// Register offset, post-decrement
 gen_hstr!(arm_strh_ptrm, STRH, POST, DEC, HDT_REG, false);
-
-
-/// UNDEFINED
-/// just increments the clock
-pub fn arm_undefined(cpu: &mut ArmCpu, _: u32) {
-	cpu.on_undefined();
-}
 
 /// ANDS lli
 /// Logical And, setting flags
@@ -2169,13 +2249,6 @@ gen_dproc_nw!(arm_teqs_imm, arm_fn_op2_imm_s, arm_fn_teq_s);
 /// Immediate value
 gen_dproc_nw!(arm_cmps_imm, arm_fn_op2_imm_s, arm_fn_cmp_s);
 
-/// MSR is
-/// Move value to status word
-/// Immediate, SPSR
-pub fn arm_msr_is(cpu: &mut ArmCpu, instr: u32) {
-	let immediate = arm_fn_op2_imm(cpu, instr);
-	cpu.registers.set_spsr_flags(immediate);
-}
 
 /// CMNS imm
 /// Compare register to negation of value (Add), setting flags
@@ -2982,11 +3055,5 @@ pub fn arm_mcr(_: &mut ArmCpu, _: u32) {
 /// Read coprocessor register to ARM register
 pub fn arm_mrc(_: &mut ArmCpu, _: u32) {
 	unreachable!("Attempted to call a coprocessor data instruction.");
-}
-
-/// SWI 
-/// Software interrupt (enter supervisor mode)
-pub fn arm_swi(cpu: &mut ArmCpu, instr: u32) {
-	cpu.arm_swi(instr);
 }
 

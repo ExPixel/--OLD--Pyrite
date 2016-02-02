@@ -58,47 +58,60 @@ pub fn thumb_fn_neg(cpu: &mut ArmCpu, _: u32, rhs: u32) -> u32 {
 pub fn thumb_fn_mul(cpu: &mut ArmCpu, lhs: u32, rhs: u32) -> u32 {
 	let result = lhs * rhs;
 	super::super::alu::set_nz_flags(cpu, result);
+
+	if (rhs & 0xffffff00) == 0 { cpu.clock.internal(1) }
+	else if (rhs & 0xffff0000) == 0 { cpu.clock.internal(2) }
+	else if (rhs & 0xff000000) == 0 { cpu.clock.internal(3) }
+
 	return result;
 }
 
 pub fn thumb_fn_ldr(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread32_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.data_access32_nonseq(address);
 }
 
 pub fn thumb_fn_ldrb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread8_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.data_access8_nonseq(address);
 }
 
 pub fn thumb_fn_str(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.rget(rd);
 	cpu.mwrite32(address, data);
+	cpu.clock.data_access32_nonseq(address);
 }
 
 pub fn thumb_fn_strb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.rget(rd) as u8;
 	cpu.mwrite8(address, data);
+	cpu.clock.data_access8_nonseq(address);
 }
 
 pub fn thumb_fn_ldrh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread16_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.data_access16_nonseq(address);
 }
 
 pub fn thumb_fn_strh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.rget(rd) as u16;
 	cpu.mwrite16(address, data);
+	cpu.clock.data_access16_nonseq(address);
 }
 
 pub fn thumb_fn_ldrsb(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread8_signed_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.data_access8_nonseq(address);
 }
 
 pub fn thumb_fn_ldrsh(cpu: &mut ArmCpu, address: u32, rd: u32) {
 	let data = cpu.mread16_signed_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.data_access16_nonseq(address);
 }
 
 pub fn thumb_sdt_addr_reg(cpu: &ArmCpu, instr: u32) -> u32 {

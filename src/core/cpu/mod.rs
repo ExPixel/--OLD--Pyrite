@@ -336,6 +336,10 @@ impl ArmCpu {
 	// Move the address of the next instruction into LR, move CPSR to SPSR, 
 	// load the SWI vector address (0x8) into the PC. Switch to ARM state and enter SVC mode.
 	pub fn thumb_swi(&mut self, instr: u32) {
+		self.clock_prefetch_thumb();
+		self.clock.code_access32_nonseq(SWI_VECTOR);
+		self.clock.code_access32_seq(SWI_VECTOR + 4);
+
 		if self.emulate_swi { 
 			handle_thumb_swi(self, instr);
 		} else {
@@ -362,6 +366,9 @@ impl ArmCpu {
 	// so if the supervisor code wishes to use software interrupts within itself it 
 	// must first save a copy of the return address and SPSR.
 	pub fn arm_swi(&mut self, instr: u32) {
+		self.clock_prefetch_arm();
+		self.clock.code_access32_nonseq(SWI_VECTOR);
+		self.clock.code_access32_seq(SWI_VECTOR + 4);
 		if self.emulate_swi { 
 			handle_arm_swi(self, instr);
 		} else {

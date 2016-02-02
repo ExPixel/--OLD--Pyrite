@@ -31,11 +31,16 @@ const LDRSH: fn(&mut ArmCpu, u32, u32) = thumb_fn_ldrsh;
 macro_rules! gen_sdt {
 	(
 		$instr_name: ident,
+		$load: expr, // true if this is a load instruction.
 		$transfer_fn: ident,
 		$addressing_fn: ident
 	) => (
 		pub fn $instr_name(cpu: &mut ArmCpu, instr: u32) {
-			let address = $addressing_fn(cpu, instr);
+			cpu.clock_prefetch_thumb();
+			if $load {
+				cpu.clock.internal(1);
+			}
+			let address = $addressing_fn(cpu, instr); // handles clock thingy.
 			let rd = instr & 0x7;
 			$transfer_fn(cpu, address, rd);
 		}
@@ -46,6 +51,7 @@ macro_rules! gen_sdt {
 /// Logical shift-left register
 /// Immediate value
 pub fn thumb_lsl_imm(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
@@ -58,6 +64,7 @@ pub fn thumb_lsl_imm(cpu: &mut ArmCpu, instr: u32) {
 /// Logical shift-right register
 /// Immediate value
 pub fn thumb_lsr_imm(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
@@ -70,6 +77,7 @@ pub fn thumb_lsr_imm(cpu: &mut ArmCpu, instr: u32) {
 /// Arithmetic shift-right register
 /// Immediate value
 pub fn thumb_asr_imm(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
@@ -82,6 +90,7 @@ pub fn thumb_asr_imm(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// Register offset
 pub fn thumb_add_reg(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let rn = (instr >> 6) & 0x7;
@@ -95,6 +104,7 @@ pub fn thumb_add_reg(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// Register offset
 pub fn thumb_sub_reg(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let rn = (instr >> 6) & 0x7;
@@ -108,6 +118,7 @@ pub fn thumb_sub_reg(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 3-bit immediate offset
 pub fn thumb_add_imm3(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset3 = (instr >> 6) & 0x7;
@@ -120,6 +131,7 @@ pub fn thumb_add_imm3(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 3-bit immediate offset
 pub fn thumb_sub_imm3(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset3 = (instr >> 6) & 0x7;
@@ -132,6 +144,7 @@ pub fn thumb_sub_imm3(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r0
 pub fn thumb_mov_i8r0(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(0);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -142,6 +155,7 @@ pub fn thumb_mov_i8r0(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r1
 pub fn thumb_mov_i8r1(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(1);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -152,6 +166,7 @@ pub fn thumb_mov_i8r1(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r2
 pub fn thumb_mov_i8r2(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(2);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -162,6 +177,7 @@ pub fn thumb_mov_i8r2(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r3
 pub fn thumb_mov_i8r3(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(3);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -172,6 +188,7 @@ pub fn thumb_mov_i8r3(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r4
 pub fn thumb_mov_i8r4(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(4);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -182,6 +199,7 @@ pub fn thumb_mov_i8r4(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r5
 pub fn thumb_mov_i8r5(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(5);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -192,6 +210,7 @@ pub fn thumb_mov_i8r5(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r6
 pub fn thumb_mov_i8r6(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(6);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -202,6 +221,7 @@ pub fn thumb_mov_i8r6(cpu: &mut ArmCpu, instr: u32) {
 /// Move value to a register
 /// 8-bit immediate offset, using r7
 pub fn thumb_mov_i8r7(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(7);
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
@@ -212,6 +232,7 @@ pub fn thumb_mov_i8r7(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r0
 pub fn thumb_cmp_i8r0(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(0);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -221,6 +242,7 @@ pub fn thumb_cmp_i8r0(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r1
 pub fn thumb_cmp_i8r1(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(1);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -230,6 +252,7 @@ pub fn thumb_cmp_i8r1(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r2
 pub fn thumb_cmp_i8r2(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(2);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -239,6 +262,7 @@ pub fn thumb_cmp_i8r2(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r3
 pub fn thumb_cmp_i8r3(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(3);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -248,6 +272,7 @@ pub fn thumb_cmp_i8r3(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r4
 pub fn thumb_cmp_i8r4(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(4);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -257,6 +282,7 @@ pub fn thumb_cmp_i8r4(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r5
 pub fn thumb_cmp_i8r5(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(5);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -266,6 +292,7 @@ pub fn thumb_cmp_i8r5(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r6
 pub fn thumb_cmp_i8r6(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(6);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -275,6 +302,7 @@ pub fn thumb_cmp_i8r6(cpu: &mut ArmCpu, instr: u32) {
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r7
 pub fn thumb_cmp_i8r7(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(7);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
@@ -284,6 +312,7 @@ pub fn thumb_cmp_i8r7(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r0
 pub fn thumb_add_i8r0(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(0);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -294,6 +323,7 @@ pub fn thumb_add_i8r0(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r1
 pub fn thumb_add_i8r1(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(1);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -304,6 +334,7 @@ pub fn thumb_add_i8r1(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r2
 pub fn thumb_add_i8r2(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(2);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -314,6 +345,7 @@ pub fn thumb_add_i8r2(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r3
 pub fn thumb_add_i8r3(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(3);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -324,6 +356,7 @@ pub fn thumb_add_i8r3(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r4
 pub fn thumb_add_i8r4(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(4);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -334,6 +367,7 @@ pub fn thumb_add_i8r4(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r5
 pub fn thumb_add_i8r5(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(5);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -344,6 +378,7 @@ pub fn thumb_add_i8r5(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r6
 pub fn thumb_add_i8r6(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(6);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -354,6 +389,7 @@ pub fn thumb_add_i8r6(cpu: &mut ArmCpu, instr: u32) {
 /// Add to register
 /// 8-bit immediate offset, using r7
 pub fn thumb_add_i8r7(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(7);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
@@ -364,6 +400,7 @@ pub fn thumb_add_i8r7(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r0
 pub fn thumb_sub_i8r0(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(0);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -374,6 +411,7 @@ pub fn thumb_sub_i8r0(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r1
 pub fn thumb_sub_i8r1(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(1);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -384,6 +422,7 @@ pub fn thumb_sub_i8r1(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r2
 pub fn thumb_sub_i8r2(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(2);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -394,6 +433,7 @@ pub fn thumb_sub_i8r2(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r3
 pub fn thumb_sub_i8r3(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(3);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -404,6 +444,7 @@ pub fn thumb_sub_i8r3(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r4
 pub fn thumb_sub_i8r4(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(4);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -414,6 +455,7 @@ pub fn thumb_sub_i8r4(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r5
 pub fn thumb_sub_i8r5(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(5);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -424,6 +466,7 @@ pub fn thumb_sub_i8r5(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r6
 pub fn thumb_sub_i8r6(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(6);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -434,6 +477,7 @@ pub fn thumb_sub_i8r6(cpu: &mut ArmCpu, instr: u32) {
 /// Subtract from register
 /// 8-bit immediate offset, using r7
 pub fn thumb_sub_i8r7(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let lhs = cpu.rget(7);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
@@ -475,6 +519,7 @@ pub fn thumb_dp_g4(cpu: &mut ArmCpu, instr: u32) {
 /// ADDH 
 /// Add registers, select from all 16
 pub fn thumb_addh(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let mut rd = instr & 0x7;
 	if (instr & 0x80) != 0 { rd += 8; }
 	let mut rs = (instr >> 3) & 0x7;
@@ -488,6 +533,7 @@ pub fn thumb_addh(cpu: &mut ArmCpu, instr: u32) {
 /// CMPH 
 /// Compare registers, select from all 16
 pub fn thumb_cmph(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let mut rd = instr & 0x7;
 	if (instr & 0x80) != 0 { rd += 8; }
 	let mut rs = (instr >> 3) & 0x7;
@@ -500,6 +546,7 @@ pub fn thumb_cmph(cpu: &mut ArmCpu, instr: u32) {
 /// MOVH 
 /// Move to a register, select from all 16
 pub fn thumb_movh(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let mut rd = instr & 0x7;
 	if (instr & 0x80) != 0 { rd += 8; }
 	let mut rs = (instr >> 3) & 0x7;
@@ -514,26 +561,32 @@ pub fn thumb_movh(cpu: &mut ArmCpu, instr: u32) {
 /// Branch and switch execution modes
 /// Register offset
 pub fn thumb_bx_reg(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let mut rs = (instr >> 3) & 0x7;
 	if (instr & 0x40) != 0 { rs += 8; }
 	let address = cpu.rget(rs);
 	if (address & 1) == 1 {
 		// Branch into thumb mode.
 		cpu.set_pc(address & 0xFFFFFFFE);
+		cpu.clock_branched_thumb();
 	} else {
 		// Branch into arm mode.
 		cpu.registers.clearf_t();
 		cpu.set_pc(address & 0xFFFFFFFC);
+		cpu.clock_branched_arm();
 	}
 }
 
 /// Common ldrpc function.
 fn thumb_ldrpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
 	let pc = cpu.get_pc() & 0xFFFFFFFC; // Has to be word aligned.
 	let offset = (instr & 0xff) << 2;
 	let address = pc + offset;
 	let data = cpu.mread32_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.internal(1);
+	cpu.clock.data_access32_nonseq(address);
 }
 
 /// LDRPC r0
@@ -595,80 +648,82 @@ pub fn thumb_ldrpc_r7(cpu: &mut ArmCpu, instr: u32) {
 /// STR reg
 /// Store word
 /// Register offset
-gen_sdt!(thumb_str_reg, STR, ADDR_REG);
+gen_sdt!(thumb_str_reg, false, STR, ADDR_REG);
 
 /// STRH reg
 /// Store halfword
 /// Register offset
-gen_sdt!(thumb_strh_reg, STRH, ADDR_REG);
+gen_sdt!(thumb_strh_reg, false, STRH, ADDR_REG);
 
 /// STRB reg
 /// Store byte
 /// Register offset
-gen_sdt!(thumb_strb_reg, STRB, ADDR_REG);
+gen_sdt!(thumb_strb_reg, false, STRB, ADDR_REG);
 
 /// LDRSB reg
 /// Load signed byte
 /// Register offset
-gen_sdt!(thumb_ldrsb_reg, LDRSB, ADDR_REG);
+gen_sdt!(thumb_ldrsb_reg, true, LDRSB, ADDR_REG);
 
 /// LDR reg
 /// Load word
 /// Register offset
-gen_sdt!(thumb_ldr_reg, LDR, ADDR_REG);
+gen_sdt!(thumb_ldr_reg, true, LDR, ADDR_REG);
 
 /// LDRH reg
 /// Load halfword
 /// Register offset
-gen_sdt!(thumb_ldrh_reg, LDRH, ADDR_REG);
+gen_sdt!(thumb_ldrh_reg, true, LDRH, ADDR_REG);
 
 /// LDRB reg
 /// Load byte
 /// Register offset
-gen_sdt!(thumb_ldrb_reg, LDRB, ADDR_REG);
+gen_sdt!(thumb_ldrb_reg, true, LDRB, ADDR_REG);
 
 /// LDRSH reg
 /// Load signed halfword
 /// Register offset
-gen_sdt!(thumb_ldrsh_reg, LDRSH, ADDR_REG);
+gen_sdt!(thumb_ldrsh_reg, true, LDRSH, ADDR_REG);
 
 /// STR imm5
 /// Store word
 /// 5-bit immediate offset
-gen_sdt!(thumb_str_imm5, STR, ADDR_IMM7);
+gen_sdt!(thumb_str_imm5, false, STR, ADDR_IMM7);
 
 /// LDR imm5
 /// Load word
 /// 5-bit immediate offset
-gen_sdt!(thumb_ldr_imm5, LDR, ADDR_IMM7);
+gen_sdt!(thumb_ldr_imm5, true, LDR, ADDR_IMM7);
 
 /// STRB imm5
 /// Store byte
 /// 5-bit immediate offset
-gen_sdt!(thumb_strb_imm5, STRB, ADDR_IMM5);
+gen_sdt!(thumb_strb_imm5, false, STRB, ADDR_IMM5);
 
 /// LDRB imm5
 /// Load byte
 /// 5-bit immediate offset
-gen_sdt!(thumb_ldrb_imm5, LDRB, ADDR_IMM5);
+gen_sdt!(thumb_ldrb_imm5, true, LDRB, ADDR_IMM5);
 
 /// STRH imm5
 /// Store halfword
 /// 5-bit immediate offset
-gen_sdt!(thumb_strh_imm5, STRH, ADDR_IMM6);
+gen_sdt!(thumb_strh_imm5, false, STRH, ADDR_IMM6);
 
 /// LDRH imm5
 /// Load halfword
 /// 5-bit immediate offset
-gen_sdt!(thumb_ldrh_imm5, LDRH, ADDR_IMM6);
+gen_sdt!(thumb_ldrh_imm5, true, LDRH, ADDR_IMM6);
 
 /// Common strsp function.
 fn thumb_strsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
 	let offset = (instr & 0xff) << 2;
 	let base = cpu.rget(SP);
 	let address = base + offset;
 	let data = cpu.rget(rd);
 	cpu.mwrite32(address, data);
+	cpu.clock.data_access32_nonseq(address);
 }
 
 /// STRSP r0
@@ -729,11 +784,14 @@ pub fn thumb_strsp_r7(cpu: &mut ArmCpu, instr: u32) {
 
 /// Common ldrsp function.
 fn thumb_ldrsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
 	let offset = (instr & 0xff) << 2;
 	let base = cpu.rget(SP);
 	let address = base + offset;
 	let data = cpu.mread32_al(address);
 	cpu.rset(rd, data);
+	cpu.clock.internal(1);
+	cpu.clock.data_access32_nonseq(address);
 }
 
 /// LDRSP r0
@@ -794,6 +852,7 @@ pub fn thumb_ldrsp_r7(cpu: &mut ArmCpu, instr: u32) {
 
 // Common addpc function.
 fn thumb_addpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
 	let offset = (instr & 0xff) << 2;
 	let pc = cpu.get_pc() & 0xFFFFFFFC; // Has to be word aligned.
 	cpu.rset(rd, pc + offset);
@@ -849,6 +908,7 @@ pub fn thumb_addpc_r7(cpu: &mut ArmCpu, instr: u32) {
 
 /// Common addsp function.
 fn thumb_addsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
 	let offset = (instr & 0xff) << 2;
 	let sp = cpu.rget(SP);
 	cpu.rset(rd, sp + offset);
@@ -905,6 +965,7 @@ pub fn thumb_addsp_r7(cpu: &mut ArmCpu, instr: u32) {
 /// ADDSP imm7
 /// 7-bit immediate offset
 pub fn thumb_addsp_imm7(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let mut offset = ((instr & 0x7f) << 2) as i32;
 	if (instr & 0x80) != 0 { offset = -offset; }
 	let sp = cpu.rget(SP) as i32;
@@ -950,6 +1011,9 @@ fn thumb_stm_single_wb(cpu: &mut ArmCpu, src_reg: u32, wb_reg: u32, wroteback: &
 /// PUSH 
 /// Store multiple words to memory (STMDB equivalent)
 pub fn thumb_push(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
+	let mut first_access = true;
+
 	let mut address = cpu.rget(SP);
 	let mut wroteback = false;
 
@@ -964,6 +1028,13 @@ pub fn thumb_push(cpu: &mut ArmCpu, instr: u32) {
 	for r in 0..8 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_stm_single_wb(cpu, r, 13, &mut wroteback, &mut address);
+
+			if first_access {
+				cpu.clock.data_access32_nonseq(address);
+				first_access = false;
+			} else {
+				cpu.clock.data_access32_seq(address);
+			}
 		}
 	}
 }
@@ -972,6 +1043,9 @@ pub fn thumb_push(cpu: &mut ArmCpu, instr: u32) {
 /// Store multiple words to memory (STMDB equivalent)
 /// Include r14
 pub fn thumb_push_lr(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
+	let mut first_access = true;
+
 	let mut address = cpu.rget(SP);
 	let mut wroteback = false;
 
@@ -986,17 +1060,42 @@ pub fn thumb_push_lr(cpu: &mut ArmCpu, instr: u32) {
 	for r in 0..8 {
 		if ((instr >> r) & 1) != 0 {
 			thumb_stm_single_wb(cpu, r, 13, &mut wroteback, &mut address);
+
+			if first_access {
+				cpu.clock.data_access32_nonseq(address);
+				first_access = false;
+			} else {
+				cpu.clock.data_access32_seq(address);
+			}
 		}
 	}
+
+	if first_access {
+		cpu.clock.data_access32_nonseq(address);
+	} else {
+		cpu.clock.data_access32_seq(address);
+	}
+
 	thumb_stm_single_wb(cpu, 14, 13, &mut wroteback, &mut address);
+
 }
 
 /// POP 
 /// Load multiple words from memory (LDMIA equivalent)
 pub fn thumb_pop(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
+	let mut first_access = true;
+
 	let mut address = cpu.rget(SP);
 	for r in 0..8 {
 		if ((instr >> r) & 1) != 0 {
+			if first_access {
+				cpu.clock.data_access32_nonseq(address);
+				first_access = false;
+			} else {
+				cpu.clock.data_access32_seq(address);
+			}
+
 			thumb_ldm_single(cpu, r, &mut address);
 		}
 	}
@@ -1007,23 +1106,54 @@ pub fn thumb_pop(cpu: &mut ArmCpu, instr: u32) {
 /// Load multiple words from memory (LDMIA equivalent)
 /// Include r15
 pub fn thumb_pop_pc(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
+	let mut first_access = true;
+
 	let mut address = cpu.rget(SP);
 	for r in 0..8 {
 		if ((instr >> r) & 1) != 0 {
+			if first_access {
+				cpu.clock.data_access32_nonseq(address);
+				first_access = false;
+			} else {
+				cpu.clock.data_access32_seq(address);
+			}
+
 			thumb_ldm_single(cpu, r, &mut address);
 		}
 	}
+
+
+	if first_access {
+		cpu.clock.data_access32_nonseq(address);
+		first_access = false;
+	} else {
+		cpu.clock.data_access32_seq(address);
+	}
+
 	thumb_ldm_single(cpu, 15, &mut address);
 	cpu.rset(SP, address);
+
+	cpu.clock_branched_thumb();
 }
 
 /// Common STMIA instruction.
 fn thumb_stmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
+	cpu.clock_prefetch_thumb();
+	let mut first_access = true;
+
 	let mut address = cpu.rget(rb);
 
 	// let rlist = instr & 0xff;
 	for r in 0..8 {
 		if ((instr >> r) & 1) != 0 {
+			if first_access {
+				cpu.clock.data_access32_nonseq(address);
+				first_access = false;
+			} else {
+				cpu.clock.data_access32_seq(address);
+			}
+
 			thumb_stm_single(cpu, r, &mut address);
 		}
 	}
@@ -1088,10 +1218,20 @@ pub fn thumb_stmia_r7(cpu: &mut ArmCpu, instr: u32) {
 
 /// Common LDMIA instruction.
 fn thumb_ldmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
+	cpu.clock_prefetch_thumb();
+	let mut first_access = true;
+
 	let mut address = cpu.rget(rb);
 	// let rlist = instr & 0xff;
 	for r in 0..8 {
 		if ((instr >> r) & 1) != 0 {
+			if first_access {
+				cpu.clock.data_access32_nonseq(address);
+				first_access = false;
+			} else {
+				cpu.clock.data_access32_seq(address);
+			}
+
 			thumb_ldm_single(cpu, r, &mut address);
 		}
 	}
@@ -1163,11 +1303,13 @@ fn thumb_b_cond_passed(cpu: &mut ArmCpu, instr: u32) {
 	offset <<= 1;
 	let pc = cpu.get_pc() + offset;
 	cpu.set_pc(pc);
+	cpu.clock_branched_thumb();
 }
 
 /// BEQ 
 /// Branch if zero flag set
 pub fn thumb_beq(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_z() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1176,6 +1318,7 @@ pub fn thumb_beq(cpu: &mut ArmCpu, instr: u32) {
 /// BNE 
 /// Branch if zero flag clear
 pub fn thumb_bne(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if !cpu.registers.getf_z() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1184,6 +1327,7 @@ pub fn thumb_bne(cpu: &mut ArmCpu, instr: u32) {
 /// BCS 
 /// Branch if carry flag set
 pub fn thumb_bcs(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_c() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1192,6 +1336,7 @@ pub fn thumb_bcs(cpu: &mut ArmCpu, instr: u32) {
 /// BCC 
 /// Branch if carry flag clear
 pub fn thumb_bcc(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if !cpu.registers.getf_c() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1200,6 +1345,7 @@ pub fn thumb_bcc(cpu: &mut ArmCpu, instr: u32) {
 /// BMI 
 /// Branch if negative flag set
 pub fn thumb_bmi(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_n() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1208,6 +1354,7 @@ pub fn thumb_bmi(cpu: &mut ArmCpu, instr: u32) {
 /// BPL 
 /// Branch if negative flag clear
 pub fn thumb_bpl(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if !cpu.registers.getf_n() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1216,6 +1363,7 @@ pub fn thumb_bpl(cpu: &mut ArmCpu, instr: u32) {
 /// BVS 
 /// Branch if overflow flag set
 pub fn thumb_bvs(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_v() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1224,6 +1372,7 @@ pub fn thumb_bvs(cpu: &mut ArmCpu, instr: u32) {
 /// BVC 
 /// Branch if overflow flag clear
 pub fn thumb_bvc(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if !cpu.registers.getf_v() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1232,6 +1381,7 @@ pub fn thumb_bvc(cpu: &mut ArmCpu, instr: u32) {
 /// BHI 
 /// Branch if higher (unsigned)
 pub fn thumb_bhi(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_c() & !cpu.registers.getf_z() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1240,6 +1390,7 @@ pub fn thumb_bhi(cpu: &mut ArmCpu, instr: u32) {
 /// BLS 
 /// Branch if lower or the same (unsigned)
 pub fn thumb_bls(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if !cpu.registers.getf_c() || cpu.registers.getf_z() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1248,6 +1399,7 @@ pub fn thumb_bls(cpu: &mut ArmCpu, instr: u32) {
 /// BGE 
 /// Branch if greater than or equal to
 pub fn thumb_bge(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_n() == cpu.registers.getf_v() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1256,6 +1408,7 @@ pub fn thumb_bge(cpu: &mut ArmCpu, instr: u32) {
 /// BLT 
 /// Branch if less than
 pub fn thumb_blt(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_n() != cpu.registers.getf_v() {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1264,6 +1417,7 @@ pub fn thumb_blt(cpu: &mut ArmCpu, instr: u32) {
 /// BGT 
 /// Branch if greater than
 pub fn thumb_bgt(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if !cpu.registers.getf_z() && (cpu.registers.getf_n() == cpu.registers.getf_v()) {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1272,6 +1426,7 @@ pub fn thumb_bgt(cpu: &mut ArmCpu, instr: u32) {
 /// BLE 
 /// Branch if less than or equal to
 pub fn thumb_ble(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	if cpu.registers.getf_z() || (cpu.registers.getf_n() != cpu.registers.getf_v()) {
 		thumb_b_cond_passed(cpu, instr);
 	}
@@ -1286,15 +1441,18 @@ pub fn thumb_swi(cpu: &mut ArmCpu, instr: u32) {
 /// B 
 /// Branch
 pub fn thumb_b(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let soffset12 = ((((instr & 0x7ff) as i32) << 21) >> 20) as u32;
 	let pc = cpu.get_pc() + soffset12;
 	cpu.set_pc(pc);
+	cpu.clock_branched_thumb();
 }
 
 /// BL setup
 /// Branch and link
 /// Two-instruction branch, high 11 bits of offset
 pub fn thumb_bl_setup(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let soffset11 = ((((instr & 0x7ff) as i32) << 21) >> 9) as u32;
 	let pc = cpu.get_pc();
 	cpu.rset(14, pc + soffset11);
@@ -1304,11 +1462,13 @@ pub fn thumb_bl_setup(cpu: &mut ArmCpu, instr: u32) {
 /// Branch and link
 /// Two-instruction branch, low 11 bits of offset
 pub fn thumb_bl_off(cpu: &mut ArmCpu, instr: u32) {
+	cpu.clock_prefetch_thumb();
 	let offset12 = (instr & 0x7ff) << 1;
 	let lr = cpu.rget(14);
 	let address = lr + offset12;
 	let next = cpu.get_pc() - 2;
 	cpu.rset(14, next | 1); // bit 0 of lr must be set.
 	cpu.set_pc(address);
+	cpu.clock_branched_thumb();
 }
 
