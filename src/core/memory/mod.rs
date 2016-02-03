@@ -63,10 +63,11 @@ impl GbaMemory {
 
 	/// Returns a slice of the memory in the range [start_address, end_address).
 	/// This should never try to slice memory across regions or mirrors. Bad things might happen.
+	/// NOTE: Ranges in this are inclusive!
 	pub fn get_slice(&self, start_address: u32, end_address: u32) -> &[u8] {
 		let start_index = self.transform(start_address);
 		let end_index = self.transform(end_address);
-		&self.internal_data[start_index..end_index]
+		&self.internal_data[start_index..(end_index + 1)]
 	}
 
 	// #TODO handle rom.
