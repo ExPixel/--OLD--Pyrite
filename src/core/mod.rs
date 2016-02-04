@@ -103,7 +103,7 @@ impl Gba {
 		let mut gba_fps_counter = FrameCounter::new();
 		'running: loop {
 			if delta >= FPS_60_DELTA_NS {
-				self.complete_draw();
+				self.frame();
 				gba_fps_counter.record_frame();
 				// println!("delta is {}, resetting.", delta);
 				delta = 0;
@@ -124,55 +124,40 @@ impl Gba {
 		println!("-- Shutdown successfully.");
 	}
 
-	fn complete_draw(&mut self) {
-		let mut vcount = self.cpu.memory.get_reg(ioreg::VCOUNT);
-		while vcount < 228 {
-			self.draw_line();
-			vcount += 1;
+	fn frame(&mut self) {
+		// Clears the VBlank flag.
+		{
+			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+			dispstat &= !0x1;
+			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 		}
-		self.cpu.memory.set_reg(ioreg::VCOUNT, 0);
-	}
 
-	fn draw_line(&mut self) {
-		let vcount = self.cpu.memory.get_reg(ioreg::VCOUNT);
-		if vcount == 0 {
-			self.set_vdraw_flags();
-		} else if vcount == 160 {
-			self.set_vblank_flags();
-			self.try_fire_vblank_int();
-		}
-		self.check_line_coincidence(vcount);
-
-		if vcount < 160 {
+	
+		for vcount in 0..160 {
+			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
+			self.check_line_coincidence(vcount);
 			self.do_vdraw_line(vcount);
-		} else {
+		}
+
+		// Sets the VBlank flag.
+		{
+			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+			dispstat |= 0x1;
+			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+		}
+
+		// We do the first iteration of vblank here in order
+		// to fire the interrupt once.
+		self.cpu.memory.set_reg(ioreg::VCOUNT, 160);
+		self.check_line_coincidence(160);
+		self.try_fire_vblank_int();
+		self.do_vblank_line();
+
+		for vcount in 161..228 {
+			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
+			self.check_line_coincidence(vcount);
 			self.do_vblank_line();
 		}
-		self.cpu.memory.set_reg(ioreg::VCOUNT, vcount + 1);
-	}
-
-	fn draw_some_lines(&mut self, max: u16) {
-		let mut lines_drawn = 0;
-		let mut vcount = self.cpu.memory.get_reg(ioreg::VCOUNT);
-		while vcount < 227 && lines_drawn < max { // we don't draw the last line here.
-			self.draw_line();
-			vcount += 1;
-			lines_drawn += 1;
-		}
-	}
-
-	// Sets the VBlank flag.
-	fn set_vblank_flags(&mut self) {
-		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
-		dispstat |= 0x1;
-		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
-	}
-
-	// Clears the VBlank flag.
-	fn set_vdraw_flags(&mut self) {
-		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
-		dispstat &= !0x1;
-		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 	}
 
 	/// Attempts to fire an vblank interrupt
