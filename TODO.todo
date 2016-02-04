@@ -13,6 +13,10 @@ Core:
        Maybe by adding an optional containing a u32 with the interrupt's instruction
        in it and if the interrupt variable hasn't been set to none but the time the next
        cpu tick call, it is then handled by the CPU which then branches into the BIOS.
+    ☐ I want to poll events more but right now I'm stuffing everything into a single frame.
+       I could probably poll more if I split the work done on each line between frames since
+       we're likely to be running at a framerate higher than 60. I'm not sure if this will be true
+       on other machines though. Will this still be okay on something like an i3?
     ✔ Complete CPU's Clock. @done (16-02-02 13:27)
     ✔ Complete the CPU's logic. @done (16-01-20 15:26)
     ✔ Complete the CPU's ALU @done (16-01-01 22:36)
