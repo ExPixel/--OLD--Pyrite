@@ -15,7 +15,6 @@ use self::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::lcd::GbaLcd;
 use self::joypad::GbaJoypad;
-use ::util::frame_counter::FrameCounter;
 
 /// delay for a 60fps frame in nanoseconds.
 const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
