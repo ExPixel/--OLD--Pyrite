@@ -30,13 +30,18 @@ void main() {
 static FRAGMENT_SHADER_SRC: &'static str = r#"
 #version 140
 
+// The Gamma of the GBA screen.
+#define GAMMA 2.2
+
 in vec2 v_tex_coords;
 out vec4 color;
 
 uniform sampler2D tex;
 
 void main() {
-    color = texture(tex, v_tex_coords);
+	vec4 tcolor = texture(tex, v_tex_coords);
+	tcolor.rgb = pow(tcolor.rgb, vec3(GAMMA));
+    color = tcolor;
 }
 "#;
 

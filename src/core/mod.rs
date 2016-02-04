@@ -15,7 +15,7 @@ use self::joypad::GbaJoypad;
 use ::util::frame_counter::FrameCounter;
 
 /// delay for a 60fps frame in nanoseconds.
-const FPS_60_DELTA_NS: u64 = 16000000; // 16670000
+const FPS_60_DELTA_NS: u64 = 15670000; // 16670000
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -272,7 +272,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		while self.cpu.clock.cycles < target {
 			if self.cpu.executable() {
 				self.cpu.tick();
-				self.debug.on_tick(&mut self.cpu);
+				// self.debug.on_tick(&mut self.cpu);
 			} else {
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
