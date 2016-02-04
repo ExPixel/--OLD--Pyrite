@@ -5,7 +5,10 @@ pub mod joypad;
 pub mod device;
 
 use glium;
+use time;
 
+use std::thread;
+use std::time::Duration;
 use self::memory::*;
 use self::cpu::registers;
 use self::cpu::ArmCpu;
@@ -15,7 +18,7 @@ use self::joypad::GbaJoypad;
 use ::util::frame_counter::FrameCounter;
 
 /// delay for a 60fps frame in nanoseconds.
-const FPS_60_DELTA_NS: u64 = 15670000; // 16670000
+const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -99,29 +102,29 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.init();
-		let mut delta = 0;
-		let mut gba_fps_counter = FrameCounter::new();
 		'running: loop {
-			if delta >= FPS_60_DELTA_NS {
-				self.frame();
-				gba_fps_counter.record_frame();
-				// println!("delta is {}, resetting.", delta);
-				delta = 0;
-
-				{
-					let fps = self.device.fps_counter.avg_fps;
-					let speed = ((fps as f64) / 60f64) * 100f64;
-					let window = self.device.display.get_window().expect("Failed to get device window.");
-					window.set_title(&format!("Pyrite - [GBA: {} FPS] [{} FPS ({}% GBA)]", gba_fps_counter.avg_fps, fps, speed as i64));
-				}
-			}
+			let start_time = time::precise_time_ns();
+			self.tick();
+			let delta = time::precise_time_ns() - start_time;
+			let sleep_time_millis = if delta > FPS_60_DELTA_NS { FPS_60_DELTA_NS } else { FPS_60_DELTA_NS - delta } / 1000000;
+			thread::sleep(Duration::from_millis(sleep_time_millis));
 			if self.request_exit { break 'running; }
-			self.device.render(&self.lcd.screen_buffer);
-			delta += self.device.fps_counter.last_delta;
-			// println!("delta is {} (+{})", delta, self.device.fps_counter.last_delta);
 		}
 		self.request_exit = false; // in case we don't actually close here.
 		println!("-- Shutdown successfully.");
+	}
+
+	fn tick(&mut self) {
+		self.frame();
+		self.update_window_title();
+		self.device.render(&self.lcd.screen_buffer);
+	}
+
+	fn update_window_title(&mut self) {
+		let fps = self.device.fps_counter.avg_fps;
+		let speed = ((fps as f64) / 60f64) * 100f64;
+		let window = self.device.display.get_window().expect("Failed to get device window.");
+		window.set_title(&format!("Pyrite - {} FPS ({}% GBA)", fps, speed as i64));
 	}
 
 	fn frame(&mut self) {
