@@ -12,6 +12,10 @@ use self::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::lcd::GbaLcd;
 use self::joypad::GbaJoypad;
+use ::util::frame_counter::FrameCounter;
+
+/// delay for a 60fps frame in nanoseconds.
+const FPS_60_DELTA_NS: u64 = 16000000; // 16670000
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -95,61 +99,80 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.init();
-		// self.device.render();
+		let mut delta = 0;
+		let mut gba_fps_counter = FrameCounter::new();
 		'running: loop {
-			self.frame();
+			if delta >= FPS_60_DELTA_NS {
+				self.complete_draw();
+				gba_fps_counter.record_frame();
+				// println!("delta is {}, resetting.", delta);
+				delta = 0;
+
+				{
+					let fps = self.device.fps_counter.avg_fps;
+					let speed = ((fps as f64) / 60f64) * 100f64;
+					let window = self.device.display.get_window().expect("Failed to get device window.");
+					window.set_title(&format!("Pyrite - [GBA: {} FPS] [{} FPS ({}% GBA)]", gba_fps_counter.avg_fps, fps, speed as i64));
+				}
+			}
 			if self.request_exit { break 'running; }
 			self.device.render(&self.lcd.screen_buffer);
-			{
-				let fps = self.device.fps_counter.fps;
-				let speed = ((fps as f64) / 60f64) * 100f64;
-				let window = self.device.display.get_window().expect("Failed to get device window.");
-				window.set_title(&format!("Pyrite - {} FPS ({} %)", fps, speed as i64));
-			}
-			// {
-			// 	let mut window = self.device.renderer.window_mut().expect("Failed to get mutable window reference.");
-			// 	let title = format!("Pyrite - {} FPS - {:04x}", self.device.fps_counter.fps, self.cpu.memory.get_reg(ioreg::DISPCNT));
-			// 	window.set_title(&title);
-			// }
+			delta += self.device.fps_counter.last_delta;
+			// println!("delta is {} (+{})", delta, self.device.fps_counter.last_delta);
 		}
 		self.request_exit = false; // in case we don't actually close here.
 		println!("-- Shutdown successfully.");
 	}
 
-	fn frame(&mut self) {
-		// Clears the VBlank flag.
-		{
-			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
-			dispstat &= !0x1;
-			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+	fn complete_draw(&mut self) {
+		let mut vcount = self.cpu.memory.get_reg(ioreg::VCOUNT);
+		while vcount < 228 {
+			self.draw_line();
+			vcount += 1;
 		}
+		self.cpu.memory.set_reg(ioreg::VCOUNT, 0);
+	}
 
-	
-		for vcount in 0..160 {
-			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
-			self.check_line_coincidence(vcount);
+	fn draw_line(&mut self) {
+		let vcount = self.cpu.memory.get_reg(ioreg::VCOUNT);
+		if vcount == 0 {
+			self.set_vdraw_flags();
+		} else if vcount == 160 {
+			self.set_vblank_flags();
+			self.try_fire_vblank_int();
+		}
+		self.check_line_coincidence(vcount);
+
+		if vcount < 160 {
 			self.do_vdraw_line(vcount);
-		}
-
-		// Sets the VBlank flag.
-		{
-			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
-			dispstat |= 0x1;
-			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
-		}
-
-		// We do the first iteration of vblank here in order
-		// to fire the interrupt once.
-		self.cpu.memory.set_reg(ioreg::VCOUNT, 160);
-		self.check_line_coincidence(160);
-		self.try_fire_vblank_int();
-		self.do_vblank_line();
-
-		for vcount in 161..228 {
-			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
-			self.check_line_coincidence(vcount);
+		} else {
 			self.do_vblank_line();
 		}
+		self.cpu.memory.set_reg(ioreg::VCOUNT, vcount + 1);
+	}
+
+	fn draw_some_lines(&mut self, max: u16) {
+		let mut lines_drawn = 0;
+		let mut vcount = self.cpu.memory.get_reg(ioreg::VCOUNT);
+		while vcount < 227 && lines_drawn < max { // we don't draw the last line here.
+			self.draw_line();
+			vcount += 1;
+			lines_drawn += 1;
+		}
+	}
+
+	// Sets the VBlank flag.
+	fn set_vblank_flags(&mut self) {
+		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		dispstat |= 0x1;
+		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
+	}
+
+	// Clears the VBlank flag.
+	fn set_vdraw_flags(&mut self) {
+		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		dispstat &= !0x1;
+		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 	}
 
 	/// Attempts to fire an vblank interrupt
