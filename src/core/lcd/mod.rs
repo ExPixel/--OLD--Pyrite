@@ -14,6 +14,7 @@ pub mod mode4;
 #[allow(unused_variables)]
 pub mod mode5;
 
+pub type Pixel = (u8, u8, u8, u8);
 pub type GbaPixel = (u8, u8, u8);
 pub type GbaLcdLine = Vec<GbaPixel>;
 
@@ -21,33 +22,118 @@ pub type GbaLcdLine = Vec<GbaPixel>;
 // since the GBA renders in scan lines anyway.
 pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
 
+
+pub struct GbaDisplayLines {
+	pub bg0: [Pixel; 240],
+	pub bg1: [Pixel; 240],
+	pub bg2: [Pixel; 240],
+	pub bg3: [Pixel; 240],
+	pub obj: [Pixel; 240]
+}
+
 pub struct GbaLcd {
-	pub screen_buffer: GbaLcdScreenBuffer
+	pub screen_buffer: GbaLcdScreenBuffer,
+	pub lines: GbaDisplayLines
 }
 
 impl GbaLcd {
 	pub fn new() -> GbaLcd {
 		GbaLcd {
-			screen_buffer: vec![vec![(0u8, 0u8, 0u8); 240]; 160]
+			screen_buffer: vec![vec![(0u8, 0u8, 0u8); 240]; 160],
+			lines: GbaDisplayLines {
+				bg0: [(0, 0, 0, 0); 240],
+				bg1: [(0, 0, 0, 0); 240],
+				bg2: [(0, 0, 0, 0); 240],
+				bg3: [(0, 0, 0, 0); 240],
+				obj: [(0, 0, 0, 0); 240]
+			}
 		}
 	}
 
 	/// Causes the LCD to render a single line.
 	#[allow(unused_variables)] // #TODO remove this
-	pub fn render_line(&mut self, memory: &mut GbaMemory, line: u16) {
+	pub fn render_line(&mut self, memory: &GbaMemory, line: u16) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
 		match dispcnt & 0x7 {
-			0 => mode0::render_mode_0(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
-			1 => mode1::render_mode_1(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
-			2 => mode2::render_mode_2(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
-			3 => mode3::render_mode_3(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
-			4 => mode4::render_mode_4(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
-			5 => mode5::render_mode_5(dispcnt, memory, line, &mut self.screen_buffer[line as usize][0..240]),
+			0 => mode0::render_mode_0(dispcnt, memory, line, &mut self.lines),
+			1 => mode1::render_mode_1(dispcnt, memory, line, &mut self.lines),
+			2 => mode2::render_mode_2(dispcnt, memory, line, &mut self.lines),
+			3 => mode3::render_mode_3(dispcnt, memory, line, &mut self.lines),
+			4 => mode4::render_mode_4(dispcnt, memory, line, &mut self.lines),
+			5 => mode5::render_mode_5(dispcnt, memory, line, &mut self.lines),
 			_ => unreachable!()
 		}
+
+		self.blend(line, memory);
+	}
+
+	fn blend(&mut self, line: u16, memory: &GbaMemory) {
+		let dispcnt = memory.get_reg(ioreg::DISPCNT);
+
+		let transparent = memory.read16(0x05000000);
+		let transparent_color = convert_rgb5_to_rgb8(transparent);
+		let output = &mut self.screen_buffer[line as usize][0..240];
+
+		for idx in 0..240 {
+			output[idx] = transparent_color; // Make the line transparent to start with.
+		}
+
+		let bg0_enabled = ((dispcnt >> 8) & 1) != 0;
+		let bg1_enabled = ((dispcnt >> 9) & 1) != 0;
+		let bg2_enabled = ((dispcnt >> 10) & 1) != 0;
+		let bg3_enabled = ((dispcnt >> 11) & 1) != 0;
+
+		let bg0_priority = memory.get_reg(ioreg::BG0CNT) & 0x3;
+		let bg1_priority = memory.get_reg(ioreg::BG1CNT) & 0x3;
+		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
+		let bg3_priority = memory.get_reg(ioreg::BG3CNT) & 0x3;
+
+		for priority in 0..4 {
+			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output); }
+			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output); }
+			if bg2_enabled && bg2_priority == priority { Self::blend_lines(&self.lines.bg2, output); }
+			if bg3_enabled && bg3_priority == priority { Self::blend_lines(&self.lines.bg3, output); }
+		}
+	}
+
+	fn blend_lines(src: &[Pixel], dest: &mut [GbaPixel]) {
+		// #TODO SIMD pls.
+		for idx in 0..240 {
+			let dest_pixel = dest[idx];
+			let src_pixel = src[idx];
+			let out_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+			dest[idx] = out_pixel;
+		}
+	}
+
+	#[inline(always)]
+	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
+		// blends color components, ca: component a, cb: component b, aa: alpha a, ab: alpha b
+		let _blend = |ca, cb, aa, ab| -> u8 {
+			let ca = ca as u32;
+			let cb = cb as u32;
+			let aa = aa as u32;
+			let ab = ab as u32;
+
+			// return ((ca * aa / 255) + (cb * ab * (255 - aa) / (255*255))) as u8
+
+			// #FIXME Losing a bit of precision for speed, is it worth it?
+			// using x/256 instead of x/255
+			// using x/65536 instead of x/65025
+			return ((ca * aa >> 8) + (cb * ab * (255 - aa) >> 16)) as u8
+		};
+
+		(_blend(a.0, b.0, a.3, 255), _blend(a.1, b.1, a.3, 255), _blend(a.2, b.2, a.3, 255))
 	}
 }
+
+/*
+rOut = (rA * aA / 255) + (rB * aB * (255 - aA) / (255*255))
+gOut = (gA * aA / 255) + (gB * aB * (255 - aA) / (255*255))
+bOut = (bA * aA / 255) + (bB * aB * (255 - aA) / (255*255))
+aOut = aA + (aB * (255 - aA) / 255)
+*/
 
 /// Bit   Expl.
 /// 0-4   Red Intensity   (0-31)
@@ -60,5 +146,20 @@ pub fn convert_rgb5_to_rgb8(rgb5: u16) -> GbaPixel {
 		(((rgb5 & 0x1f) * 527 + 23 ) >> 6) as u8,
 		((((rgb5 >> 5) & 0x1f) * 527 + 23 ) >> 6) as u8,
 		((((rgb5 >> 10) & 0x1f) * 527 + 23 ) >> 6) as u8
+	)
+}
+
+/// Bit   Expl.
+/// 0-4   Red Intensity   (0-31)
+/// 5-9   Green Intensity (0-31)
+/// 10-14 Blue Intensity  (0-31)
+/// 15    Not used in GBA Mode (in NDS Mode: Alpha=0=Transparent, Alpha=1=Normal)
+#[inline(always)]
+pub fn convert_rgb5_to_rgba8(rgb5: u16) -> Pixel {
+	(
+		(((rgb5 & 0x1f) * 527 + 23 ) >> 6) as u8,
+		((((rgb5 >> 5) & 0x1f) * 527 + 23 ) >> 6) as u8,
+		((((rgb5 >> 10) & 0x1f) * 527 + 23 ) >> 6) as u8,
+		255
 	)
 }
