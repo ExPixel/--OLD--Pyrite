@@ -1,4 +1,7 @@
+General:
+  ☐ Clean up leftover debug statements that have been commented out.
 Core:
+  ☐ Complete DMAs
   LCD:
     ☐ Complete All Rendering
       ☐ Complete Mode 0 Rendering
@@ -7,16 +10,16 @@ Core:
       ☐ Complete Mode 3 Rendering
       ☐ Complete Mode 4 Rendering
       ☐ Complete Window Rendering
-  CPU:
-    ☐ Clean up leftover debug statements that have been commented out.
-    ☐ Add a good way for handling software interrupts outside of the CPU
+  GBA:
+    ✔ Add a good way for handling software interrupts outside of the CPU @done (16-02-05 15:37)
        Maybe by adding an optional containing a u32 with the interrupt's instruction
        in it and if the interrupt variable hasn't been set to none but the time the next
        cpu tick call, it is then handled by the CPU which then branches into the BIOS.
-    ☐ I want to poll events more but right now I'm stuffing everything into a single frame.
+    ✔ I want to poll events more but right now I'm stuffing everything into a single frame. @done (16-02-05 15:37)
        I could probably poll more if I split the work done on each line between frames since
-       we're likely to be running at a framerate higher than 60. I'm not sure if this will be true
+       we're likely to be running at a framerate higher than 60. I'm not sure if this will b true
        on other machines though. Will this still be okay on something like an i3?
+  CPU:
     ✔ Complete CPU's Clock. @done (16-02-02 13:27)
     ✔ Complete the CPU's logic. @done (16-01-20 15:26)
     ✔ Complete the CPU's ALU @done (16-01-01 22:36)
