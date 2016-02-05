@@ -64,7 +64,6 @@ pub struct Gba {
 	pub lcd: GbaLcd,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
-	pub debug: GbaDebug,
 	pub request_exit: bool
 }
 
@@ -75,7 +74,6 @@ impl Gba {
 			lcd: GbaLcd::new(),
 			device: GbaDevice::new(),
 			joypad: GbaJoypad::new(),
-			debug: GbaDebug::new(),
 			request_exit: false
 		}
 	}
@@ -272,25 +270,12 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		while self.cpu.clock.cycles < target {
 			if self.cpu.executable() {
 				self.cpu.tick();
-				// self.debug.on_tick(&mut self.cpu);
 			} else {
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
 		}
 	}
 
-	// fn __debug_init_texture(&mut self) {
-	// 	self.device.gba_screen.with_lock(None, |buffer: &mut [u8], pitch: usize| {
-	// 		for y in 0..160 {
-	// 			for x in 0..240 {
-	// 				let offset = y*pitch + x*3;
-	// 				buffer[offset + 0] = x as u8;
-	// 				buffer[offset + 1] = y as u8;
-	// 				buffer[offset + 2] = ((x + y) / 2) as u8;
-	// 			}
-	// 		}
-	// 	}).expect("Failed to aquire texture lock.");
-	// }
 
 	/// Polls for and handles events from the device.
 	/// returns true if this should quit.
@@ -313,32 +298,4 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		self.joypad.tick(&mut self.cpu);
 	}
 }
-
-pub struct GbaDebug {
-	waiting_for_io: bool
-}
-
-impl GbaDebug {
-	pub fn new() -> GbaDebug {
-		GbaDebug { waiting_for_io: false }
-	}
-
-	pub fn on_tick(&mut self, cpu: &mut ArmCpu) {
-		if self.waiting_for_io {
-			let siodata32_h = cpu.memory.read16(0x4000122);
-			if siodata32_h == 0xbeef {
-				let siodata32_l = cpu.memory.read16(0x4000120);
-				print!("{}", (siodata32_l as u8) as char);
-				self.waiting_for_io = false;
-			}
-		} else {
-			let siodata32_h = cpu.memory.read16(0x4000122);
-			if siodata32_h == 0xdead {
-				self.waiting_for_io = true;
-			}
-		}
-	}
-}
-
-
 
