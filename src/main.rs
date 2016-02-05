@@ -1,4 +1,4 @@
-pub mod core;
+pub mod gba;
 pub mod debug;
 pub mod util;
 
@@ -9,8 +9,8 @@ use std::io::prelude::*;
 use std::env;
 use std::fs::File;
 
-use core::memory::GbaMemory;
-use core::Gba;
+use gba::core::memory::GbaMemory;
+use gba::Gba;
 
 const BIOS_PATH: &'static str = "roms/legal/gba.bin";
 

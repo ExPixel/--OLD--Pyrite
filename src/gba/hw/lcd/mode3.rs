@@ -1,5 +1,5 @@
 use super::*;
-use super::super::memory::*;
+use super::super::super::core::memory::*;
 
 /// BG Mode 3 (Bitmap based Mode for still images)
 ///  06000000-06013FFF  80 KBytes Frame 0 buffer (only 75K actually used)

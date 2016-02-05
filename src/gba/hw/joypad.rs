@@ -1,5 +1,5 @@
-use super::cpu::ArmCpu;
-use super::memory::*;
+use super::super::core::cpu::ArmCpu;
+use super::super::core::memory::*;
 use glium::glutin::VirtualKeyCode;
 
 pub struct GbaJoypad {

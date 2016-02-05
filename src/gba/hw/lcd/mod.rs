@@ -1,4 +1,4 @@
-use super::memory::*;
+use super::super::core::memory::*;
 
 // #TODO remove these allows
 #[allow(unused_variables)]

@@ -1,7 +1,5 @@
-pub mod memory;
-pub mod cpu;
-pub mod lcd;
-pub mod joypad;
+pub mod core;
+pub mod hw;
 pub mod device;
 
 use glium;
@@ -9,12 +7,12 @@ use time;
 
 use std::thread;
 use std::time::Duration;
-use self::memory::*;
-use self::cpu::registers;
-use self::cpu::ArmCpu;
+use self::core::memory::*;
+use self::core::cpu::registers;
+use self::core::cpu::ArmCpu;
 use self::device::GbaDevice;
-use self::lcd::GbaLcd;
-use self::joypad::GbaJoypad;
+use self::hw::lcd::GbaLcd;
+use self::hw::joypad::GbaJoypad;
 
 /// delay for a 60fps frame in nanoseconds.
 const FPS_60_DELTA_NS: u64 = 16000000; // 16666667

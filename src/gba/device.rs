@@ -4,7 +4,7 @@ use glium::Surface;
 use glium::texture::UncompressedFloatFormat;
 use glium::texture::MipmapsOption;
 
-use super::lcd::GbaLcdScreenBuffer;
+use super::hw::lcd::GbaLcdScreenBuffer;
 use ::util::frame_counter::FrameCounter;
 
 const GBA_SCREEN_WIDTH: u32 = 240;

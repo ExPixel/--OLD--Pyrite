@@ -427,9 +427,9 @@ impl ArmCpu {
 	/// Disasssembly of the instruction currently being executed.
 	pub fn disasm_exec(&self) -> String {
 		if self.thumb_mode() {
-			super::super::debug::armdis::disasm_thumb(self.get_exec_address(), &self.memory, 0b11111111)
+			super::super::super::debug::armdis::disasm_thumb(self.get_exec_address(), &self.memory, 0b11111111)
 		} else {
-			super::super::debug::armdis::disasm_arm(self.get_exec_address(), &self.memory, 0b11111111)
+			super::super::super::debug::armdis::disasm_arm(self.get_exec_address(), &self.memory, 0b11111111)
 		}
 	}
 

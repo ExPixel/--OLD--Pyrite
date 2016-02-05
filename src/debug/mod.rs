@@ -3,7 +3,7 @@ pub mod armdis;
 // not ready.
 // pub mod armasm;
 
-pub use ::core::memory::GbaMemory;
+pub use ::gba::core::memory::GbaMemory;
 
 use self::armdis::*;
 

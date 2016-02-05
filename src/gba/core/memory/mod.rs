@@ -76,8 +76,8 @@ impl GbaMemory {
 	}
 
 	/// Transforms a global GBA memory address
-	/// into a local address in our internal data array.
-	fn transform(&self, address32: u32) -> usize {
+	/// into a local index in our internal data array.
+	pub fn transform(&self, address32: u32) -> usize {
 		let address = address32 as usize;
 		match address {
 			// System ROM (BIOS):

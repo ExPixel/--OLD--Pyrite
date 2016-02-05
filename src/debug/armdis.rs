@@ -1,7 +1,7 @@
 // An almost direct translation of VBA's armdis.cpp to Rust.
 // Slightly modified to be more rusty (just expecting to do this might not have happened)
 // and for more functionality (like resolving GBA Swi instructions).
-use ::core::memory::GbaMemory;
+use ::gba::core::memory::GbaMemory;
 
 pub struct Opcodes {
 	pub mask: u32,
