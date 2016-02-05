@@ -15,6 +15,7 @@ opt-level=3
 # Ideally I would just like to turn overflow checking off
 # because overflows happen so frequently, but this is fine I guess.
 debug-assertions = false
+codegen-units = 2
 
 [profile.release]
 opt-level=3
