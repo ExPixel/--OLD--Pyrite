@@ -15,12 +15,12 @@ use core::Gba;
 const BIOS_PATH: &'static str = "roms/legal/gba.bin";
 
 macro_rules! println_err {
-    ($($arg:tt)*) => (
-    	match writeln!(&mut ::std::io::stderr(), $($arg)*) {
-    		Ok(_) => {},
-    		Err(error) => panic!("Failed to write to stderr: {}", error)
-    	}
-    )
+	($($arg:tt)*) => (
+		match writeln!(&mut ::std::io::stderr(), $($arg)*) {
+			Ok(_) => {},
+			Err(error) => panic!("Failed to write to stderr: {}", error)
+		}
+	)
 }
 
 pub fn load_bios(memory: &mut GbaMemory) {
