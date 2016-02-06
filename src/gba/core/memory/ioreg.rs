@@ -1,5 +1,10 @@
+#[derive(Copy, Clone)]
 pub struct IORegister8(pub usize);
+
+#[derive(Copy, Clone)]
 pub struct IORegister16(pub usize);
+
+#[derive(Copy, Clone)]
 pub struct IORegister32(pub usize);
 
 // Offsets from 0x4000000
