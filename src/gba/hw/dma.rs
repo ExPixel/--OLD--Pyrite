@@ -61,8 +61,11 @@ struct DmaInternal {
 }
 
 pub struct DmaHandler {
+	/// true if there is an ongoing DMA transfer.
+	in_dma: bool,
+
 	/// The current DMA if there is one.
-	current_dma: Option<DmaInternal>,
+	current_dma: DmaInternal,
 
 	/// Cycle count at which to begin the DMA transfer.
 	/// DMAs need 2 cycles before they start.
@@ -72,9 +75,7 @@ pub struct DmaHandler {
 
 impl DmaHandler {
 	pub fn check_dmas(&mut self, cpu: &mut ArmCpu, timing: u16) {
-		if let Some(internal) = self.current_dma.take() {
-			Self::complete_dma(cpu, internal);
-		} else {
+		if !self.in_dma {
 			for channel in 0..4 {
 				if self.try_start_dma(cpu, timing, channel) {
 					break;
@@ -98,17 +99,16 @@ impl DmaHandler {
 				units &= channel.max_units - 1;
 			}
 
-			self.current_dma = Some(DmaInternal {
-				src_addr: src_addr,
-				dest_addr: dest_addr,
-				units: units,
-				channel_index: channel_index
-			});
+			self.current_dma.src_addr = src_addr;
+			self.current_dma.dest_addr = dest_addr;
+			self.current_dma.units = units;
+			self.current_dma.channel_index = channel_index;
+			self.in_dma = true;
 			return true
 		}
 		return false
 	}
 
-	fn complete_dma(cpu: &mut ArmCpu, info: DmaInternal) {
+	fn dma_tick(cpu: &mut ArmCpu, info: DmaInternal) {
 	}
 }
