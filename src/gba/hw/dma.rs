@@ -53,38 +53,35 @@ const CHANNELS: [DmaChannel; 4] = [
 	}
 ];
 
-struct DmaInternal {
-	src_addr: u32,
-	dest_addr: u32,
-	units: u16,
-	channel_index: usize
-}
-
+#[derive(Default)]
 pub struct DmaHandler {
-	/// true if there is an ongoing DMA transfer.
-	in_dma: bool,
-
-	/// The current DMA if there is one.
-	current_dma: DmaInternal,
-
-	/// Cycle count at which to begin the DMA transfer.
-	/// DMAs need 2 cycles before they start.
-	do_dma_at: u64
+	dma_cycles: u64
 }
 
+/*
+This is wrong. DMAs should be able to interrupt each other I think
+so I'm going to switch to a different model where they can. I should
+use an array of ongoing DMA transfers (by moving in_dma) to the DmaInternal
+struct itself. And then each tick I can check which is the highest priority
+DMA transfer currently being done and move along with that one instead.
+To speed things up, I can probably pass along the target cycles to the DMA
+transfer and keep the code running here in the DmaHandler rather than passing
+back and forth between the Gba and the DmaHandler and running for loops everywhere.
+*/
 
 impl DmaHandler {
-	pub fn check_dmas(&mut self, cpu: &mut ArmCpu, timing: u16) {
-		if !self.in_dma {
-			for channel in 0..4 {
-				if self.try_start_dma(cpu, timing, channel) {
-					break;
-				}
-			}
-		}
+	pub fn new() -> DmaHandler {
+		Default::default()
 	}
 
-	/// Checks a DMA channel and starts it and returns true if it is active.
+	pub fn check_dmas(&mut self, cpu: &mut ArmCpu, timing: u16) {
+		self.try_start_dma(cpu, timing, 0);
+		self.try_start_dma(cpu, timing, 1);
+		self.try_start_dma(cpu, timing, 2);
+		self.try_start_dma(cpu, timing, 3);
+	}
+
+	/// Checks a DMA channel and starts it and returns true if a DMA transfer was done.
 	fn try_start_dma(&mut self, cpu: &mut ArmCpu, timing: u16, channel_index: usize) -> bool {
 		let channel = &CHANNELS[channel_index];
 		let dma_cnt_h = cpu.memory.get_reg(channel.reg_cnt_h);
@@ -99,16 +96,64 @@ impl DmaHandler {
 				units &= channel.max_units - 1;
 			}
 
-			self.current_dma.src_addr = src_addr;
-			self.current_dma.dest_addr = dest_addr;
-			self.current_dma.units = units;
-			self.current_dma.channel_index = channel_index;
-			self.in_dma = true;
+			let ending_dest;
+
+			if ((dma_cnt_h >> 10) & 1) != 0 {
+				let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
+				let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
+				ending_dest = self.do_dma_transfer32(cpu, channel, src_addr, dest_addr, units, src_inc, dest_inc);
+			} else {
+				let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
+				let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
+				ending_dest = self.do_dma_transfer16(cpu, channel, src_addr, dest_addr, units, src_inc, dest_inc);
+			}
+
+			if ((dma_cnt_h >> 5) & 0x3) == 0x3 {
+				cpu.memory.set_reg(channel.reg_dad, ending_dest & channel.dest_mask);
+			}
+
+			if ((dma_cnt_h >> 9) & 1) == 0 { // If this is not repeating.
+				cpu.memory.set_reg(channel.reg_cnt_h, dma_cnt_h & 0x7fff); // clears the enable bit.
+			}
+
 			return true
 		}
 		return false
 	}
 
-	fn dma_tick(cpu: &mut ArmCpu, info: DmaInternal) {
+	fn get_increment(n: u16, size: i32) -> u32 {
+		let inc = match n {
+			0 | 3 => size,
+			1 => size * -1,
+			2 => 0,
+			_ => unreachable!()
+		};
+		return inc as u32
+	}
+
+	fn do_dma_transfer16(&mut self, cpu: &mut ArmCpu, channel: &DmaChannel, src_addr: u32, dest_addr: u32, units: u16, src_inc: u32, dest_inc: u32) -> u32 {
+		let mut src = src_addr;
+		let mut dest = dest_addr;
+		for _ in 0..units {
+			let data = cpu.memory.read16(src);
+			cpu.memory.write16(dest, data);
+			src += src_inc;
+			dest += dest_inc;
+		}
+		dest
+	}
+
+	fn do_dma_transfer32(&mut self, cpu: &mut ArmCpu, channel: &DmaChannel, src_addr: u32, dest_addr: u32, units: u16, src_inc: u32, dest_inc: u32) -> u32 {
+		let mut src = src_addr;
+		let mut dest = dest_addr;
+
+		for _ in 0..units {
+			let data = cpu.memory.read16(src);
+			cpu.memory.write16(dest, data);
+			src += src_inc;
+			dest += dest_inc;
+		}
+
+		dest
 	}
 }
