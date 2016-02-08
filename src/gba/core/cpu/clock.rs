@@ -127,37 +127,37 @@ impl ArmCpuClock {
 		self.internal(cycles);
 	}
 
-	fn get_seq_cycles8(&self, address: u32) -> u8 {
+	pub fn get_seq_cycles8(&self, address: u32) -> u8 {
 		let area = ((address >> 24) & 0xff) as usize;
 		if area > 0x0E { 1 }
 		else { (self.memory_timings[area].0).0 }
 	}
 
-	fn get_nonseq_cycles8(&self, address: u32) -> u8 {
+	pub fn get_nonseq_cycles8(&self, address: u32) -> u8 {
 		let area = ((address >> 24) & 0xff) as usize;
 		if area > 0x0E { 1 }
 		else { (self.memory_timings[area].1).0 }
 	}
 
-	fn get_seq_cycles16(&self, address: u32) -> u8 {
+	pub fn get_seq_cycles16(&self, address: u32) -> u8 {
 		let area = ((address >> 24) & 0xff) as usize;
 		if area > 0x0E { 1 }
 		else { (self.memory_timings[area].0).1 }
 	}
 
-	fn get_nonseq_cycles16(&self, address: u32) -> u8 {
+	pub fn get_nonseq_cycles16(&self, address: u32) -> u8 {
 		let area = ((address >> 24) & 0xff) as usize;
 		if area > 0x0E { 1 }
 		else { (self.memory_timings[area].1).1 }
 	}
 
-	fn get_seq_cycles32(&self, address: u32) -> u8 {
+	pub fn get_seq_cycles32(&self, address: u32) -> u8 {
 		let area = ((address >> 24) & 0xff) as usize;
 		if area > 0x0E { 1 }
 		else { (self.memory_timings[area].0).2 }
 	}
 
-	fn get_nonseq_cycles32(&self, address: u32) -> u8 {
+	pub fn get_nonseq_cycles32(&self, address: u32) -> u8 {
 		let area = ((address >> 24) & 0xff) as usize;
 		if area > 0x0E { 1 }
 		else { (self.memory_timings[area].1).2 }
