@@ -11,7 +11,7 @@ struct DmaChannel {
 
 	src_mask: u32,
 	dest_mask: u32,
-	max_units: u16
+	max_units: u32
 }
 
 const CHANNELS: [DmaChannel; 4] = [
@@ -55,7 +55,7 @@ const CHANNELS: [DmaChannel; 4] = [
 
 #[derive(Default)]
 pub struct DmaHandler {
-	dma_cycles: u64
+	dma_cycles: u32
 }
 
 /*
@@ -81,44 +81,46 @@ impl DmaHandler {
 		self.try_start_dma(cpu, timing, 3);
 	}
 
-	/// Checks a DMA channel and starts it and returns true if a DMA transfer was done.
-	fn try_start_dma(&mut self, cpu: &mut ArmCpu, timing: u16, channel_index: usize) -> bool {
+	#[inline(always)]
+	fn try_start_dma(&mut self, cpu: &mut ArmCpu, timing: u16, channel_index: usize) {
 		let channel = &CHANNELS[channel_index];
 		let dma_cnt_h = cpu.memory.get_reg(channel.reg_cnt_h);
-		if ((dma_cnt_h >> 15) & 1) != 0 { // DMA enable.
-			let src_addr = cpu.memory.get_reg(channel.reg_sad) & channel.src_mask;
-			let dest_addr = cpu.memory.get_reg(channel.reg_dad) & channel.dest_mask;
-			let mut units = cpu.memory.get_reg(channel.reg_cnt_l);
-
-			if units == 0 {
-				units = channel.max_units
-			} else {
-				units &= channel.max_units - 1;
-			}
-
-			let ending_dest;
-
-			if ((dma_cnt_h >> 10) & 1) != 0 {
-				let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
-				let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
-				ending_dest = self.do_dma_transfer32(cpu, channel, src_addr, dest_addr, units, src_inc, dest_inc);
-			} else {
-				let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
-				let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
-				ending_dest = self.do_dma_transfer16(cpu, channel, src_addr, dest_addr, units, src_inc, dest_inc);
-			}
-
-			if ((dma_cnt_h >> 5) & 0x3) == 0x3 {
-				cpu.memory.set_reg(channel.reg_dad, ending_dest & channel.dest_mask);
-			}
-
-			if ((dma_cnt_h >> 9) & 1) == 0 { // If this is not repeating.
-				cpu.memory.set_reg(channel.reg_cnt_h, dma_cnt_h & 0x7fff); // clears the enable bit.
-			}
-
-			return true
+		if ((dma_cnt_h >> 15) & 1) != 0 && ((dma_cnt_h >> 12) & 0x3) == timing { // DMA is enabled && Timing is correct
+			self.start_dma(cpu, dma_cnt_h, channel);
 		}
-		return false
+	}
+
+	/// Checks a DMA channel and starts it and returns true if a DMA transfer was done.
+	fn start_dma(&mut self, cpu: &mut ArmCpu, dma_cnt_h: u16, channel: &DmaChannel) {
+		let src_addr = cpu.memory.get_reg(channel.reg_sad) & channel.src_mask;
+		let dest_addr = cpu.memory.get_reg(channel.reg_dad) & channel.dest_mask;
+		let mut units = cpu.memory.get_reg(channel.reg_cnt_l) as u32;
+
+		if units == 0 {
+			units = channel.max_units
+		} else {
+			units &= channel.max_units - 1;
+		}
+
+		let ending_dest;
+
+		if ((dma_cnt_h >> 10) & 1) != 0 {
+			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
+			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
+			ending_dest = self.do_dma_transfer32(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
+		} else {
+			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
+			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
+			ending_dest = self.do_dma_transfer16(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
+		}
+
+		if ((dma_cnt_h >> 5) & 0x3) == 0x3 {
+			cpu.memory.set_reg(channel.reg_dad, ending_dest & channel.dest_mask);
+		}
+
+		if ((dma_cnt_h >> 9) & 1) == 0 { // If this is not repeating.
+			cpu.memory.set_reg(channel.reg_cnt_h, dma_cnt_h & 0x7fff); // clears the enable bit.
+		}
 	}
 
 	fn get_increment(n: u16, size: i32) -> u32 {
@@ -131,7 +133,7 @@ impl DmaHandler {
 		return inc as u32
 	}
 
-	fn do_dma_transfer16(&mut self, cpu: &mut ArmCpu, channel: &DmaChannel, src_addr: u32, dest_addr: u32, units: u16, src_inc: u32, dest_inc: u32) -> u32 {
+	fn do_dma_transfer16(&mut self, cpu: &mut ArmCpu, src_addr: u32, dest_addr: u32, units: u32, src_inc: u32, dest_inc: u32) -> u32 {
 		let mut src = src_addr;
 		let mut dest = dest_addr;
 		for _ in 0..units {
@@ -140,18 +142,53 @@ impl DmaHandler {
 			src += src_inc;
 			dest += dest_inc;
 		}
+
+		// -- Timing Stuff ---
+		self.dma_cycles += if units > 1 {
+			(cpu.clock.get_nonseq_cycles16(src_addr) as u32) + (cpu.clock.get_nonseq_cycles16(dest_addr) as u32) +
+			((cpu.clock.get_seq_cycles16(src_addr) as u32) * (units - 1)) + ((cpu.clock.get_seq_cycles16(dest_addr) as u32) * (units - 1))
+		} else {
+			(cpu.clock.get_nonseq_cycles16(src_addr) as u32)+ (cpu.clock.get_nonseq_cycles16(dest_addr) as u32)
+		};
+
+		// 2 internal cycles unless both dest_addr and src_addr are in gamepak memory area.
+		let src_area = (src_addr >> 24) & 0xFF;
+		let dest_area = (dest_addr >> 24) & 0xFF;
+		if src_area > 0x07 && dest_area > 0x07 {
+			self.dma_cycles += 4;
+		} else {
+			self.dma_cycles += 2;
+		}
+
 		dest
 	}
 
-	fn do_dma_transfer32(&mut self, cpu: &mut ArmCpu, channel: &DmaChannel, src_addr: u32, dest_addr: u32, units: u16, src_inc: u32, dest_inc: u32) -> u32 {
+
+	fn do_dma_transfer32(&mut self, cpu: &mut ArmCpu, src_addr: u32, dest_addr: u32, units: u32, src_inc: u32, dest_inc: u32) -> u32 {
 		let mut src = src_addr;
 		let mut dest = dest_addr;
-
 		for _ in 0..units {
 			let data = cpu.memory.read16(src);
 			cpu.memory.write16(dest, data);
 			src += src_inc;
 			dest += dest_inc;
+		}
+
+		// -- Timing Stuff ---
+		self.dma_cycles += if units > 1 {
+			(cpu.clock.get_nonseq_cycles32(src_addr) as u32)+ (cpu.clock.get_nonseq_cycles32(dest_addr) as u32) +
+			((cpu.clock.get_seq_cycles32(src_addr) as u32) * (units - 1)) + ((cpu.clock.get_seq_cycles32(dest_addr) as u32) * (units - 1))
+		} else {
+			(cpu.clock.get_nonseq_cycles32(src_addr) as u32)+ (cpu.clock.get_nonseq_cycles32(dest_addr) as u32)
+		};
+
+		// 2 internal cycles unless both dest_addr and src_addr are in gamepak memory area.
+		let src_area = (src_addr >> 24) & 0xFF;
+		let dest_area = (dest_addr >> 24) & 0xFF;
+		if src_area > 0x07 && dest_area > 0x07 {
+			self.dma_cycles += 4;
+		} else {
+			self.dma_cycles += 2;
 		}
 
 		dest
