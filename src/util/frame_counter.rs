@@ -13,7 +13,8 @@ pub struct FrameCounter {
 	pub total_fps: u64,
 	pub avg_fps: u64,
 
-	pub fps: u64
+	pub fps: u64,
+	pub fps_available: bool,
 }
 
 impl FrameCounter {
@@ -28,8 +29,14 @@ impl FrameCounter {
 			total_fps: 0,
 			avg_fps: 0,
 
-			fps: 0
+			fps: 0,
+			fps_available: false
 		}
+	}
+
+	pub fn take_fps(&mut self) -> u64 {
+		self.fps_available = false;
+		self.fps
 	}
 
 	pub fn record_frame(&mut self) {
@@ -49,6 +56,7 @@ impl FrameCounter {
 			self.total_fps += self.fps;
 			self.seconds += 1;
 			self.avg_fps = self.total_fps / self.seconds;
+			self.fps_available = true;
 		}
 	}
 }
