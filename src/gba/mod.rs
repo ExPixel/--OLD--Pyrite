@@ -13,6 +13,10 @@ use self::core::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
+use self::hw::dma::*;
+
+// #TODO remove this debug code.
+const LIMIT_FPS: bool = true;
 
 /// delay for a 60fps frame in nanoseconds.
 const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
@@ -64,6 +68,7 @@ pub struct Gba {
 	pub lcd: GbaLcd,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
+	pub dma_handler: DmaHandler,
 	pub request_exit: bool
 }
 
@@ -74,6 +79,7 @@ impl Gba {
 			lcd: GbaLcd::new(),
 			device: GbaDevice::new(),
 			joypad: GbaJoypad::new(),
+			dma_handler: DmaHandler::new(),
 			request_exit: false
 		}
 	}
@@ -98,11 +104,15 @@ impl Gba {
 	pub fn run(&mut self) {
 		self.init();
 		'running: loop {
-			let start_time = time::precise_time_ns();
-			self.tick();
-			let delta = time::precise_time_ns() - start_time;
-			let sleep_time_millis = if delta > FPS_60_DELTA_NS { FPS_60_DELTA_NS } else { FPS_60_DELTA_NS - delta } / 1000000;
-			thread::sleep(Duration::from_millis(sleep_time_millis));
+			if LIMIT_FPS {
+				let start_time = time::precise_time_ns();
+				self.tick();
+				let delta = time::precise_time_ns() - start_time;
+				let sleep_time_millis = if delta > FPS_60_DELTA_NS { FPS_60_DELTA_NS } else { FPS_60_DELTA_NS - delta } / 1000000;
+				thread::sleep(Duration::from_millis(sleep_time_millis));
+			} else { // #TODO remove debug code.
+				self.tick();
+			}
 			if self.request_exit { break 'running; }
 		}
 		self.request_exit = false; // in case we don't actually close here.
@@ -116,10 +126,12 @@ impl Gba {
 	}
 
 	fn update_window_title(&mut self) {
-		let fps = self.device.fps_counter.avg_fps;
-		let speed = ((fps as f64) / 60f64) * 100f64;
-		let window = self.device.display.get_window().expect("Failed to get device window.");
-		window.set_title(&format!("Pyrite - {} FPS ({}% GBA)", fps, speed as i64));
+		if self.device.fps_counter.fps_available { // So we don't sample too much.
+			let fps = self.device.fps_counter.avg_fps;
+			let speed = ((fps as f64) / 60f64) * 100f64;
+			let window = self.device.display.get_window().expect("Failed to get device window.");
+			window.set_title(&format!("Pyrite - {} FPS ({}% GBA)", fps, speed as i64));
+		}
 	}
 
 	fn frame(&mut self) {
@@ -250,7 +262,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		dispstat &= !0x2;
 		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
-
 		self.run_cpu_cycles(960);
 	}
 
@@ -259,17 +270,33 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		dispstat |= 0x2;
 		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
-
 		self.try_fire_hblank_int();
-
+		self.dma_handler.check_dmas(&mut self.cpu, DMA_TIMING_HBLANK);
 		self.run_cpu_cycles(272);
 	}
 
 	fn run_cpu_cycles(&mut self, cycles: u64) {
-		let target = self.cpu.clock.cycles + cycles;
-		while self.cpu.clock.cycles < target {
+		let mut cycles = cycles;
+		let mut target = self.cpu.clock.cycles + cycles;
+		'cpu_loop: while self.cpu.clock.cycles < target {
 			if self.cpu.executable() {
-				self.cpu.tick();
+				if self.dma_handler.dma_cycles > 0 {
+					if cycles < self.dma_handler.dma_cycles {
+						self.dma_handler.dma_cycles -= cycles;
+						break 'cpu_loop;
+					} else {
+						cycles -= self.dma_handler.dma_cycles;
+						target = self.cpu.clock.cycles + cycles; // recalculate the target
+						self.dma_handler.dma_cycles = 0;
+					}
+				} else {
+					self.cpu.tick();
+
+					// #TODO I should check if the DMA is registers are dirty or something.
+					// This loses me about 40-50 FPS. I could probably check by using something in the memory
+					// to check if any of the ioregisters are dirty.
+					self.dma_handler.check_dmas(&mut self.cpu, DMA_TIMING_IMMEDIATE);
+				}
 			} else {
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}

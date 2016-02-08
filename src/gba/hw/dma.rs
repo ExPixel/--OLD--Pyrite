@@ -3,6 +3,11 @@ use super::super::core::memory::ioreg::IORegister32;
 use super::super::core::memory::ioreg::IORegister16;
 use super::super::core::memory::*;
 
+pub const DMA_TIMING_IMMEDIATE: u16 = 0;
+pub const DMA_TIMING_VBLANK: u16 = 1;
+pub const DMA_TIMING_HBLANK: u16 = 2;
+pub const DMA_TIMING_SPECIAL: u16 = 3;
+
 struct DmaChannel {
 	reg_sad: IORegister32,
 	reg_dad: IORegister32,
@@ -55,7 +60,7 @@ const CHANNELS: [DmaChannel; 4] = [
 
 #[derive(Default)]
 pub struct DmaHandler {
-	dma_cycles: u32
+	pub dma_cycles: u64
 }
 
 impl DmaHandler {
@@ -134,10 +139,11 @@ impl DmaHandler {
 
 		// -- Timing Stuff ---
 		self.dma_cycles += if units > 1 {
-			(cpu.clock.get_nonseq_cycles16(src_addr) as u32) + (cpu.clock.get_nonseq_cycles16(dest_addr) as u32) +
-			((cpu.clock.get_seq_cycles16(src_addr) as u32) * (units - 1)) + ((cpu.clock.get_seq_cycles16(dest_addr) as u32) * (units - 1))
+			let seq = (units as u64) - 1;
+			(cpu.clock.get_nonseq_cycles16(src_addr) as u64) + (cpu.clock.get_nonseq_cycles16(dest_addr) as u64) +
+			((cpu.clock.get_seq_cycles16(src_addr) as u64) * seq) + ((cpu.clock.get_seq_cycles16(dest_addr) as u64) * seq)
 		} else {
-			(cpu.clock.get_nonseq_cycles16(src_addr) as u32)+ (cpu.clock.get_nonseq_cycles16(dest_addr) as u32)
+			(cpu.clock.get_nonseq_cycles16(src_addr) as u64)+ (cpu.clock.get_nonseq_cycles16(dest_addr) as u64)
 		};
 
 		// 2 internal cycles unless both dest_addr and src_addr are in gamepak memory area.
@@ -165,10 +171,11 @@ impl DmaHandler {
 
 		// -- Timing Stuff ---
 		self.dma_cycles += if units > 1 {
-			(cpu.clock.get_nonseq_cycles32(src_addr) as u32)+ (cpu.clock.get_nonseq_cycles32(dest_addr) as u32) +
-			((cpu.clock.get_seq_cycles32(src_addr) as u32) * (units - 1)) + ((cpu.clock.get_seq_cycles32(dest_addr) as u32) * (units - 1))
+			let seq = (units as u64) - 1;
+			(cpu.clock.get_nonseq_cycles32(src_addr) as u64)+ (cpu.clock.get_nonseq_cycles32(dest_addr) as u64) +
+			((cpu.clock.get_seq_cycles32(src_addr) as u64) * seq) + ((cpu.clock.get_seq_cycles32(dest_addr) as u64) * seq)
 		} else {
-			(cpu.clock.get_nonseq_cycles32(src_addr) as u32)+ (cpu.clock.get_nonseq_cycles32(dest_addr) as u32)
+			(cpu.clock.get_nonseq_cycles32(src_addr) as u64)+ (cpu.clock.get_nonseq_cycles32(dest_addr) as u64)
 		};
 
 		// 2 internal cycles unless both dest_addr and src_addr are in gamepak memory area.
