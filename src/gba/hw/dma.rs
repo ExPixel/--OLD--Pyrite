@@ -58,17 +58,6 @@ pub struct DmaHandler {
 	dma_cycles: u32
 }
 
-/*
-This is wrong. DMAs should be able to interrupt each other I think
-so I'm going to switch to a different model where they can. I should
-use an array of ongoing DMA transfers (by moving in_dma) to the DmaInternal
-struct itself. And then each tick I can check which is the highest priority
-DMA transfer currently being done and move along with that one instead.
-To speed things up, I can probably pass along the target cycles to the DMA
-transfer and keep the code running here in the DmaHandler rather than passing
-back and forth between the Gba and the DmaHandler and running for loops everywhere.
-*/
-
 impl DmaHandler {
 	pub fn new() -> DmaHandler {
 		Default::default()
