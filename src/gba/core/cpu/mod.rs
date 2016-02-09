@@ -402,13 +402,13 @@ impl ArmCpu {
 		};
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
-
 		self.reg_dump_pretty();
-		panic!("picnic");
+		panic!("picnic -- hardware interrupt");
 	}
 
 	/// The CPU has hit an undefined instruction.
 	pub fn on_undefined(&mut self) {
+		panic!("picnic -- undefined instruction");
 	}
 
 	/// Returns the address of the instruction currently

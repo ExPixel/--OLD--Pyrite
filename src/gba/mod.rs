@@ -193,7 +193,7 @@ impl Gba {
 
 	fn check_dmas(&mut self, timing: u16) {
 		let mut interrupt = None;
-		
+
 		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) && ((self.cpu.memory.get_reg(ioreg::DMA0CNT_H) >> 14) & 1) != 0 { 
 			interrupt = Some(INT_DMA0);
 		}
