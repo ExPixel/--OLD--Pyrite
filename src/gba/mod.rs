@@ -161,6 +161,7 @@ impl Gba {
 		self.cpu.memory.set_reg(ioreg::VCOUNT, 160);
 		self.check_line_coincidence(160);
 		self.try_fire_vblank_int();
+		self.check_dmas(DMA_TIMING_VBLANK);
 		self.do_vblank_line();
 
 		for vcount in 161..228 {
@@ -188,6 +189,28 @@ impl Gba {
 		if ((dispstat >> 4) & 1) != 0 {
 			self.hardware_interrupt(INT_HBLANK);
 		}
+	}
+
+	fn check_dmas(&mut self, timing: u16) {
+		let mut interrupt = None;
+		
+		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) && ((self.cpu.memory.get_reg(ioreg::DMA0CNT_H) >> 14) & 1) != 0 { 
+			interrupt = Some(INT_DMA0);
+		}
+
+		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 1) && ((self.cpu.memory.get_reg(ioreg::DMA1CNT_H) >> 14) & 1) != 0 {
+			interrupt = Some(INT_DMA1);
+		}
+
+		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 2) && ((self.cpu.memory.get_reg(ioreg::DMA2CNT_H) >> 14) & 1) != 0 {
+			interrupt = Some(INT_DMA2);
+		}
+
+		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 3) && ((self.cpu.memory.get_reg(ioreg::DMA3CNT_H) >> 14) & 1) != 0 {
+			interrupt = Some(INT_DMA3);
+		}
+
+		if let Some(mask) = interrupt { self.hardware_interrupt(mask) }
 	}
 
 	/// Taken From TONC:
@@ -271,7 +294,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		dispstat |= 0x2;
 		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 		self.try_fire_hblank_int();
-		self.dma_handler.check_dmas(&mut self.cpu, DMA_TIMING_HBLANK);
+		self.check_dmas(DMA_TIMING_HBLANK);
 		self.run_cpu_cycles(272);
 	}
 
@@ -295,7 +318,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					// #TODO I should check if the DMA is registers are dirty or something.
 					// This loses me about 40-50 FPS. I could probably check by using something in the memory
 					// to check if any of the ioregisters are dirty.
-					self.dma_handler.check_dmas(&mut self.cpu, DMA_TIMING_IMMEDIATE);
+					self.check_dmas(DMA_TIMING_IMMEDIATE);
 				}
 			} else {
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());

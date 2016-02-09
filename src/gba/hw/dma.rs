@@ -6,7 +6,7 @@ use super::super::core::memory::*;
 pub const DMA_TIMING_IMMEDIATE: u16 = 0;
 pub const DMA_TIMING_VBLANK: u16 = 1;
 pub const DMA_TIMING_HBLANK: u16 = 2;
-pub const DMA_TIMING_SPECIAL: u16 = 3;
+pub const DMA_TIMING_SPECIAL: u16 = 3; // #TODO where the fuck?
 
 struct DmaChannel {
 	reg_sad: IORegister32,
@@ -68,19 +68,15 @@ impl DmaHandler {
 		Default::default()
 	}
 
-	pub fn check_dmas(&mut self, cpu: &mut ArmCpu, timing: u16) {
-		self.try_start_dma(cpu, timing, 0);
-		self.try_start_dma(cpu, timing, 1);
-		self.try_start_dma(cpu, timing, 2);
-		self.try_start_dma(cpu, timing, 3);
-	}
-
 	#[inline(always)]
-	fn try_start_dma(&mut self, cpu: &mut ArmCpu, timing: u16, channel_index: usize) {
+	pub fn try_start_dma(&mut self, cpu: &mut ArmCpu, timing: u16, channel_index: usize) -> bool {
 		let channel = &CHANNELS[channel_index];
 		let dma_cnt_h = cpu.memory.get_reg(channel.reg_cnt_h);
 		if ((dma_cnt_h >> 15) & 1) != 0 && ((dma_cnt_h >> 12) & 0x3) == timing { // DMA is enabled && Timing is correct
 			self.start_dma(cpu, dma_cnt_h, channel);
+			true
+		} else {
+			false
 		}
 	}
 
