@@ -1,18 +1,21 @@
 use super::super::core::memory::*;
 
+pub mod tiles;
+
 // #TODO remove these allows
-#[allow(unused_variables)]
 pub mod mode0;
+
 #[allow(unused_variables)]
 pub mod mode1;
+
 #[allow(unused_variables)]
 pub mod mode2;
-#[allow(unused_variables)]
+
 pub mod mode3;
-#[allow(unused_variables)]
 pub mod mode4;
-#[allow(unused_variables)]
 pub mod mode5;
+
+
 
 pub type Pixel = (u8, u8, u8, u8);
 pub type GbaPixel = (u8, u8, u8);
