@@ -20,6 +20,7 @@ pub mod mode5;
 pub type Pixel = (u8, u8, u8, u8);
 pub type GbaPixel = (u8, u8, u8);
 pub type GbaLcdLine = Vec<GbaPixel>;
+pub type GbaBGLine = [Pixel; 240];
 
 // No point in having a secondary screen buffer
 // since the GBA renders in scan lines anyway.
@@ -27,11 +28,11 @@ pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
 
 
 pub struct GbaDisplayLines {
-	pub bg0: [Pixel; 240],
-	pub bg1: [Pixel; 240],
-	pub bg2: [Pixel; 240],
-	pub bg3: [Pixel; 240],
-	pub obj: [Pixel; 240]
+	pub bg0: GbaBGLine,
+	pub bg1: GbaBGLine,
+	pub bg2: GbaBGLine,
+	pub bg3: GbaBGLine,
+	pub obj: GbaBGLine
 }
 
 pub struct GbaLcd {

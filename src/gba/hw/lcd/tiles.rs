@@ -29,13 +29,25 @@ macro_rules! kbytes {
 // Whereas SC0 is defined by the normal BG Map base address (Bit 8-12 of BG#CNT), 
 // SC1 uses same address +2K, SC2 address +4K, SC3 address +6K. When the screen is scrolled it'll always wraparound.
 
-pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+const SCREEN_SIZES: [(u32, u32); 4] = [
+	(256, 256),
+	(512, 256),
+	(256, 512),
+	(512, 512)
+];
+
+pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
 	let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
 	let mosaic = ((bgcnt >> 6) & 0x1) == 1;
 	let palette = ((bgcnt >> 7) & 0x1) == 1; // 0=16/16 (4bit), 1=256/1 (8bit)
 	let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
+
+	// #FIXME: I think text mode always wraps so this might be unecessary.
 	let display_area_overflow = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
+
 	let screen_size = (bgcnt >> 14) & 0x3;
+
+	let (screen_width, screen_height) = SCREEN_SIZES[screen_size as usize];
 
 	// let character_data_size = if palette {} else {};
 	// #FIXME for now we just slice the whole fucking thing. This might be bad but I don't see how it could fail.
@@ -46,42 +58,51 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		memory.get_slice(off, off + kbytes!(2))
 	};
 
+	let __sw_mod = (screen_width - 1);
+	let __sh_mod = (screen_height - 1);
+
+	// screen_width & screen_height are going to be powers of 2.
+	let screen_x = (xoffset as u32) & __sw_mod;
+	let screen_y = (yoffset as u32) & __sh_mod;
+
+	// splits the screen into the two regions of the screen that can
+	// be seen through the 240x160 window.
+	let mut x_regions = [
+		(0, 0, 0), // (screen-x, real-screen-x, pixels)
+		(0, 0, 0)
+	];
+	
+	{
+		let mut first_region_pixels = screen_width - screen_x;
+		if first_region_pixels > 240 { first_region_pixels = 240; }
+		x_regions[0] = (screen_x, 0, first_region_pixels);
+		x_regions[1] = (0, first_region_pixels, 240 - first_region_pixels);
+	}
+
+	// draws a 256x256 tile area.
+	let mut draw_tile_area = |sc: u32, x: u32, y: u32| {
+		
+	};
+
 	match screen_size {
 		0 => { // 256 x 256
-			draw_tile_area(line, lines, character_data, get_sc(0), palette, mosaic, display_area_overflow, xoffset, yoffset, 0, 0);
+			draw_tile_area(0, 0, 0);
 		},
 		1 => { // 512 x 256
-			draw_tile_area(line, lines, character_data, get_sc(0), palette, mosaic, display_area_overflow, xoffset, yoffset, 0, 0);
-			draw_tile_area(line, lines, character_data, get_sc(1), palette, mosaic, display_area_overflow, xoffset, yoffset, 256, 0);
+			draw_tile_area(0, 0, 0);
+			draw_tile_area(1, 256, 0);
 		},
 		2 => { // 256x512
-			draw_tile_area(line, lines, character_data, get_sc(0), palette, mosaic, display_area_overflow, xoffset, yoffset, 0, 0);
-			draw_tile_area(line, lines, character_data, get_sc(1), palette, mosaic, display_area_overflow, xoffset, yoffset, 0, 256);
+			draw_tile_area(0, 0, 0);
+			draw_tile_area(1, 0, 256);
 		},
 		3 => { // 512 x 512
-			draw_tile_area(line, lines, character_data, get_sc(0), palette, mosaic, display_area_overflow, xoffset, yoffset, 0, 0);
-			draw_tile_area(line, lines, character_data, get_sc(1), palette, mosaic, display_area_overflow, xoffset, yoffset, 256, 0);
-			draw_tile_area(line, lines, character_data, get_sc(2), palette, mosaic, display_area_overflow, xoffset, yoffset, 0, 256);
-			draw_tile_area(line, lines, character_data, get_sc(3), palette, mosaic, display_area_overflow, xoffset, yoffset, 256, 256);
+			draw_tile_area(0, 0, 0);
+			draw_tile_area(1, 256, 0); 
+			draw_tile_area(2, 0, 256);
+			draw_tile_area(3, 256, 256);
 		},
 		_ => unreachable!()
 	}
-}
-
-// #CLEANUP: This has a lot of arguments...what do?
-/// Draws a 256x256 tile area.
-fn draw_tile_area(
-		line: u16, 
-		lines: &mut GbaDisplayLines,
-		character_block: &[u8],
-		screen_block: &[u8],
-		palette: bool,
-		mosaic: bool,
-		display_area_overflow: bool,
-		xoffset: u16,  
-		yoffset: u16, 
-		x: u16,
-		y: u16) {
-
 }
 
