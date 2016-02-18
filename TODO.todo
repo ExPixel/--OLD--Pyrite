@@ -1,5 +1,6 @@
 General:
   ☐ Clean up leftover debug statements that have been commented out.
+  ☐ Move calculations for bgr5 -> argb to the GPU via shaders.
 Core:
   ☐ Complete DMAs
   LCD:
