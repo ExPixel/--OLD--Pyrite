@@ -160,10 +160,15 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		column += 8;
 	}
 
-	// #TODO remove, just filling the remaining pixels with black.
-	while column < 240 {
-		bg_line[column as usize] = (0, 0, 0, 255);
-		column += 1;
+	{
+		let pixel_x = (column + (xoffset as u32)) & __sw_mod;
+		let sc = ((pixel_x >> screen_width) & 1) + (((pixel_y >> screen_height) & 1) << 1);
+		let tile_x = (pixel_x & 255) >> 3;
+		let tile_y = (pixel_y & 255) >> 3;
+		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
+		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
+		tile_copy(character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
+			map_tile_info, 240 - column, pixel_y & 7);
 	}
 }
 
