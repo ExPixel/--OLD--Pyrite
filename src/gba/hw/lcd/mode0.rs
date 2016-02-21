@@ -9,8 +9,8 @@ pub fn render_mode_0(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		if ((dispcnt >> enable) & 1) != 0 {
 			draw_tiles_text_mode(
 				memory.get_reg(bgcnt), 
-				memory.get_reg(bghofs),
-				memory.get_reg(bgvofs),
+				memory.get_reg(bghofs) & 0x1ff,
+				memory.get_reg(bgvofs) & 0x1ff,
 				memory,
 				line,
 				&mut lines.bg0);

@@ -45,6 +45,8 @@ void main() {
 }
 "#;
 
+const DEFAULT_SCALE: u32 = 2;
+
 pub struct GbaDevice {
 	pub display: glium::backend::glutin_backend::GlutinFacade, // #TODO wtf
 	vertex_buffer: glium::vertex::VertexBuffer<Vertex>,
@@ -58,7 +60,7 @@ impl GbaDevice {
 	pub fn new() -> GbaDevice {
 		use glium::DisplayBuild;
 		let display = glium::glutin::WindowBuilder::new()
-						.with_dimensions(GBA_SCREEN_WIDTH * 2, GBA_SCREEN_HEIGHT * 2)
+						.with_dimensions(GBA_SCREEN_WIDTH * DEFAULT_SCALE, GBA_SCREEN_HEIGHT * DEFAULT_SCALE)
 						.build_glium().unwrap();
 
 		let shape = vec![
