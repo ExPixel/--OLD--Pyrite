@@ -181,6 +181,9 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 	// let vertical_flip = (tile_info >> 11) & 1;
 	let palette_number = (tile_info >> 12) & 0xf;
 
+	// 32 bytes per tile
+	// 4 bytes per row
+	// each byte is 2 columns
 	let mut offset = (((tile_number as u32) << 5) + (ty << 2) + (tx >> 1)) as usize;
 	let mut pindex = 0;
 	
