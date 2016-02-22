@@ -45,7 +45,7 @@ void main() {
 }
 "#;
 
-const DEFAULT_SCALE: u32 = 2;
+const DEFAULT_SCALE: u32 = 1;
 
 pub struct GbaDevice {
 	pub display: glium::backend::glutin_backend::GlutinFacade, // #TODO wtf

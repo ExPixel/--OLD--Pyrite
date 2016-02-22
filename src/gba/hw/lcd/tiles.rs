@@ -106,12 +106,13 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
 	let mosaic = ((bgcnt >> 6) & 0x1) == 1;
 
-	let palette = ((bgcnt >> 7) & 0x1) == 1; // 0=16/16 (4bit), 1=256/1 (8bit)
-	let tile_copy: fn(&[u8], &mut [Pixel], u16, u32, u32) = if palette {
+	let palette_type = ((bgcnt >> 7) & 0x1) == 1; // 0=16/16 (4bit), 1=256/1 (8bit)
+	let tile_copy: fn(&[u8], &[u8], &mut [Pixel], u16, u32, u32) = if palette_type {
 		copy_tile_line8bpp
 	} else {
 		copy_tile_line4bpp
 	};
+	let palette = memory.get_slice(0x05000000, 0x050001FF);
 
 	let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
 
@@ -122,7 +123,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 
 	let (screen_width, screen_height) = SCREEN_SIZES[screen_size as usize];
 
-	// let character_data_size = if palette {} else {};
+	// let character_data_size = if palette_type {} else {};
 	let character_data = &vram_tile_data[(character_base_block as usize)..(0xFFFF - 1)];
 
 
@@ -141,7 +142,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
+		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
 			map_tile_info, pixel_x & 7, pixel_y & 7);
 		column += 8 - (pixel_x & 7); // Just going to do this instead though, for now.
 	}
@@ -155,7 +156,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
+		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
 			map_tile_info, 8, pixel_y & 7);
 		column += 8;
 	}
@@ -167,18 +168,18 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
+		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
 			map_tile_info, 240 - column, pixel_y & 7);
 	}
 }
 
-pub fn copy_tile_line4bpp(char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
 	let tile_number = tile_info & 0x3ff;
 
 	// #TODO implement these
 	// let horizontal_flip = (tile_info >> 10) & 1;
 	// let vertical_flip = (tile_info >> 11) & 1;
-	// let palette_number = (tile_info >> 12) & 0xf;
+	let palette_number = (tile_info >> 12) & 0xf;
 
 	let mut offset = (((tile_number as u32) << 5) + (ty << 2) + (tx >> 1)) as usize;
 	let mut pindex = 0;
@@ -188,21 +189,33 @@ pub fn copy_tile_line4bpp(char_data: &[u8], output: &mut [Pixel], tile_info: u16
 
 		// left pixel
 		let left_dot = two_dots & 0xf;
-		output[pindex] = rand_color(left_dot as u32);
+		if left_dot & 15 == 0 {
+			// If the color number is a multiple of 16 or 0, 
+			// that means that it is color 0 of its palette, making it transparent.
+			output[pindex] = (0, 0, 0, 0);
+		} else {
+			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
+		}
 		pindex += 1;
 
 		if pindex >= output.len() { break; }
 
 		// right pixel
 		let right_dot = (two_dots >> 4) & 0xf;
-		output[pindex] = rand_color(right_dot as u32);
+		if right_dot & 15 == 0 {
+			// If the color number is a multiple of 16 or 0, 
+			// that means that it is color 0 of its palette, making it transparent.
+			output[pindex] = (0, 0, 0, 0);
+		} else {
+			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((right_dot << 1) as u16)) as usize));
+		}
 		pindex += 1;
 
 		offset += 1;
 	}
 }
 
-pub fn copy_tile_line8bpp(char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+pub fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
 	println!("8bpp");
 }
 
