@@ -180,14 +180,23 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 	let tile_number = tile_info & 0x3ff;
 
 	// #TODO implement these
-	// let horizontal_flip = (tile_info >> 10) & 1;
-	// let vertical_flip = (tile_info >> 11) & 1;
+	let horizontal_flip = ((tile_info >> 10) & 1) == 1;
+	let vertical_flip = ((tile_info >> 11) & 1) == 1;
 	let palette_number = (tile_info >> 12) & 0xf;
+
+	let left_dot_shift = if horizontal_flip { 4 } else { 0 };
+	let right_dot_shift = if horizontal_flip { 0 } else { 4 };
+	let offset_inc = if horizontal_flip { (-1isize) as usize } else { 1usize };
 
 	// 32 bytes per tile
 	// 4 bytes per row
 	// each byte is 2 columns
-	let mut offset = (((tile_number as u32) << 5) + (ty << 2) + (tx >> 1)) as usize;
+	let _ty_add = if vertical_flip {
+		((7 - ty) << 2)
+	} else {
+		(ty << 2)
+	};
+	let mut offset = (((tile_number as u32) << 5) + _ty_add + (tx >> 1)) as usize;
 	let mut pindex = 0;
 	
 	while pindex < output.len() {
@@ -195,7 +204,7 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 
 		if (pindex & 1) == 0 {
 			// left pixel
-			let left_dot = two_dots & 0xf;
+			let left_dot = (two_dots >> left_dot_shift) & 0xf;
 			if left_dot & 15 == 0 {
 				// If the color number is a multiple of 16 or 0, 
 				// that means that it is color 0 of its palette, making it transparent.
@@ -211,7 +220,7 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 		if pindex >= output.len() { break; }
 
 		// right pixel
-		let right_dot = (two_dots >> 4) & 0xf;
+		let right_dot = (two_dots >> right_dot_shift) & 0xf;
 		if right_dot & 15 == 0 {
 			// If the color number is a multiple of 16 or 0, 
 			// that means that it is color 0 of its palette, making it transparent.
@@ -223,7 +232,7 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 		}
 		pindex += 1;
 
-		offset += 1;
+		offset += offset_inc;
 	}
 }
 
