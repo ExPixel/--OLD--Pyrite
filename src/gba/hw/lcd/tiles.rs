@@ -127,11 +127,11 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	let character_data = &vram_tile_data[(character_base_block as usize)..(0xFFFF - 1)];
 
 
-	let __sw_mod = ((1 << screen_width) - 1);
-	let __sh_mod = ((1 << screen_height) - 1);
+	let __sw_mod = (1 << screen_width) - 1; // used for mod (screen_width - 1)
+	let __sh_mod = (1 << screen_height) - 1; // used for mod (screen_height - 1)
 
 	// screen_width & screen_height are going to be powers of 2.
-	let pixel_y = ((line as u32) + yoffset as u32) & __sh_mod;
+	let pixel_y = ((line as u32) + (yoffset as u32)) & __sh_mod;
 	let mut column = 0;
 
 	{
@@ -141,9 +141,18 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
-			map_tile_info, pixel_x & 7, pixel_y & 7);
-		column += 8 - (pixel_x & 7); // Just going to do this instead though, for now.
+		// tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
+		// 	map_tile_info, pixel_x & 7, pixel_y & 7);
+
+		{
+			let _c = rand_color(map_tile_info as u32);
+			let _l = 8 - (pixel_x & 7);
+			for i in 0.._l {
+				bg_line[(column as usize) + (i as usize)] = _c;
+			}
+		}
+
+		column += 8 - (pixel_x & 7);
 	}
 
 	// 232 because we don't want to draw the last tile unless it's being shown completely.
@@ -155,8 +164,16 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
-			map_tile_info, 8, pixel_y & 7);
+		// tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
+		// 	map_tile_info, 8, pixel_y & 7);
+
+		{
+			let _c = rand_color(map_tile_info as u32);
+			let _l = 8;
+			for i in 0.._l {
+				bg_line[(column as usize) + (i as usize)] = _c;
+			}
+		}
 		column += 8;
 	}
 
@@ -167,8 +184,15 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
-			map_tile_info, 8 - (240 - column), pixel_y & 7);
+		// tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
+		// 	map_tile_info, 8 - (240 - column), pixel_y & 7);
+		{
+			let _c = rand_color(map_tile_info as u32);
+			let _l = 240 - column;
+			for i in 0.._l {
+				bg_line[(column as usize) + (i as usize)] = _c;
+			}
+		}
 	}
 }
 
@@ -189,16 +213,18 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 	while pindex < output.len() {
 		let two_dots = char_data[offset];
 
-		// left pixel
-		let left_dot = two_dots & 0xf;
-		if left_dot & 15 == 0 {
-			// If the color number is a multiple of 16 or 0, 
-			// that means that it is color 0 of its palette, making it transparent.
-			output[pindex] = (0, 0, 0, 0);
-		} else {
-			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
+		if (pindex & 1) != 0 {
+			// left pixel
+			let left_dot = two_dots & 0xf;
+			if left_dot & 15 == 0 {
+				// If the color number is a multiple of 16 or 0, 
+				// that means that it is color 0 of its palette, making it transparent.
+				output[pindex] = (0, 0, 0, 0);
+			} else {
+				output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
+			}
+			pindex += 1;
 		}
-		pindex += 1;
 
 		if pindex >= output.len() { break; }
 
