@@ -193,7 +193,7 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 	while pindex < output.len() {
 		let two_dots = char_data[offset];
 
-		if (pindex & 1) != 0 {
+		if (pindex & 1) == 0 {
 			// left pixel
 			let left_dot = two_dots & 0xf;
 			if left_dot & 15 == 0 {
