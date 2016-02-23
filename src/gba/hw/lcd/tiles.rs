@@ -143,24 +143,6 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
 		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
 			map_tile_info, pixel_x & 7, pixel_y & 7);
-
-
-		if pyrite_debugging!() && line == 0 {
-			debug_println!(
-				line,
-				xoffset,
-				yoffset,
-				pixel_y,
-				pixel_x,
-				pixel_y & 7,
-				pixel_x & 7,
-				tile_x,
-				tile_y,
-				sc,
-				(column as usize) + ((8 - (pixel_x & 7)) as usize)
-			);
-		}
-
 		column += 8 - (pixel_x & 7); // Just going to do this instead though, for now.
 	}
 
