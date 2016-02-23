@@ -333,6 +333,12 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		for event in self.device.display.poll_events() {
 			match event {
 				glium::glutin::Event::Closed => self.request_exit = true,
+				glium::glutin::Event::KeyboardInput(state, _, Some(glium::glutin::VirtualKeyCode::W)) => {
+					match state {
+						glium::glutin::ElementState::Pressed => set_pyrite_dyn_debug!(true),
+						_ => set_pyrite_dyn_debug!(false)
+					}
+				},
 				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::D)) => {
 					self.cpu.reg_dump_pretty();
 				},

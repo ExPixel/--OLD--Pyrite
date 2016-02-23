@@ -1,5 +1,26 @@
 pub mod frame_counter;
 
+
+// These should be in the debug module, but whatever.
+
+pub static mut PYRITE_DYN_DEBUG_ENABLED: bool = false;
+
+macro_rules! set_pyrite_dyn_debug {
+	($value:expr) => (
+		unsafe {
+			::util::PYRITE_DYN_DEBUG_ENABLED = $value;
+		}
+	)
+}
+
+macro_rules! pyrite_debugging {
+	() => (
+		unsafe {
+			::util::PYRITE_DYN_DEBUG_ENABLED
+		}
+	)
+}
+
 #[macro_export]
 macro_rules! debug_print {
 	($($x:expr),*) => (
@@ -23,3 +44,4 @@ macro_rules! debug_println {
 		)*
 	)
 }
+
