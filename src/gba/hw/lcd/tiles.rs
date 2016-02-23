@@ -141,17 +141,8 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		// tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
-		// 	map_tile_info, pixel_x & 7, pixel_y & 7);
-
-		{
-			let _c = rand_color(map_tile_info as u32);
-			let _l = 8 - (pixel_x & 7);
-			for i in 0.._l {
-				bg_line[(column as usize) + (i as usize)] = _c;
-			}
-		}
-
+		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
+			map_tile_info, pixel_x & 7, pixel_y & 7);
 		column += 8 - (pixel_x & 7);
 	}
 
@@ -164,16 +155,8 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		// tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
-		// 	map_tile_info, 8, pixel_y & 7);
-
-		{
-			let _c = rand_color(map_tile_info as u32);
-			let _l = 8;
-			for i in 0.._l {
-				bg_line[(column as usize) + (i as usize)] = _c;
-			}
-		}
+		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
+			map_tile_info, 8, pixel_y & 7);
 		column += 8;
 	}
 
@@ -184,15 +167,8 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		// tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
-		// 	map_tile_info, 8 - (240 - column), pixel_y & 7);
-		{
-			let _c = rand_color(map_tile_info as u32);
-			let _l = 240 - column;
-			for i in 0.._l {
-				bg_line[(column as usize) + (i as usize)] = _c;
-			}
-		}
+		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
+			map_tile_info, 8 - (240 - column), pixel_y & 7);
 	}
 }
 
@@ -221,6 +197,8 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 				// that means that it is color 0 of its palette, making it transparent.
 				output[pindex] = (0, 0, 0, 0);
 			} else {
+				// 32 bytes per palette
+				// 2 bytes per color entry
 				output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
 			}
 			pindex += 1;
@@ -235,6 +213,8 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 			// that means that it is color 0 of its palette, making it transparent.
 			output[pindex] = (0, 0, 0, 0);
 		} else {
+			// 32 bytes per palette
+			// 2 bytes per color entry
 			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((right_dot << 1) as u16)) as usize));
 		}
 		pindex += 1;
