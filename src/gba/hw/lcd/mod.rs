@@ -93,6 +93,11 @@ impl GbaLcd {
 		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
 		let bg3_priority = memory.get_reg(ioreg::BG3CNT) & 0x3;
 
+		// I can turn this into one operation, bu organizing the lines into one array
+		// of arrays and then using that instead...
+		// blend_pixels( lines[0][idx] )
+		// blend_pixels( lines[1][idx] )
+		// ...
 		for priority in 0..4 {
 			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output); }
 			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output); }
@@ -113,22 +118,14 @@ impl GbaLcd {
 
 	#[inline(always)]
 	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
-		// blends color components, ca: component a, cb: component b, aa: alpha a, ab: alpha b
-		let _blend = |ca, cb, aa, ab| -> u8 {
-			let ca = ca as u32;
-			let cb = cb as u32;
-			let aa = aa as u32;
-			let ab = ab as u32;
-
-			// return ((ca * aa / 255) + (cb * ab * (255 - aa) / (255*255))) as u8
-
-			// #FIXME Losing a bit of precision for speed, is it worth it?
-			// using x/256 instead of x/255
-			// using x/65536 instead of x/65025
-			return ((ca * aa >> 8) + (cb * ab * (255 - aa) >> 16)) as u8
+		let aa = (a.3 as u32) + 1; // alpha component of a
+		let aa_inv = 256 - (a.3 as u32);
+		let _blend = |ca, cb| -> u8 {
+			let ca = ca as u32; // color component of a
+			let cb = cb as u32; // color component of b
+			((aa * ca + aa_inv * cb) >> 8) as u8
 		};
-
-		(_blend(a.0, b.0, a.3, 255), _blend(a.1, b.1, a.3, 255), _blend(a.2, b.2, a.3, 255))
+		(_blend(a.0, b.0), _blend(a.1, b.1), _blend(a.2, b.2))
 	}
 }
 
