@@ -313,6 +313,8 @@ impl ArmCpu {
 	}
 
 	pub fn execute_swi(&mut self) {
+		self.reg_dump_pretty();
+		println!("Executing SWI: {:#?}", self.software_interrupt);
 		if self.thumb_mode() {
 			self.handle_thumb_swi();
 		} else {
@@ -431,6 +433,12 @@ impl ArmCpu {
 		} else {
 			super::super::super::debug::armdis::disasm_arm(self.get_exec_address(), &self.memory, 0b11111111)
 		}
+	}
+
+	/// Called when the CPU tries to execute a coprocessor instruction.
+	pub fn bad_coprocessor_instr(&mut self, instr_name: &'static str) {
+		self.reg_dump_pretty();
+		panic!("Attempted to call a bad coprocessor data instruction: `{}`", instr_name);
 	}
 
 	pub fn reg_dump(&self) {
