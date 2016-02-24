@@ -124,7 +124,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	let (screen_width, screen_height) = SCREEN_SIZES[screen_size as usize];
 
 	// let character_data_size = if palette_type {} else {};
-	let character_data = &vram_tile_data[(character_base_block as usize)..(0xFFFF - 1)];
+	let character_data = &vram_tile_data[(character_base_block as usize)..0xFFFF];
 
 
 	let __sw_mod = (1 << screen_width) - 1; // used for mod (screen_width - 1)
@@ -177,6 +177,9 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 }
 
 pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+	let mut tx = tx;
+	let mut ty = ty;
+
 	let tile_number = tile_info & 0x3ff;
 
 	// #TODO implement these
@@ -184,24 +187,38 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 	let vertical_flip = ((tile_info >> 11) & 1) == 1;
 	let palette_number = (tile_info >> 12) & 0xf;
 
-	let left_dot_shift = if horizontal_flip { 4 } else { 0 };
-	let right_dot_shift = if horizontal_flip { 0 } else { 4 };
-	let offset_inc = if horizontal_flip { (-1isize) as usize } else { 1usize };
+	let left_dot_shift;
+	let right_dot_shift;
+	let offset_inc;
+
+	if horizontal_flip {
+		left_dot_shift = 4;
+		right_dot_shift = 0;
+		offset_inc = -1isize as usize;
+		tx = 7 - tx;
+	} else {
+		left_dot_shift = 0;
+		right_dot_shift = 4;
+		offset_inc = 1usize;
+	}
+
+	if vertical_flip {
+		ty = 7 - ty;
+	}
 
 	// 32 bytes per tile
 	// 4 bytes per row
 	// each byte is 2 columns
-	let _ty_add = if vertical_flip {
-		((7 - ty) << 2)
-	} else {
-		(ty << 2)
-	};
-	let mut offset = (((tile_number as u32) << 5) + _ty_add + (tx >> 1)) as usize;
+	let mut offset = (((tile_number as u32) << 5) + (ty << 2) + (tx >> 1)) as usize;
+
 	let mut pindex = 0;
 	
 	while pindex < output.len() {
 		let two_dots = char_data[offset];
 
+		// #TODO optimize by turning the dot rendering into a function
+		// and moving this if condition out of the loop and just drawing the first
+		// dot solo if it's not aligned.
 		if pindex != 0 || ((tx & 1) == 0) {
 			// left pixel
 			let left_dot = (two_dots >> left_dot_shift) & 0xf;
@@ -237,6 +254,53 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 }
 
 pub fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
-	println!("8bpp");
+	let mut tx = tx;
+	let mut ty = ty;
+
+	let tile_number = tile_info & 0x3ff;
+
+	// #TODO implement these
+	let horizontal_flip = ((tile_info >> 10) & 1) == 1;
+	let vertical_flip = ((tile_info >> 11) & 1) == 1;
+
+	let offset_inc;
+
+	if horizontal_flip {
+		offset_inc = -1isize as usize;
+		tx = 7 - tx;
+	} else {
+		offset_inc = 1usize;
+	}
+
+	if vertical_flip {
+		ty = 7 - ty;
+	}
+
+	// 64 bytes per tile
+	// 8 bytes per row
+	// 1 byte per column
+	let mut offset = (((tile_number as u32) << 6) + (ty << 3) + tx) as usize;
+
+	let mut max;
+	// we don't want an out of bounds so we do this calculation here:
+	if offset >= char_data.len() {
+		return // no point, then.
+	} else {
+		max = char_data.len() - offset;
+	};
+	max = if max < output.len() { max } else { output.len() };
+
+	for pindex in 0..max {
+		let dot = char_data[offset];
+
+		// 0 is transparent.
+		if dot == 0 {
+			output[pindex] = (0, 0, 0, 0);
+		} else {
+			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+		}
+
+		offset += offset_inc;
+	}
 }
 
