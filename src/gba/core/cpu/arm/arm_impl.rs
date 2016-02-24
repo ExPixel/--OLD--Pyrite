@@ -2930,130 +2930,130 @@ gen_ldm_u!(arm_ldmib_uw, PRE, INC, true);
 /// STC ofm
 /// Store coprocessor data to memory
 /// Negative offset
-pub fn arm_stc_ofm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_ofm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_ofm");
 }
 
 /// LDC ofm
 /// Load coprocessor data from memory
 /// Negative offset
-pub fn arm_ldc_ofm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_ofm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_ofm");
 }
 
 /// STC prm
 /// Store coprocessor data to memory
 /// Pre-decrement
-pub fn arm_stc_prm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_prm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_prm");
 }
 
 /// LDC prm
 /// Load coprocessor data from memory
 /// Pre-decrement
-pub fn arm_ldc_prm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_prm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_prm");
 }
 
 /// STC ofp
 /// Store coprocessor data to memory
 /// Positive offset
-pub fn arm_stc_ofp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_ofp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_ofp");
 }
 
 /// LDC ofp
 /// Load coprocessor data from memory
 /// Positive offset
-pub fn arm_ldc_ofp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_ofp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_ofp");
 }
 
 /// STC prp
 /// Store coprocessor data to memory
 /// Pre-increment
-pub fn arm_stc_prp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_prp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_prp");
 }
 
 /// LDC prp
 /// Load coprocessor data from memory
 /// Pre-increment
-pub fn arm_ldc_prp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_prp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_prp");
 }
 
 /// STC unm
 /// Store coprocessor data to memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_stc_unm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_unm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_unm");
 }
 
 /// LDC unm
 /// Load coprocessor data from memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_ldc_unm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_unm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_unm");
 }
 
 /// STC ptm
 /// Store coprocessor data to memory
 /// Post-decrement
-pub fn arm_stc_ptm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_ptm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_ptm");
 }
 
 /// LDC ptm
 /// Load coprocessor data from memory
 /// Post-decrement
-pub fn arm_ldc_ptm(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_ptm(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_ptm");
 }
 
 /// STC unp
 /// Store coprocessor data to memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_stc_unp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_unp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_unp");
 }
 
 /// LDC unp
 /// Load coprocessor data from memory
 /// Unindexed, bits 7-0 available for copro use
-pub fn arm_ldc_unp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_unp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_unp");
 }
 
 /// STC ptp
 /// Store coprocessor data to memory
 /// Post-increment
-pub fn arm_stc_ptp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_stc_ptp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_stc_ptp");
 }
 
 /// LDC ptp
 /// Load coprocessor data from memory
 /// Post-increment
-pub fn arm_ldc_ptp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_ldc_ptp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_ldc_ptp");
 }
 
 /// CDP 
 /// Perform coprocessor data operation
-pub fn arm_cdp(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_cdp(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_cdp");
 }
 
 /// MCR 
 /// Write coprocessor register from ARM register
-pub fn arm_mcr(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_mcr(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_mcr");
 }
 
 /// MRC 
 /// Read coprocessor register to ARM register
-pub fn arm_mrc(_: &mut ArmCpu, _: u32) {
-	unreachable!("Attempted to call a coprocessor data instruction.");
+pub fn arm_mrc(cpu: &mut ArmCpu, _: u32) {
+	cpu.bad_coprocessor_instr("arm_mrc");
 }
 
