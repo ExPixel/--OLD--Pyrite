@@ -5,7 +5,9 @@ use super::tiles::*;
 const TILE_ADDR: (u32, u32) = (0x06000000, 0x0600FFFF);
 
 pub fn render_mode_0(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
-	let mut try_render_bg = |enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
+	// I use this in both render_mode0 and render_mode1, maybe I could just make a common function for them or something?
+	// I would only need to pass in dispcnt and line.
+	let mut try_render_text_bg = |enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
 								bg_line: &mut GbaBGLine| {
 		if ((dispcnt >> enable) & 1) != 0 {
 			draw_tiles_text_mode(
@@ -18,8 +20,8 @@ pub fn render_mode_0(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		}
 	};
 
-	try_render_bg(0x8, ioreg::BG0CNT, ioreg::BG0HOFS, ioreg::BG0VOFS, &mut lines.bg0);
-	try_render_bg(0x9, ioreg::BG1CNT, ioreg::BG1HOFS, ioreg::BG1VOFS, &mut lines.bg1);
-	try_render_bg(0xA, ioreg::BG2CNT, ioreg::BG2HOFS, ioreg::BG2VOFS, &mut lines.bg2);
-	try_render_bg(0xB, ioreg::BG3CNT, ioreg::BG3HOFS, ioreg::BG3VOFS, &mut lines.bg3);
+	try_render_text_bg(0x8, ioreg::BG0CNT, ioreg::BG0HOFS, ioreg::BG0VOFS, &mut lines.bg0);
+	try_render_text_bg(0x9, ioreg::BG1CNT, ioreg::BG1HOFS, ioreg::BG1VOFS, &mut lines.bg1);
+	try_render_text_bg(0xA, ioreg::BG2CNT, ioreg::BG2HOFS, ioreg::BG2VOFS, &mut lines.bg2);
+	try_render_text_bg(0xB, ioreg::BG3CNT, ioreg::BG3HOFS, ioreg::BG3VOFS, &mut lines.bg3);
 }

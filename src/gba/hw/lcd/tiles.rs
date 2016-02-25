@@ -1,7 +1,11 @@
 use super::*;
 use super::super::super::core::memory::*;
+use super::super::super::core::memory::ioreg::IORegister16;
+use super::super::super::core::memory::ioreg::IORegister32;
 
 // This is here temporarily so that I don't lose my mind.
+// #TODO I can turn all of these into shifts since n is always a power
+// of 2 anyways (al least for all of the GBA's needs).
 macro_rules! kbytes {
 	($n: expr) => ($n * 1024)
 }
@@ -111,6 +115,29 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
 			map_tile_info, 0, pixel_y & 7);
 	}
+}
+
+pub struct BGRotScaleParams {
+	// Reference point X register (actually 28 bits.)
+	pub ref_x_reg: IORegister32,
+
+	// Reference point X register (actually 28 bits.)
+	pub ref_y_reg: IORegister32,
+
+	/// When transforming a horizontal line, dx and dy specify the resulting gradient and magnification for that line
+	pub dx_reg: IORegister16,
+	/// When transforming a horizontal line, dx and dy specify the resulting gradient and magnification for that line
+	pub dy_reg: IORegister16,
+
+	/// These values define the resulting gradient and magnification for transformation of vertical lines.
+	pub dmx_reg: IORegister16, // arf arf!
+	/// These values define the resulting gradient and magnification for transformation of vertical lines.
+	pub dmy_reg: IORegister16
+
+
+}
+
+pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
 }
 
 pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
