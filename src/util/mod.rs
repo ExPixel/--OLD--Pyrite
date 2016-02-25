@@ -14,9 +14,9 @@ macro_rules! set_pyrite_dyn_debug {
 }
 
 macro_rules! pyrite_debugging {
-	() => (
-		unsafe {
-			::util::PYRITE_DYN_DEBUG_ENABLED
+	($b:block) => (
+		if unsafe {::util::PYRITE_DYN_DEBUG_ENABLED} {
+			$b
 		}
 	)
 }
