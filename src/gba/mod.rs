@@ -127,7 +127,7 @@ impl Gba {
 
 	fn update_window_title(&mut self) {
 		if self.device.fps_counter.fps_available { // So we don't sample too much.
-			let fps = self.device.fps_counter.avg_fps;
+			let fps = self.device.fps_counter.fps;
 			let speed = ((fps as f64) / 60f64) * 100f64;
 			let window = self.device.display.get_window().expect("Failed to get device window.");
 			window.set_title(&format!("Pyrite - {} FPS ({}% GBA)", fps, speed as i64));
@@ -336,13 +336,13 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::Escape)) => {
 					self.request_exit = true
 				},
-				glium::glutin::Event::KeyboardInput(state, _, Some(glium::glutin::VirtualKeyCode::W)) => {
+				glium::glutin::Event::KeyboardInput(state, _, Some(glium::glutin::VirtualKeyCode::D)) => {
 					match state {
 						glium::glutin::ElementState::Pressed => set_pyrite_dyn_debug!(true),
 						_ => set_pyrite_dyn_debug!(false)
 					}
 				},
-				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::D)) => {
+				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::R)) => {
 					self.cpu.reg_dump_pretty();
 				},
 				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(keycode)) => {
