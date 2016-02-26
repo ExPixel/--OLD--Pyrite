@@ -93,17 +93,18 @@ impl GbaLcd {
 		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
 		let bg3_priority = memory.get_reg(ioreg::BG3CNT) & 0x3;
 
-		// I can turn this into one operation, bu organizing the lines into one array
+		// I can turn this into one operation, by organizing the lines into one array
 		// of arrays and then using that instead...
 		// blend_pixels( lines[0][idx] )
 		// blend_pixels( lines[1][idx] )
 		// ...
-		for priority in 0..4 {
-			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output); }
-			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output); }
-			if bg2_enabled && bg2_priority == priority { Self::blend_lines(&self.lines.bg2, output); }
-			if bg3_enabled && bg3_priority == priority { Self::blend_lines(&self.lines.bg3, output); }
+		for priority in (0..4).rev() {
+			if bg3_enabled && bg3_priority == priority { Self::blend_lines(&self.lines.bg3, output);}
+			if bg2_enabled && bg2_priority == priority { Self::blend_lines(&self.lines.bg2, output);}
+			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output);}
+			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output);}
 		}
+		pyrite_debugging!({println!("...")});
 	}
 
 	fn blend_lines(src: &[Pixel], dest: &mut [GbaPixel]) {
