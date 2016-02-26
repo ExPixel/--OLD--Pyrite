@@ -16,7 +16,9 @@ use self::hw::joypad::GbaJoypad;
 use self::hw::dma::*;
 
 // #TODO remove this debug code.
-const LIMIT_FPS: bool = true;
+// I'm using vsync now and because my monitor's refresh rate is 60Hz
+// I don't limit the FPS, this is bad to leave false though :P
+const LIMIT_FPS: bool = false;
 
 /// delay for a 60fps frame in nanoseconds.
 const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
