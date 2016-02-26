@@ -103,13 +103,12 @@ const RANDOM_FUCKING_COLORS: [(u8, u8, u8); 272] = [
 	(0xBA, 0x68, 0xC8), (0xF9, 0xA8, 0x25)
 ];
 
-pub fn rand_color(n: u32) -> (u8, u8, u8, u8) {
-	let c = RANDOM_FUCKING_COLORS[(n as usize) % 272];
-	return (c.0, c.1, c.2, 255);
+pub fn rand_color(n: usize, a: u8) -> (u8, u8, u8, u8) {
+	let c = RANDOM_FUCKING_COLORS[n % 272];
+	return (c.0, c.1, c.2, a);
 }
 
 macro_rules! rand_color {
-    ($n) => (
-    	::util::rand_color($n)
-    )
+    ($n:expr) => ( ::util::rand_color(($n) as usize, 255) );
+    ($n:expr, $a:expr) => ( ::util::rand_color(($n) as usize, $a) );
 }
