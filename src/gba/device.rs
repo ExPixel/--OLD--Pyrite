@@ -60,6 +60,7 @@ impl GbaDevice {
 	pub fn new() -> GbaDevice {
 		use glium::DisplayBuild;
 		let display = glium::glutin::WindowBuilder::new()
+						.with_vsync()
 						.with_dimensions(GBA_SCREEN_WIDTH * DEFAULT_SCALE, GBA_SCREEN_HEIGHT * DEFAULT_SCALE)
 						.build_glium().unwrap();
 
