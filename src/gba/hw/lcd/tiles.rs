@@ -33,12 +33,20 @@ macro_rules! kbytes {
 // Whereas SC0 is defined by the normal BG Map base address (Bit 8-12 of BG#CNT), 
 // SC1 uses same address +2K, SC2 address +4K, SC3 address +6K. When the screen is scrolled it'll always wraparound.
 
-// screen sizes in shifts.
-const SCREEN_SIZES: [(u32, u32); 4] = [
-	(8, 8),
-	(9, 8),
-	(8, 9),
-	(9, 9)
+/// screen sizes for text mode in shifts.
+const TEXT_MODE_SCREEN_SIZES: [(u32, u32); 4] = [
+	(256, 256),
+	(512, 256),
+	(256, 512),
+	(512, 512)
+];
+
+/// screen sizes for text mode in shifts.
+const RS_MODE_SCREEN_SIZES: [(u32, u32); 4] = [
+	(128, 128),
+	(256, 256),
+	(512, 512),
+	(1024, 1024)
 ];
 
 pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
@@ -58,20 +66,20 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
 
 	// #FIXME: I think text mode always wraps so this might be unecessary.
-	let display_area_overflow = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
+	// let display_area_overflow = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
 
 	let screen_size = (bgcnt >> 14) & 0x3;
 
-	let (screen_width, screen_height) = SCREEN_SIZES[screen_size as usize];
+	let (screen_width, screen_height) = TEXT_MODE_SCREEN_SIZES[screen_size as usize];
 
 	// let character_data_size = if palette_type {} else {};
 	let character_data = &vram_tile_data[(character_base_block as usize)..0xFFFF];
 
 
-	let __sw_mod = (1 << screen_width) - 1; // used for mod (screen_width - 1)
-	let __sh_mod = (1 << screen_height) - 1; // used for mod (screen_height - 1)
-
 	// screen_width & screen_height are going to be powers of 2.
+	let __sw_mod = screen_width - 1;
+	let __sh_mod = screen_height - 1;
+
 	let pixel_y = ((line as u32) + (yoffset as u32)) & __sh_mod;
 	let mut column = 0;
 
@@ -125,19 +133,61 @@ pub struct BGRotScaleParams {
 	pub ref_y_reg: IORegister32,
 
 	/// When transforming a horizontal line, dx and dy specify the resulting gradient and magnification for that line
-	pub dx_reg: IORegister16,
+	pub dx_reg: IORegister16, // pa
 	/// When transforming a horizontal line, dx and dy specify the resulting gradient and magnification for that line
-	pub dy_reg: IORegister16,
+	pub dy_reg: IORegister16, // pc
 
 	/// These values define the resulting gradient and magnification for transformation of vertical lines.
-	pub dmx_reg: IORegister16, // arf arf!
+	pub dmx_reg: IORegister16, // pb -- arf arf!
 	/// These values define the resulting gradient and magnification for transformation of vertical lines.
-	pub dmy_reg: IORegister16
-
-
+	pub dmy_reg: IORegister16 // pd
 }
 
 pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
+	let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
+	let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
+	let mosaic = ((bgcnt >> 6) & 0x1) == 1;
+	let palette = memory.get_slice(0x05000000, 0x050001FF);
+	let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
+	let display_area_overflow = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
+	let screen_size = (bgcnt >> 14) & 0x3;
+	let (screen_width, screen_height) = RS_MODE_SCREEN_SIZES[screen_size as usize];
+
+	// let character_data_size = if palette_type {} else {};
+	let character_data = &vram_tile_data[(character_base_block as usize)..0xFFFF];
+	let screen_data = &vram_tile_data[(screen_base_block as usize)..0xFFFF];
+
+
+	// screen_width & screen_height are going to be powers of 2.
+	let __sw_mod = screen_width - 1;
+	let __sh_mod = screen_height - 1;
+
+	let ref_x = memory.get_reg(params.ref_x_reg);
+	let ref_y = memory.get_reg(params.ref_y_reg);
+	let dx = memory.get_reg(params.dx_reg);
+	let dy = memory.get_reg(params.dy_reg);
+	let dmx = memory.get_reg(params.dmx_reg);
+	let dmy = memory.get_reg(params.dmy_reg);
+
+	pyrite_debugging!({
+		debug_println!(
+			ref_x, ref_y, dx, dy, dmx, dmy
+		);
+	});
+
+	// #TODO: I'll just write two versions. This is the wrapping version of the code:
+
+	let pixel_y = ((line as u32) + (ref_y as u32)) & __sh_mod;
+	
+	for column in 0..240 {
+		let pixel_x = (column + (ref_x as u32)) & __sw_mod;
+		let tile_x = pixel_x >> 3;
+		let tile_y = pixel_y >> 3;
+		let offset = (tile_y * screen_width) + tile_x;
+		let tile_number = screen_data[offset as usize];
+		let c = rand_color!(tile_number);
+		bg_line[column as usize] = c;
+	}
 }
 
 pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
