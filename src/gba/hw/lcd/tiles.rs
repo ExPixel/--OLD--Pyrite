@@ -95,14 +95,14 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 
 
 	// screen_width & screen_height are going to be powers of 2.
-	let __sw_mod = screen_width - 1;
-	let __sh_mod = screen_height - 1;
+	let __sw_mask = screen_width - 1;
+	let __sh_mask = screen_height - 1;
 
-	let pixel_y = ((line as u32) + (yoffset as u32)) & __sh_mod;
+	let pixel_y = ((line as u32) + (yoffset as u32)) & __sh_mask;
 	let mut column = 0;
 
 	{
-		let pixel_x = (xoffset as u32) & __sw_mod;
+		let pixel_x = (xoffset as u32) & __sw_mask;
 		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
@@ -120,7 +120,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	// 232 because we don't want to draw the last tile unless it's being shown completely.
 	while column < 232 {
 		// #TODO handle mosaic
-		let pixel_x = (column + (xoffset as u32)) & __sw_mod;
+		let pixel_x = (column + (xoffset as u32)) & __sw_mask;
 		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
@@ -132,7 +132,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	}
 
 	{
-		let pixel_x = (column + (xoffset as u32)) & __sw_mod;
+		let pixel_x = (column + (xoffset as u32)) & __sw_mask;
 		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
@@ -163,13 +163,15 @@ pub struct BGRotScaleParams {
 }
 
 pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
-	let x0 = gba_float32!(memory.get_reg(params.ref_x_reg));
-	let y0 = gba_float32!(memory.get_reg(params.ref_y_reg));
-	let a = gba_float16!(memory.get_reg(params.dx_reg));
-	let b = gba_float16!(memory.get_reg(params.dmx_reg));
-	let c = gba_float16!(memory.get_reg(params.dy_reg));
-	let d = gba_float16!(memory.get_reg(params.dmy_reg));
-	
+	let sx = (((memory.get_reg(params.ref_x_reg) << 4) as i32) >> 4) as u32; // sign extension from 28bits to 32bits
+	let sy = (((memory.get_reg(params.ref_y_reg) << 4) as i32) >> 4) as u32; // sign extension from 28bits to 32bits
+	let mut x = sx;
+	let mut y = sy;
+	let dx = ((memory.get_reg(params.dx_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
+	let dmx = ((memory.get_reg(params.dmx_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
+	let dy = ((memory.get_reg(params.dy_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
+	let dmy = ((memory.get_reg(params.dmy_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
+
 	{
 		let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
 		let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
@@ -186,48 +188,13 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 
 
 		// screen_width & screen_height are going to be powers of 2.
-		let __sw_mod = screen_width - 1;
-		let __sh_mod = screen_height - 1;
+		let __sw_mask = screen_width - 1;
+		let __sh_mask = screen_height - 1;
 
-		pyrite_debugging!({
-			debug_println!(
-				x0, y0, a, b, c, d
-			);
-		});
-
-		// A, B, C, D are dx, dmx, dy, dmy respectively.
-		// Calculating the position of a rotated/scaled dot
-		// Using the following expressions,
-		//   x0,y0    Rotation Center
-		//   x1,y1    Old Position of a pixel (before rotation/scaling)
-		//   x2,y2    New position of above pixel (after rotation scaling)
-		//   A,B,C,D  BG2PA-BG2PD Parameters
-		// the following formula can be used to calculate x2,y2:
-		//   x2 = A(x1-x0) + B(y1-y0) + x0
-		//   y2 = C(x1-x0) + D(y1-y0) + y0
-		let y1 = (((line as f32) + y0) as u32) & __sh_mod;
-
-		let _b_y1_y0_x0 = b * ((y1 as f32) - y0) + x0;
-		let _d_y1_y0_y0 = d * ((y1 as f32) - y0) + y0;
-
-		// x2 = A(x1-x0) + B(y1-y0) + x0
-		let x_transform = |x1_in: f32| {
-			(a * (x1_in - x0) + _b_y1_y0_x0) as u32
-		};
-
-		// y2 = C(x1-x0) + D(y1-y0) + y0
-		let y_transform = |x1_in: f32| {
-			(c * (x1_in - x0) + _d_y1_y0_y0) as u32
-		};
-
-		// #TODO: I'll just write two versions. This is the wrapping version of the code:	
-		let mut column_f32 = 0f32;
 
 		for column in 0..240 {
-			let x1 = ((column_f32 + x0) as u32) & __sw_mod;
-
-			let pixel_x = x_transform(x1 as f32) & __sw_mod;
-			let pixel_y = y_transform(x1 as f32) & __sh_mod;
+			let pixel_x = (x >> 8) & __sw_mask;
+			let pixel_y = (y >> 8) & __sh_mask;
 
 			let tile_x = pixel_x >> 3;
 			let tile_y = pixel_y >> 3;
@@ -245,12 +212,13 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 				bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
 			}
 
-			column_f32 += 1f32;
+			x += dx;
+			y += dy;
 		}
 	}
 
-	memory.set_reg(params.ref_x_reg, (x0 + b) as u32);
-	memory.set_reg(params.ref_y_reg, (y0 + d) as u32);
+	memory.set_reg(params.ref_x_reg, sx + dmx);
+	memory.set_reg(params.ref_y_reg, sy + dmy);
 }
 
 pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
