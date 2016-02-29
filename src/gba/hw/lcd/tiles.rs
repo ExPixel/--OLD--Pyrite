@@ -60,7 +60,7 @@ const TEXT_MODE_SCREEN_SIZES: [(u32, u32); 4] = [
 ];
 
 /// screen sizes for text mode in shifts.
-const RS_MODE_SCREEN_SIZES: [(u32, u32); 4] = [
+const RS_MODE_SCREEN_SIZES: [(i32, i32); 4] = [
 	(128, 128),
 	(256, 256),
 	(512, 512),
@@ -163,14 +163,23 @@ pub struct BGRotScaleParams {
 }
 
 pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
-	let sx = (((memory.get_reg(params.ref_x_reg) << 4) as i32) >> 4) as u32; // sign extension from 28bits to 32bits
-	let sy = (((memory.get_reg(params.ref_y_reg) << 4) as i32) >> 4) as u32; // sign extension from 28bits to 32bits
+	// I work with signed types in this function instead of the normal u32
+	// for reasons that I immediately forgot after writing it. (◕‿◕✿)
+	let sx = ((memory.get_reg(params.ref_x_reg) << 4) as i32) >> 4; // sign extension from 28bits to 32bits
+	let sy = ((memory.get_reg(params.ref_y_reg) << 4) as i32) >> 4; // sign extension from 28bits to 32bits
 	let mut x = sx;
 	let mut y = sy;
-	let dx = ((memory.get_reg(params.dx_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
-	let dmx = ((memory.get_reg(params.dmx_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
-	let dy = ((memory.get_reg(params.dy_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
-	let dmy = ((memory.get_reg(params.dmy_reg) as i16) as i32) as u32; // sign extension from 16bits to 32 bits
+	let dx = (memory.get_reg(params.dx_reg) as i16) as i32; // sign extension from 16bits to 32 bits
+	let dmx = (memory.get_reg(params.dmx_reg) as i16) as i32; // sign extension from 16bits to 32 bits
+	let dy = (memory.get_reg(params.dy_reg) as i16) as i32; // sign extension from 16bits to 32 bits
+	let dmy = (memory.get_reg(params.dmy_reg) as i16) as i32; // sign extension from 16bits to 32 bits
+
+	pyrite_debugging!({
+		debug_println!(
+			sx, sy, x, y,
+			dx, dmx, dy, dmy
+		);
+	});
 
 	{
 		let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
@@ -178,7 +187,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 		let mosaic = ((bgcnt >> 6) & 0x1) == 1;
 		let palette = memory.get_slice(0x05000000, 0x050001FF);
 		let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
-		let display_area_overflow = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
+		let wraparound = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
 		let screen_size = (bgcnt >> 14) & 0x3;
 		let (screen_width, screen_height) = RS_MODE_SCREEN_SIZES[screen_size as usize];
 
@@ -191,34 +200,63 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 		let __sw_mask = screen_width - 1;
 		let __sh_mask = screen_height - 1;
 
+		if wraparound {
+			for column in 0..240 {
+				let pixel_x = (x >> 8) & __sw_mask;
+				let pixel_y = (y >> 8) & __sh_mask;
 
-		for column in 0..240 {
-			let pixel_x = (x >> 8) & __sw_mask;
-			let pixel_y = (y >> 8) & __sh_mask;
+				let tile_x = pixel_x >> 3;
+				let tile_y = pixel_y >> 3;
+				let screen_data_offset = (tile_y * (screen_width >> 3)) + tile_x;
+				let tile_number = screen_data[screen_data_offset as usize];
 
-			let tile_x = pixel_x >> 3;
-			let tile_y = pixel_y >> 3;
-			let screen_data_offset = (tile_y * (screen_width >> 3)) + tile_x;
-			let tile_number = screen_data[screen_data_offset as usize];
+				let tx = pixel_x & 7;
+				let ty = pixel_y & 7;
 
-			let tx = pixel_x & 7;
-			let ty = pixel_y & 7;
+				let dot_offset = (((tile_number as i32) << 6) + (ty << 3) + tx) as usize;
+				let dot = character_data[dot_offset];
+				if dot == 0 {
+					bg_line[column as usize] = (0, 0, 0, 0);
+				} else {
+					bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+				}
 
-			let dot_offset = (((tile_number as u32) << 6) + (ty << 3) + tx) as usize;
-			let dot = character_data[dot_offset];
-			if dot == 0 {
-				bg_line[column as usize] = (0, 0, 0, 0);
-			} else {
-				bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+				x += dx;
+				y += dy;
 			}
+		} else {
+			for column in 0..240 {
+				let pixel_x = x >> 8;
+				let pixel_y = y >> 8;
 
-			x += dx;
-			y += dy;
+				if pixel_x < 0 || pixel_y < 0 || pixel_x >= screen_width || pixel_y >= screen_height {
+					bg_line[column as usize] = (0, 0, 0, 0);
+				} else {
+					let tile_x = pixel_x >> 3;
+					let tile_y = pixel_y >> 3;
+					let screen_data_offset = (tile_y * (screen_width >> 3)) + tile_x;
+					let tile_number = screen_data[screen_data_offset as usize];
+
+					let tx = pixel_x & 7;
+					let ty = pixel_y & 7;
+
+					let dot_offset = (((tile_number as i32) << 6) + (ty << 3) + tx) as usize;
+					let dot = character_data[dot_offset];
+					if dot == 0 {
+						bg_line[column as usize] = (0, 0, 0, 0);
+					} else {
+						bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+					}
+				}
+
+				x += dx;
+				y += dy;
+			}
 		}
 	}
 
-	memory.set_reg(params.ref_x_reg, sx + dmx);
-	memory.set_reg(params.ref_y_reg, sy + dmy);
+	memory.set_reg(params.ref_x_reg, (sx + dmx) as u32);
+	memory.set_reg(params.ref_y_reg, (sy + dmy) as u32);
 }
 
 pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
