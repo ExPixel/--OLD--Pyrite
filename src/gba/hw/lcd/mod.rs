@@ -56,7 +56,7 @@ impl GbaLcd {
 
 	/// Causes the LCD to render a single line.
 	#[allow(unused_variables)] // #TODO remove this
-	pub fn render_line(&mut self, memory: &GbaMemory, line: u16) {
+	pub fn render_line(&mut self, memory: &mut GbaMemory, line: u16) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
 		match dispcnt & 0x7 {
@@ -104,7 +104,6 @@ impl GbaLcd {
 			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output);}
 			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output);}
 		}
-		pyrite_debugging!({println!("...")});
 	}
 
 	fn blend_lines(src: &[Pixel], dest: &mut [GbaPixel]) {

@@ -2,10 +2,10 @@ use super::*;
 use super::super::super::core::memory::*;
 use super::tiles::*;
 
-pub fn render_mode_1(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	// I use this in both render_mode0 and render_mode1, maybe I could just make a common function for them or something?
 	// I would only need to pass in dispcnt and line.
-	let mut try_render_text_bg = |enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
+	let mut try_render_text_bg = |memory: &GbaMemory, enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
 								bg_line: &mut GbaBGLine| {
 		if ((dispcnt >> enable) & 1) != 0 {
 			draw_tiles_text_mode(
@@ -18,8 +18,8 @@ pub fn render_mode_1(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		}
 	};
 
-	try_render_text_bg(0x8, ioreg::BG0CNT, ioreg::BG0HOFS, ioreg::BG0VOFS, &mut lines.bg0);
-	try_render_text_bg(0x9, ioreg::BG1CNT, ioreg::BG1HOFS, ioreg::BG1VOFS, &mut lines.bg1);
+	try_render_text_bg(memory, 0x8, ioreg::BG0CNT, ioreg::BG0HOFS, ioreg::BG0VOFS, &mut lines.bg0);
+	try_render_text_bg(memory, 0x9, ioreg::BG1CNT, ioreg::BG1HOFS, ioreg::BG1VOFS, &mut lines.bg1);
 
 	if ((dispcnt >> 10) & 1) != 0 {
 		let params = BGRotScaleParams {

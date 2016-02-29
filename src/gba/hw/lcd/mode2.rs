@@ -2,7 +2,7 @@ use super::*;
 use super::super::super::core::memory::*;
 use super::tiles::*;
 
-pub fn render_mode_2(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+pub fn render_mode_2(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	if ((dispcnt >> 10) & 1) != 0 {
 		let params = BGRotScaleParams {
 			ref_x_reg: ioreg::BG2X,

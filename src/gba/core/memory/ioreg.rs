@@ -11,7 +11,6 @@ pub struct IORegister32(pub usize);
 
 pub const POSTFLG: IORegister8 = IORegister8(0x0000300);
 pub const HALTCNT: IORegister8 = IORegister8(0x0000301);
-
 pub const DISPCNT: IORegister16 = IORegister16(0x0000000);
 pub const DISPSTAT: IORegister16 = IORegister16(0x0000004);
 pub const VCOUNT: IORegister16 = IORegister16(0x0000006);
@@ -103,7 +102,6 @@ pub const IE: IORegister16 = IORegister16(0x0000200);
 pub const IF: IORegister16 = IORegister16(0x0000202);
 pub const WAITCNT: IORegister16 = IORegister16(0x0000204);
 pub const IME: IORegister16 = IORegister16(0x0000208);
-
 pub const BG2X: IORegister32 = IORegister32(0x0000028);
 pub const BG2Y: IORegister32 = IORegister32(0x000002c);
 pub const BG3X: IORegister32 = IORegister32(0x0000038);
