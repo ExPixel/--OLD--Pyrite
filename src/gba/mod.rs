@@ -171,6 +171,14 @@ impl Gba {
 			self.check_line_coincidence(vcount);
 			self.do_vblank_line();
 		}
+
+		self.on_frame_end();
+	}
+
+	fn on_frame_end(&mut self) {
+		self.cpu.memory.internal_regs.on_frame_end(
+			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
+		);
 	}
 
 	/// Attempts to fire an vblank interrupt

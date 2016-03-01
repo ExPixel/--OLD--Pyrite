@@ -3,12 +3,13 @@ pub mod ioreg;
 use self::ioreg::IORegister8;
 use self::ioreg::IORegister16;
 use self::ioreg::IORegister32;
+use self::ioreg::InternalRegisters;
 
 pub struct MemoryRegion {
 	pub start: u32,
 	pub end: u32,
 	pub size: usize,
-	local_addr: usize
+	pub local_addr: usize
 }
 
 // Internal Memory
@@ -32,6 +33,7 @@ pub const MEM_SRAM:		MemoryRegion = MemoryRegion { start: 0x0e000000, end: 0x0E0
 
 pub struct GbaMemory {
 	pub internal_data: [u8; INTERNAL_MEM_SIZE],
+	pub internal_regs: InternalRegisters,
 	pub rom: Vec<u8>
 	// #TODO add SRAM.
 }
@@ -51,6 +53,7 @@ impl GbaMemory {
 	pub fn new() -> GbaMemory {
 		GbaMemory {
 			internal_data: [0u8; INTERNAL_MEM_SIZE],
+			internal_regs: InternalRegisters::new(),
 			rom: vec![]
 		}
 	}
@@ -157,7 +160,10 @@ impl GbaMemory {
 	}
 
 	pub fn write8(&mut self, address: u32, value: u8) {
-		self.__write8__(address, value)
+		self.__write8__(address, value);
+		if address >= 0x04000000 && address <= 0x4000803 {
+			self.internal_regs.on_write8(address, value, &self.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]);
+		}
 	}
 
 	pub fn read16(&self, address: u32) -> u16 {
@@ -168,6 +174,9 @@ impl GbaMemory {
 	pub fn write16(&mut self, address: u32, value: u16) {
 		self.__write8__(address, (value & 0xff) as u8);
 		self.__write8__(address + 1, ((value >> 8) & 0xff) as u8);
+		if address >= 0x04000000 && address <= 0x4000803 {
+			self.internal_regs.on_write16(address, value);
+		}
 	}
 
 	pub fn read32(&self, address: u32) -> u32 {
@@ -182,6 +191,9 @@ impl GbaMemory {
 		self.__write8__(address + 1, ((value >> 8) & 0xff) as u8);
 		self.__write8__(address + 2, ((value >> 16) & 0xff) as u8);
 		self.__write8__(address + 3, ((value >> 24) & 0xff) as u8);
+		if address >= 0x04000000 && address <= 0x4000803 {
+			self.internal_regs.on_write32(address, value);
+		}
 	}
 
 	pub fn direct_read8(&self, index: usize) -> u8 {

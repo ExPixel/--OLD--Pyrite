@@ -1,3 +1,5 @@
+pub use super::*;
+
 #[derive(Copy, Clone)]
 pub struct IORegister8(pub usize);
 
@@ -119,3 +121,86 @@ pub const DMA3DAD: IORegister32 = IORegister32(0x00000d8);
 pub const SIODATA32: IORegister32 = IORegister32(0x0000120);
 pub const JOY_RECV: IORegister32 = IORegister32(0x0000150);
 pub const JOY_TRANS: IORegister32 = IORegister32(0x0000154);
+
+macro_rules! put_lo16 {
+	($key:expr, $value:expr) => (
+		($key & (0xFFFF0000)) | ($value as u32)
+	)
+}
+
+macro_rules! put_hi16 {
+	($key:expr, $value:expr) => (
+		($key & (0x0000FFFF)) | (($value as u32) << 16)
+	)
+}
+
+// Internal IO registers.
+#[derive(Default)]
+pub struct InternalRegisters {
+	pub bg2x: u32,
+	pub bg2y: u32,
+	pub bg3x: u32,
+	pub bg3y: u32
+}
+
+impl InternalRegisters {
+	pub fn new() -> InternalRegisters {
+		Default::default()
+	}
+
+	// This should almost never happen.
+	pub fn on_write8(&mut self, address: u32, value: u8, iodata: &[u8]) {
+		let register = address & 0x3fe;
+		let value16 = if (address & 1) == 1 {
+			(iodata.direct_read16(register as usize) & 0xFF) | ((value as u16) << 8)
+		} else {
+			(iodata.direct_read16(register as usize) & 0xFF00) | ((value as u16))
+		};
+		self.on_reg_write(register, value16);
+	}
+
+	pub fn on_write16(&mut self, address: u32, value: u16) {
+		self.on_reg_write(address & 0x3ff, value);
+	}
+
+	pub fn on_write32(&mut self, address: u32, value: u32) {
+		self.on_reg_write(address & 0x3ff, (value & 0xFFFF) as u16);
+		self.on_reg_write((address & 0x3ff) + 2, ((value >> 16) & 0xFFFF) as u16);
+	}
+
+	pub fn on_frame_end(&mut self, iodata: &[u8]) {
+		// refresh BG2X, BG2Y, BG3X, BG3Y
+		self.on_reg_write(0x0000028, iodata.direct_read16(0x0000028));
+		self.on_reg_write(0x000002A, iodata.direct_read16(0x000002A));
+		self.on_reg_write(0x000002C, iodata.direct_read16(0x000002C));
+		self.on_reg_write(0x000002E, iodata.direct_read16(0x000002E));
+		self.on_reg_write(0x0000038, iodata.direct_read16(0x0000038));
+		self.on_reg_write(0x000003A, iodata.direct_read16(0x000003A));
+		self.on_reg_write(0x000003C, iodata.direct_read16(0x000003C));
+		self.on_reg_write(0x000003E, iodata.direct_read16(0x000003E));
+	}
+
+	pub fn on_reg_write(&mut self, register: u32, value: u16) {
+		match register {
+			0x0000028 => { self.bg2x = (((put_lo16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x000002A => { self.bg2x = (((put_hi16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+
+			0x000002C => { self.bg2y = (((put_lo16!(self.bg2y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x000002E => { self.bg2y = (((put_hi16!(self.bg2y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+
+			0x0000038 => { self.bg3x = (((put_lo16!(self.bg3x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x000003A => { self.bg3x = (((put_hi16!(self.bg3x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+
+			0x000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			_ => {}
+		}
+	}
+}
+
+/*
+pub const BG2X: IORegister32 = IORegister32(0x0000028);
+pub const BG2Y: IORegister32 = IORegister32(0x000002c);
+pub const BG3X: IORegister32 = IORegister32(0x0000038);
+pub const BG3Y: IORegister32 = IORegister32(0x000003c);
+*/

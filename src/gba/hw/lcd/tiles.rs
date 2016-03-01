@@ -12,22 +12,15 @@ macro_rules! kbytes {
 
 macro_rules! gba_float32 {
     ($f:expr) => (
-    	(((($f & (!0xf)) as i32) >> 8) as f32) + ((($f & 0xff) as f32) / 100f32)
+    	(((($f & (!0xff)) as i32) >> 8) as f32) + ((($f & 0xff) as f32) / 256f32)
     )
 }
 
 macro_rules! gba_float16 {
     ($f:expr) => (
-    	(((($f & (!0xf)) as i16) as i32) as f32) + ((($f & 0xff) as f32) / 100f32)
+    	(((($f & (!0xff)) as i16) as i32) as f32) + ((($f & 0xff) as f32) / 256f32)
     )
 }
-
-macro_rules! fixed_point32 {
-    ($i:expr, $f:expr) => (
-    	((($i as u32) & 0x7ffff) << 8) | (($f as u32) & 0xff)
-    )
-}
-
 // BG Mode 0,1,2 (Tile/Map based Modes)  
 //   06000000-0600FFFF  64 KBytes shared for BG Map and Tiles  
 //   06010000-06017FFF  32 KBytes OBJ Tiles  
@@ -165,21 +158,14 @@ pub struct BGRotScaleParams {
 pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
 	// I work with signed types in this function instead of the normal u32
 	// for reasons that I immediately forgot after writing it. (◕‿◕✿)
-	let sx = ((memory.get_reg(params.ref_x_reg) << 4) as i32) >> 4; // sign extension from 28bits to 32bits
-	let sy = ((memory.get_reg(params.ref_y_reg) << 4) as i32) >> 4; // sign extension from 28bits to 32bits
+	let sx = memory.internal_regs.bg2x as i32;
+	let sy = memory.internal_regs.bg2y as i32;
 	let mut x = sx;
 	let mut y = sy;
 	let dx = (memory.get_reg(params.dx_reg) as i16) as i32; // sign extension from 16bits to 32 bits
 	let dmx = (memory.get_reg(params.dmx_reg) as i16) as i32; // sign extension from 16bits to 32 bits
 	let dy = (memory.get_reg(params.dy_reg) as i16) as i32; // sign extension from 16bits to 32 bits
 	let dmy = (memory.get_reg(params.dmy_reg) as i16) as i32; // sign extension from 16bits to 32 bits
-
-	pyrite_debugging!({
-		debug_println!(
-			sx, sy, x, y,
-			dx, dmx, dy, dmy
-		);
-	});
 
 	{
 		let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
@@ -207,6 +193,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 
 				let tile_x = pixel_x >> 3;
 				let tile_y = pixel_y >> 3;
+				// #TODO turn the tile_y * into a shift...
 				let screen_data_offset = (tile_y * (screen_width >> 3)) + tile_x;
 				let tile_number = screen_data[screen_data_offset as usize];
 
@@ -225,6 +212,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 				y += dy;
 			}
 		} else {
+			let mut r = true;
 			for column in 0..240 {
 				let pixel_x = x >> 8;
 				let pixel_y = y >> 8;
@@ -255,8 +243,8 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 		}
 	}
 
-	memory.set_reg(params.ref_x_reg, (sx + dmx) as u32);
-	memory.set_reg(params.ref_y_reg, (sy + dmy) as u32);
+	memory.internal_regs.bg2x += dmx as u32;
+	memory.internal_regs.bg2y += dmy as u32;
 }
 
 pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
