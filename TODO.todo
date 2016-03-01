@@ -1,6 +1,8 @@
 General:
   ☐ Clean up leftover debug statements that have been commented out.
   ☐ Move calculations for bgr5 -> argb to the GPU via shaders.
+     This may no longer be possible.
+  ☐ Correct the Gamma and colors through the shaders.
   ☐ Masking for IO Registers certain bits should not be written or read
      This is probably why I'm getting weird values for the sbb_aff tonc demo.
 Core:
