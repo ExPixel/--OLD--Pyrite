@@ -140,7 +140,9 @@ pub struct InternalRegisters {
 	pub bg2x: u32,
 	pub bg2y: u32,
 	pub bg3x: u32,
-	pub bg3y: u32
+	pub bg3y: u32,
+
+	pub dma_dirty: bool
 }
 
 impl InternalRegisters {
@@ -193,10 +195,25 @@ impl InternalRegisters {
 
 			0x000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 			0x000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+
+			0x40000BA | 0x40000C6 | 
+			0x40000D2 | 0x40000DE => { self.dma_dirty = true },
+
 			_ => {}
 		}
 	}
 }
+
+/*
+pub const DMA0SAD: IORegister32 = IORegister32(0x00000b0);
+pub const DMA0DAD: IORegister32 = IORegister32(0x00000b4);
+pub const DMA1SAD: IORegister32 = IORegister32(0x00000bc);
+pub const DMA1DAD: IORegister32 = IORegister32(0x00000c0);
+pub const DMA2SAD: IORegister32 = IORegister32(0x00000c8);
+pub const DMA2DAD: IORegister32 = IORegister32(0x00000cc);
+pub const DMA3SAD: IORegister32 = IORegister32(0x00000d4);
+pub const DMA3DAD: IORegister32 = IORegister32(0x00000d8);
+*/
 
 /*
 pub const BG2X: IORegister32 = IORegister32(0x0000028);

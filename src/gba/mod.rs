@@ -202,25 +202,29 @@ impl Gba {
 	}
 
 	fn check_dmas(&mut self, timing: u16) {
-		let mut interrupt = None;
+		if self.cpu.memory.internal_regs.dma_dirty {
+			let mut interrupt = None;
 
-		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) && ((self.cpu.memory.get_reg(ioreg::DMA0CNT_H) >> 14) & 1) != 0 { 
-			interrupt = Some(INT_DMA0);
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) && ((self.cpu.memory.get_reg(ioreg::DMA0CNT_H) >> 14) & 1) != 0 { 
+				interrupt = Some(INT_DMA0);
+			}
+
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 1) && ((self.cpu.memory.get_reg(ioreg::DMA1CNT_H) >> 14) & 1) != 0 {
+				interrupt = Some(INT_DMA1);
+			}
+
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 2) && ((self.cpu.memory.get_reg(ioreg::DMA2CNT_H) >> 14) & 1) != 0 {
+				interrupt = Some(INT_DMA2);
+			}
+
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 3) && ((self.cpu.memory.get_reg(ioreg::DMA3CNT_H) >> 14) & 1) != 0 {
+				interrupt = Some(INT_DMA3);
+			}
+
+			self.cpu.memory.internal_regs.dma_dirty = false;
+
+			if let Some(mask) = interrupt { self.hardware_interrupt(mask) }
 		}
-
-		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 1) && ((self.cpu.memory.get_reg(ioreg::DMA1CNT_H) >> 14) & 1) != 0 {
-			interrupt = Some(INT_DMA1);
-		}
-
-		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 2) && ((self.cpu.memory.get_reg(ioreg::DMA2CNT_H) >> 14) & 1) != 0 {
-			interrupt = Some(INT_DMA2);
-		}
-
-		if self.dma_handler.try_start_dma(&mut self.cpu, timing, 3) && ((self.cpu.memory.get_reg(ioreg::DMA3CNT_H) >> 14) & 1) != 0 {
-			interrupt = Some(INT_DMA3);
-		}
-
-		if let Some(mask) = interrupt { self.hardware_interrupt(mask) }
 	}
 
 	/// Taken From TONC:
