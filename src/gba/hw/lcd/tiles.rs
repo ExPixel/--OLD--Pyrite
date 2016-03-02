@@ -10,17 +10,6 @@ macro_rules! kbytes {
 	($n: expr) => ($n * 1024)
 }
 
-macro_rules! gba_float32 {
-    ($f:expr) => (
-    	(((($f & (!0xff)) as i32) >> 8) as f32) + ((($f & 0xff) as f32) / 256f32)
-    )
-}
-
-macro_rules! gba_float16 {
-    ($f:expr) => (
-    	(((($f & (!0xff)) as i16) as i32) as f32) + ((($f & 0xff) as f32) / 256f32)
-    )
-}
 // BG Mode 0,1,2 (Tile/Map based Modes)  
 //   06000000-0600FFFF  64 KBytes shared for BG Map and Tiles  
 //   06010000-06017FFF  32 KBytes OBJ Tiles  
@@ -247,7 +236,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 	memory.internal_regs.bg2y += dmy as u32;
 }
 
-pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
 	let mut tx = tx;
 	let mut ty = ty;
 
@@ -324,7 +313,7 @@ pub fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel]
 	}
 }
 
-pub fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
 	let mut tx = tx;
 	let mut ty = ty;
 
