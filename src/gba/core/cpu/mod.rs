@@ -44,55 +44,6 @@ impl<T : Copy> Pipeline<T> {
 	pub fn ready(&self) -> bool { self.count > 1 }
 }
 
-// #TODO remove testing code.
-const MAX_TRACKED_BRANCHES: usize = 16;
-struct BranchTracker {
-	branch_count: usize,
-	branches: [(u32, bool, u32, bool); MAX_TRACKED_BRANCHES],
-	buffer_size: usize,
-	waiting: (u32, bool)
-}
-impl BranchTracker {
-	pub fn new() -> BranchTracker {
-		BranchTracker {
-			buffer_size: 0,
-			branch_count: 0,
-			branches: [(0u32, false, 0u32, false); MAX_TRACKED_BRANCHES],
-			waiting: (0u32, false)
-		}
-	}
-
-	pub fn wait(&mut self, location: u32, thumb: bool) {
-		self.waiting = (location, thumb);
-	}
-
-	pub fn branched(&mut self, location: u32, thumb: bool) {
-		let waiting = self.waiting;
-		self.push(waiting.0, waiting.1, location, thumb);
-	}
-
-	pub fn push(&mut self, branch_from: u32, branch_from_thumb: bool, branch_to: u32, branch_to_thumb: bool) {
-		self.branches[self.branch_count % MAX_TRACKED_BRANCHES] = (branch_from, branch_from_thumb ,branch_to, branch_to_thumb);
-		self.branch_count += 1;
-		if self.buffer_size < MAX_TRACKED_BRANCHES {
-			self.buffer_size += 1;
-		}
-	}
-
-	pub fn empty(&self) -> bool {
-		self.count() == 0
-	}
-
-	pub fn count(&self) -> usize {
-		self.buffer_size
-	}
-
-	pub fn pop(&mut self) -> (u32, bool, u32, bool) {
-		self.branch_count -= 1;
-		self.buffer_size -= 1;
-		self.branches[self.branch_count % MAX_TRACKED_BRANCHES]
-	}
-}
 
 /// GameBoy ARM7TDMI Cpu.
 pub struct ArmCpu {
@@ -103,9 +54,6 @@ pub struct ArmCpu {
 	pub clock: ArmCpuClock,
 	pub software_interrupt: Option<u32>,
 	pub branched: bool,
-
-	// #TODO remove testing code.
-	branch_tracker: BranchTracker
 }
 
 impl ArmCpu {
@@ -117,8 +65,7 @@ impl ArmCpu {
 			memory: GbaMemory::new(),
 			clock: ArmCpuClock::new(),
 			software_interrupt: None,
-			branched: false,
-			branch_tracker: BranchTracker::new()
+			branched: false
 		}
 	}
 
@@ -219,11 +166,6 @@ impl ArmCpu {
 	}
 
 	fn arm_tick(&mut self) {
-		{
-			let addr = self.get_exec_address();
-			self.branch_tracker.wait(addr, false);
-		}
-
 		if self.arm_pipeline.ready() {
 			let decoded = self.arm_pipeline.decoded;
 			let condition = (decoded >> 28) & 0xf;
@@ -239,12 +181,6 @@ impl ArmCpu {
 			self.align_pc();
 			self.arm_pipeline.flush();
 			self.branched = false;
-
-			{
-				let addr = self.get_pc();
-				let tmode = self.thumb_mode();
-				self.branch_tracker.branched(addr, tmode);
-			}
 		} else {
 			let pc = self.get_pc();
 			let next = self.memory.read32(pc);
@@ -254,11 +190,6 @@ impl ArmCpu {
 	}
 
 	fn thumb_tick(&mut self) {
-		{
-			let addr = self.get_exec_address();
-			self.branch_tracker.wait(addr, true);
-		}
-
 		if self.thumb_pipeline.ready() {
 			let decoded = self.thumb_pipeline.decoded as u32;
 			let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
@@ -271,12 +202,6 @@ impl ArmCpu {
 			self.align_pc(); // half-word aligning the program counter for THUMB mode.
 			self.thumb_pipeline.flush();
 			self.branched = false;
-
-			{
-				let addr = self.get_pc();
-				let tmode = self.thumb_mode();
-				self.branch_tracker.branched(addr, tmode);
-			}
 		} else {
 			let pc = self.get_pc();
 			let next = self.memory.read16(pc);
@@ -435,16 +360,10 @@ impl ArmCpu {
 		let next_pc = self.get_pc() - 8;
 
 		self.rset(REG_LR, next_pc);
-		{
-			let addr = self.get_exec_address() - 4;
-			self.branch_tracker.wait(addr, false);
-		}
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		self.align_pc();
 		self.arm_pipeline.flush();
 		self.branched = false;
-
-		self.branch_tracker.branched(SWI_VECTOR, false);
 	}
 
 	/// Perform Software Interrupt:
@@ -462,17 +381,11 @@ impl ArmCpu {
 		let next_pc = self.get_pc() - 4; // 0x08000e6f
 
 		self.rset(REG_LR, next_pc); // setting bit 0 so that bx brings this back into thumb mode.
-		{
-			let addr = self.get_exec_address() - 2;
-			self.branch_tracker.wait(addr, true);
-		}
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		self.registers.clearf_t(); // Enters ARM mode.
 		self.align_pc();
 		self.thumb_pipeline.flush();
 		self.branched = false;
-
-		self.branch_tracker.branched(SWI_VECTOR, false);
 	}
 
 	pub fn thumb_swi(&mut self, instr: u32) {
@@ -558,29 +471,6 @@ impl ArmCpu {
 		print!("sp = 0x{:08x}; ", self.rget(13));
 		print!("lr = 0x{:08x}; ", self.rget(14));
 		println!("pc = 0x{:08x}", self.get_pc());
-	}
-
-	pub fn branch_dump(&mut self) {
-		println!("======= BRANCHES =======");
-		while !self.branch_tracker.empty() {
-			let branch = self.branch_tracker.pop();
-			println!("| ({}) 0x{:08x} -> ({}) 0x{:08x}", 
-				if branch.1 {"T"} else {"A"},
-				branch.0, 
-				if branch.3 {"T"} else {"A"},
-				branch.2);
-			if branch.1 {
-				println!("|     (T) {}", super::super::super::debug::armdis::disasm_thumb(branch.0, &self.memory, 0b11111111));
-			} else {
-				println!("|     (A) {}", super::super::super::debug::armdis::disasm_arm(branch.0, &self.memory, 0b11111111));
-			}
-			if branch.3 {
-				println!("|     (T) {}", super::super::super::debug::armdis::disasm_thumb(branch.2, &self.memory, 0b11111111));
-			} else {
-				println!("|     (A) {}", super::super::super::debug::armdis::disasm_arm(branch.2, &self.memory, 0b11111111));
-			}
-		}
-		println!("========================");
 	}
 
 	pub fn reg_dump_pretty(&self) {

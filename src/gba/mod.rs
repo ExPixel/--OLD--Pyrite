@@ -336,7 +336,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				}
 			} else {
 				self.cpu.reg_dump_pretty();
-				self.cpu.branch_dump();
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
 		}
