@@ -433,7 +433,6 @@ impl ArmCpu {
 	/// The CPU has hit an undefined instruction.
 	pub fn on_undefined(&mut self) {
 		self.reg_dump_pretty();
-		self.branch_dump();
 		panic!("picnic -- undefined instruction");
 	}
 
@@ -462,7 +461,6 @@ impl ArmCpu {
 	/// Called when the CPU tries to execute a coprocessor instruction.
 	pub fn bad_coprocessor_instr(&mut self, instr_name: &'static str) {
 		self.reg_dump_pretty();
-		self.branch_dump();
 		panic!("Attempted to call a bad coprocessor data instruction: `{}`", instr_name);
 	}
 
