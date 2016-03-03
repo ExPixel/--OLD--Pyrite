@@ -6,7 +6,8 @@ General:
   ☐ Masking for IO Registers certain bits should not be written or read
      This is probably why I'm getting weird values for the sbb_aff tonc demo.
 Core:
-  ☐ Complete DMAs
+  ☐ Complete CPU exceptions. (titled 'ARM CPU Exceptions' in GBAtek.)
+  ✔ Complete DMAs @done (16-03-02 18:43)
   LCD:
     ☐ Complete All Rendering
       ☐ Complete Mode 0 Rendering
