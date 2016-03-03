@@ -135,6 +135,7 @@ macro_rules! gen_dproc_sf {
 			// This form of instruction should not be used in User mode.
 			if rd == 15 { 
 				cpu.set_pc(result);
+				// #TODO this is dumb, but I'm leaving it here for now because I'm scared of breaking stuff :(
 				cpu.registers.set_cpsr(saved_cpsr); // to make it seem as if there was no changes to the flags.
 				cpu.registers.spsr_to_cpsr();
 

@@ -388,13 +388,13 @@ impl ArmCpu {
 	}
 
 	pub fn execute_swi(&mut self) {
-		self.reg_dump_pretty();
 		let swi_instr = self.software_interrupt.take().unwrap();
 		let interrupt = self.get_gba_swi(swi_instr);
-		println!("EXECUTING SWI: 0x{:2x}", interrupt);
 		if self.thumb_mode() {
+			println!("EXECUTING SWI (T): 0x{:02x}, instruction: 0x{:04x}", interrupt, swi_instr & 0xffff);
 			self.handle_thumb_swi();
 		} else {
+			println!("EXECUTING SWI (A): 0x{:02x}, instruction: 0x{:08x}", interrupt, swi_instr);
 			self.handle_arm_swi();
 		}
 	}
@@ -426,12 +426,13 @@ impl ArmCpu {
 	fn handle_arm_swi(&mut self) {
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
+		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_SVC);
-		self.registers.cpsr_to_spsr();
+		self.registers.set_spsr(cpsr);
 
 		// because the interrupt is handled on the next call to tick, 
 		// it's actually already at the next instruction.
-		let next_pc = self.get_pc();
+		let next_pc = self.get_pc() - 8;
 
 		self.rset(REG_LR, next_pc);
 		{
@@ -452,14 +453,15 @@ impl ArmCpu {
 	fn handle_thumb_swi(&mut self) {
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
+		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_SVC);
-		self.registers.cpsr_to_spsr();
+		self.registers.set_spsr(cpsr);
 
 		// because the interrupt is handled on the next call to tick, 
 		// it's actually already at the next instruction.
-		let next_pc = self.get_pc();
+		let next_pc = self.get_pc() - 4; // 0x08000e6f
 
-		self.rset(REG_LR, next_pc | 1); // setting bit 0 so that bx brings this back into thumb mode.
+		self.rset(REG_LR, next_pc); // setting bit 0 so that bx brings this back into thumb mode.
 		{
 			let addr = self.get_exec_address() - 2;
 			self.branch_tracker.wait(addr, true);
@@ -616,19 +618,19 @@ impl ArmCpu {
 	}
 }
 
-const DEBUG_STOP: bool = true;
+const DEBUG_STOP: bool = false;
 const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x0000014c;
+const DEBUG_ADDR: u32 = 0x00000144;
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
 	// if address < 0x40000 {
 	// 	println!("% {}", cpu.disasm_exec());
-	// }
+	// }0xf7ff1c18
 
-	// if cpu.rget(12) == 0xf7ff1c18 {
+	// if cpu.rget(12) == 0x000000df {
 	// 	cpu.reg_dump_pretty();
 	// 	cpu.branch_dump();
 	// 	panic!("AH");
