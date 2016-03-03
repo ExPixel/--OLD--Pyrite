@@ -315,6 +315,8 @@ impl ArmCpu {
 	pub fn execute_swi(&mut self) {
 		let swi_instr = self.software_interrupt.take().unwrap();
 		let interrupt = self.get_gba_swi(swi_instr);
+		// #TODO I'm seeing the point of this less and less.
+		// sure fully emulating the bios is great but what's the point?
 		if self.thumb_mode() {
 			println!("EXECUTING SWI (T): 0x{:02x}, instruction: 0x{:04x}", interrupt, swi_instr & 0xffff);
 			self.handle_thumb_swi();
