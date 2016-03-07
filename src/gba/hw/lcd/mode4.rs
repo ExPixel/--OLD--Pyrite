@@ -1,5 +1,6 @@
 use super::*;
 use super::super::super::core::memory::*;
+use super::obj::*;
 
 const FRAME_0_BUFFER: (u32, u32) = (0x06000000, 0x06009FFF);
 const FRAME_1_BUFFER: (u32, u32) = (0x0600A000, 0x06013FFF);
@@ -29,4 +30,12 @@ pub fn render_mode_4(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		let pixel = convert_rgb5_to_rgba8(palette.direct_read16((pal_ref as usize) * 2));
 		lines.bg2[col] = pixel;
 	}
+
+	draw_objs(
+		(0x06014000, 0x06017FFF),
+		((dispcnt >> 6) & 1) == 1,
+		((dispcnt >> 5) & 1) == 1,
+		memory,
+		line,
+		lines);
 }

@@ -1,6 +1,7 @@
 use super::super::core::memory::*;
 
 pub mod tiles;
+pub mod obj;
 
 // #TODO remove these allows
 pub mod mode0;
@@ -26,7 +27,8 @@ pub type GbaBGLine = [Pixel; 240];
 // since the GBA renders in scan lines anyway.
 pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
 
-
+// Add a way for modes themselves to turn these off
+// mode 3 for instance only uses bg2, no need for the others.
 pub struct GbaDisplayLines {
 	pub bg0: GbaBGLine,
 	pub bg1: GbaBGLine,
@@ -58,6 +60,7 @@ impl GbaLcd {
 	#[allow(unused_variables)] // #TODO remove this
 	pub fn render_line(&mut self, memory: &mut GbaMemory, line: u16) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
+		self.clear_obj_line();
 
 		match dispcnt & 0x7 {
 			0 => mode0::render_mode_0(dispcnt, memory, line, &mut self.lines),
@@ -70,6 +73,12 @@ impl GbaLcd {
 		}
 
 		self.blend(line, memory);
+	}
+
+	fn clear_obj_line(&mut self) {
+		for i in 0..self.lines.obj.len() {
+			self.lines.obj[i] = (0, 0, 0, 0);
+		}
 	}
 
 	fn blend(&mut self, line: u16, memory: &GbaMemory) {
@@ -104,6 +113,8 @@ impl GbaLcd {
 			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output);}
 			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output);}
 		}
+
+		Self::blend_lines(&self.lines.obj, output); // For giggles
 	}
 
 	fn blend_lines(src: &[Pixel], dest: &mut [GbaPixel]) {
@@ -118,6 +129,8 @@ impl GbaLcd {
 
 	#[inline(always)]
 	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
+		if a.3 == 0 { return b } // It's not going to show up.
+
 		let aa = (a.3 as u32) + 1; // alpha component of a
 		let aa_inv = 256 - (a.3 as u32);
 		let _blend = |ca, cb| -> u8 {

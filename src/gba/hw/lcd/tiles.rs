@@ -10,6 +10,8 @@ macro_rules! kbytes {
 	($n: expr) => ($n * 1024)
 }
 
+
+
 // BG Mode 0,1,2 (Tile/Map based Modes)  
 //   06000000-0600FFFF  64 KBytes shared for BG Map and Tiles  
 //   06010000-06017FFF  32 KBytes OBJ Tiles  

@@ -1,6 +1,7 @@
 use super::*;
 use super::super::super::core::memory::*;
 use super::tiles::*;
+use super::obj::*;
 
 pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	// I use this in both render_mode0 and render_mode1, maybe I could just make a common function for them or something?
@@ -32,6 +33,14 @@ pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mu
 		};
 		draw_tiles_rs_mode(memory.get_reg(ioreg::BG2CNT), params, memory, line, &mut lines.bg2);
 	}
+	
+	draw_objs(
+		(0x06010000, 0x06017FFF), 
+		((dispcnt >> 6) & 1) == 1, 
+		((dispcnt >> 5) & 1) == 1, 
+		memory, 
+		line, 
+		lines);
 }
 
 

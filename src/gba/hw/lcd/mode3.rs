@@ -1,5 +1,6 @@
 use super::*;
 use super::super::super::core::memory::*;
+use super::obj::*;
 
 /// BG Mode 3 (Bitmap based Mode for still images)
 ///  06000000-06013FFF  80 KBytes Frame 0 buffer (only 75K actually used)
@@ -25,4 +26,12 @@ pub fn render_mode_3(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		let pixel = convert_rgb5_to_rgba8(vram.direct_read16(col_offset));
 		lines.bg2[col] = pixel;
 	}
+
+	draw_objs(
+		(0x06014000, 0x06017FFF),
+		((dispcnt >> 6) & 1) == 1,
+		((dispcnt >> 5) & 1) == 1,
+		memory,
+		line,
+		lines);
 }
