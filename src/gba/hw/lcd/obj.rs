@@ -35,11 +35,12 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 }
 
 
-const OBJ_SIZES: [(u16, u16); 16] = [
-	(8, 8), (16, 16), (32, 32), (64, 64), // square
-	(16, 8), (32, 8), (32, 16), (64, 32), // horizontal
-	(8, 16), (8, 32), (16, 32), (32, 64), // vertical 
-	(8, 8), (16, 16), (32, 32), (64, 64)  // Prohibited (we mirror square, though) #TODO might remove this.
+// (width, height, shift-per-line)
+const OBJ_SIZES: [(u16, u16, u16); 16] = [
+	(8, 8, 0), (16, 16, 1), (32, 32, 2), (64, 64, 3), // square
+	(16, 8, 1), (32, 8, 2), (32, 16, 2), (64, 32, 3), // horizontal
+	(8, 16, 0), (8, 32, 0), (16, 32, 1), (32, 64, 2), // vertical 
+	(8, 8, 0), (16, 16, 1), (32, 32, 2), (64, 64, 3)  // Prohibited (we mirror square, though) #TODO might remove this.
 ];
 
 // temporary function while I try to reason about this whole thing.
@@ -73,9 +74,11 @@ fn draw_simple_obj(attr0: u16, attr1: u16, attr2: u16, memory: &GbaMemory, line:
 	let (in_y_bounds, oy) = check_obj_y_bounds(line, ycoord, size.1);
 
 	if in_y_bounds {
-		for ox in xcoord..(xcoord + size.0) {
-			if (ox & 0x1ff) < 240 {
-				lines.obj[(ox & 0x1ff) as usize] = rand_color!(oy);
+		for sx in xcoord..(xcoord + size.0) {
+			if (sx & 0x1ff) < 240 {
+				let ox = sx - xcoord;
+				let fragment = ((oy >> 3) << size.2) + (ox >> 3); // like...I don't even know anymore.
+				lines.obj[(sx & 0x1ff) as usize] = rand_color!(fragment);
 			}
 		}
 	}
