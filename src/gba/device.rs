@@ -7,6 +7,8 @@ use glium::texture::MipmapsOption;
 use super::hw::lcd::GbaLcdScreenBuffer;
 use ::util::frame_counter::FrameCounter;
 
+const ENABLE_VSYNC: bool = true;
+
 const GBA_SCREEN_WIDTH: u32 = 240;
 const GBA_SCREEN_HEIGHT: u32 = 160;
 
@@ -59,10 +61,10 @@ pub struct GbaDevice {
 impl GbaDevice {
 	pub fn new() -> GbaDevice {
 		use glium::DisplayBuild;
-		let display = glium::glutin::WindowBuilder::new()
-						.with_vsync()
-						.with_dimensions(GBA_SCREEN_WIDTH * DEFAULT_SCALE, GBA_SCREEN_HEIGHT * DEFAULT_SCALE)
-						.build_glium().unwrap();
+		let mut display_builder = glium::glutin::WindowBuilder::new()
+						.with_dimensions(GBA_SCREEN_WIDTH * DEFAULT_SCALE, GBA_SCREEN_HEIGHT * DEFAULT_SCALE);
+		if ENABLE_VSYNC { display_builder = display_builder.with_vsync(); }
+		let display = display_builder.build_glium().unwrap();
 
 		let shape = vec![
 			Vertex { position: [1.0, 1.0], tex_coords: [1.0, 0.0] },
