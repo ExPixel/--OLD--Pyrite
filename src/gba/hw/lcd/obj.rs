@@ -73,13 +73,21 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 }
 
 pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
-	pyrite_debugging!({
-		debug_println!(
-			"get_simple_obj_dot_4bpp_2d",
-			attr2, ox, oy
-		);
-	});
-	(0, 0, 0, 0)
+	let tile = attr2 & 0x1ff;
+	let tx = ox & 7;
+	let ty = oy & 7;
+	let yoffset = (((oy as usize) >> 3) << 10);
+	let xoffset = (((ox as usize) >> 3) << 5);
+	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 2) + ((tx as usize) >> 1);
+	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
+	return if dot == 0 { 
+		(0, 0, 0, 0)
+	} else { 
+		// 32 bytes per palette
+		// 2 bytes per color entry
+		let palette_number = ((attr2 >> 12) & 0x3) as usize;
+		convert_rgb5_to_rgba8(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
+	}
 }
 
 pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {

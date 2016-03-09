@@ -102,7 +102,7 @@ impl GbaLcd {
 		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
 		let bg3_priority = memory.get_reg(ioreg::BG3CNT) & 0x3;
 
-		// I can turn this into one operation, by organizing the lines into one array
+		// #optim: I can turn this into one operation, by organizing the lines into one array
 		// of arrays and then using that instead...
 		// blend_pixels( lines[0][idx] )
 		// blend_pixels( lines[1][idx] )

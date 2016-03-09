@@ -68,9 +68,6 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 
 	let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
 
-	// #FIXME: I think text mode always wraps so this might be unecessary.
-	// let display_area_overflow = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
-
 	let screen_size = (bgcnt >> 14) & 0x3;
 
 	let (screen_width, screen_height) = TEXT_MODE_SCREEN_SIZES[screen_size as usize];
