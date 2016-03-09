@@ -57,9 +57,17 @@ Each byte selects the palette entry for each dot.
 
 pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
 	let tile = attr2 & 0x1ff;
+	// dividing by 8 to get width and height in 8x8 tiles.
 	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
 	let tx = ox & 7;
 	let ty = oy & 7;
+
+	// (((tile as usize) + (fragment as usize)) << 5)
+	//     fragment is a tile 
+	//     32 byte sper tile
+	// ((ty as usize) << 2) + ((tx as usize) >> 1)
+	//     4 bytes per tile line
+	//     1/2 byte per tile column
 	let offset = (((tile as usize) + (fragment as usize)) << 5) + ((ty as usize) << 2) + ((tx as usize) >> 1);
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
@@ -76,8 +84,19 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	let tile = attr2 & 0x1ff;
 	let tx = ox & 7;
 	let ty = oy & 7;
+
+	// turning oy into tile y
+	// 32 bytes per tile
+	// 32 tiles per line (put together with the one above it)
 	let yoffset = (((oy as usize) >> 3) << 10);
+
+	// turning ox into tile x
+	// 32 bytes per tile
 	let xoffset = (((ox as usize) >> 3) << 5);
+
+	// ((ty as usize) << 2) + ((tx as usize) >> 1)
+	// 4 bytes per tile line
+	// 1/2 byte per tile column
 	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 2) + ((tx as usize) >> 1);
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
@@ -154,7 +173,10 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 			if (sx & 0x1ff) < 240 {
 				let mut ox = sx - xcoord;
 				if horizontal_flip { ox = (size.0 - 1) - ox; }
-				lines.obj[(sx & 0x1ff) as usize] = get_dot(tile_region, palette_region, attr2, ox, oy, size);
+				let dot = get_dot(tile_region, palette_region, attr2, ox, oy, size);
+				if dot.3 != 0 {
+					lines.obj[(sx & 0x1ff) as usize] = dot;
+				}
 			}
 		}
 	}
