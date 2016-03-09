@@ -6,7 +6,7 @@ use super::obj::*;
 pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	// I use this in both render_mode0 and render_mode1, maybe I could just make a common function for them or something?
 	// I would only need to pass in dispcnt and line.
-	let mut try_render_text_bg = |memory: &GbaMemory, enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
+	let try_render_text_bg = |memory: &GbaMemory, enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
 								bg_line: &mut GbaBGLine| {
 		if ((dispcnt >> enable) & 1) != 0 {
 			draw_tiles_text_mode(
@@ -31,7 +31,7 @@ pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mu
 			dmx_reg: ioreg::BG2PB,
 			dmy_reg: ioreg::BG2PD
 		};
-		draw_tiles_rs_mode(memory.get_reg(ioreg::BG2CNT), params, memory, line, &mut lines.bg2);
+		draw_tiles_rs_mode(memory.get_reg(ioreg::BG2CNT), params, memory, &mut lines.bg2);
 	}
 	
 	draw_objs(
@@ -42,9 +42,3 @@ pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mu
 		line, 
 		lines);
 }
-
-
-/*
-pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
-}
-*/

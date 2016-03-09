@@ -13,7 +13,7 @@ pub fn render_mode_2(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mu
 			dmx_reg: ioreg::BG2PB,
 			dmy_reg: ioreg::BG2PD
 		};
-		draw_tiles_rs_mode(memory.get_reg(ioreg::BG2CNT), params, memory, line, &mut lines.bg2);
+		draw_tiles_rs_mode(memory.get_reg(ioreg::BG2CNT), params, memory, &mut lines.bg2);
 	}
 
 	if ((dispcnt >> 11) & 1) != 0 {
@@ -25,7 +25,7 @@ pub fn render_mode_2(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mu
 			dmx_reg: ioreg::BG3PB,
 			dmy_reg: ioreg::BG3PD
 		};
-		draw_tiles_rs_mode(memory.get_reg(ioreg::BG3CNT), params, memory, line, &mut lines.bg3);
+		draw_tiles_rs_mode(memory.get_reg(ioreg::BG3CNT), params, memory, &mut lines.bg3);
 	}
 	
 	draw_objs(

@@ -1,7 +1,7 @@
 use super::*;
 use super::super::super::core::memory::*;
-use super::super::super::core::memory::ioreg::IORegister16;
-use super::super::super::core::memory::ioreg::IORegister32;
+// use super::super::super::core::memory::ioreg::IORegister16;
+// use super::super::super::core::memory::ioreg::IORegister32;
 
 /*
  When Rotation/Scaling used (Attribute 0, bit 8 set):
@@ -12,26 +12,28 @@ use super::super::super::core::memory::ioreg::IORegister32;
 
 pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	let tile_region = memory.get_slice(tiles_region.0, tiles_region.1);
+	let palette_region = memory.get_slice(0x05000200, 0x050003FF); // OBJ palettes are in a different location from tiles.
 	let oam_region = memory.get_region(MEM_OAM);
 	let mut attr_addr = 0;
-	for obj in 0..128 {
+
+	for _ in 0..128 {
 		let attr0 = oam_region.direct_read16(attr_addr);
 
 		if ((attr0 >> 8) & 1) == 0 {
 			if ((attr0 >> 9) & 1) == 0 {
 				let attr1 = oam_region.direct_read16(attr_addr + 2);
 				let attr2 = oam_region.direct_read16(attr_addr + 4);
-				draw_simple_obj(attr0, attr1, attr2, memory, line, lines);
+				draw_simple_obj(one_dim, tile_region, palette_region, attr0, attr1, attr2, line, lines);
 			}
 		} else {
 			let attr1 = oam_region.direct_read16(attr_addr + 2);
 			let attr2 = oam_region.direct_read16(attr_addr + 4);
 			let attr_affine = oam_region.direct_read16(attr_addr + 6);
-			draw_rot_scale_obj(attr0, attr1, attr2, attr_affine, memory, line, lines);
+			draw_rot_scale_obj(one_dim, tile_region, palette_region, attr0, attr1, attr2, attr_affine, line, lines);
 		}
 
 		attr_addr += 8; // there's an empty slot for rot/scale
-	}
+	} 
 }
 
 
@@ -43,19 +45,65 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 	(8, 8, 0), (16, 16, 1), (32, 32, 2), (64, 64, 3)  // Prohibited (we mirror square, though) #TODO might remove this.
 ];
 
-// temporary function while I try to reason about this whole thing.
-// will inline it all soon.
-fn check_obj_y_bounds(line: u16, ycoord: u16, height: u16) -> (bool, u16) {
-	let bottom = (ycoord + height) & 0xff;
-	if ycoord >= 160 {
-		return (bottom >= line && bottom < 160, (height - 1) - (bottom - line)); // bottom < 160 because we want to catch the parts that wrapped and nothing else.
-	} else {
-		return (line >= ycoord && line < ((ycoord + height) & 0xff), line - ycoord)
+/*
+4bit depth (16 colors, 16 palettes)
+Each tile occupies 32 bytes of memory, the first 4 bytes for the topmost row of the tile, and so on. 
+Each byte representing two dots, the lower 4 bits define the color for the left (!) dot, the upper 4 bits the color for the right dot.
+
+8bit depth (256 colors, 1 palette)
+Each tile occupies 64 bytes of memory, the first 8 bytes for the topmost row of the tile, and so on. 
+Each byte selects the palette entry for each dot.
+*/
+
+pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+	let tile = attr2 & 0x1ff;
+	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
+	let tx = ox & 7;
+	let ty = oy & 7;
+	let offset = (((tile as usize) + (fragment as usize)) << 5) + ((ty as usize) << 2) + ((tx as usize) >> 1);
+	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
+	return if dot == 0 { 
+		(0, 0, 0, 0)
+	} else { 
+		// 32 bytes per palette
+		// 2 bytes per color entry
+		let palette_number = ((attr2 >> 12) & 0x3) as usize;
+		convert_rgb5_to_rgba8(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
 	}
 }
 
+pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+	pyrite_debugging!({
+		debug_println!(
+			"get_simple_obj_dot_4bpp_2d",
+			attr2, ox, oy
+		);
+	});
+	(0, 0, 0, 0)
+}
+
+pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+	pyrite_debugging!({
+		debug_println!(
+			"get_simple_obj_dot_8bpp_1d",
+			attr2, ox, oy
+		);
+	});
+	(0, 0, 0, 0)
+}
+
+pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+	pyrite_debugging!({
+		debug_println!(
+			"get_simple_obj_dot_8bpp_2d",
+			attr2, ox, oy
+		);
+	});
+	(0, 0, 0, 0)
+}
+
 /// Draw an object with no rotation/scaling.
-fn draw_simple_obj(attr0: u16, attr1: u16, attr2: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], attr0: u16, attr1: u16, attr2: u16, line: u16, lines: &mut GbaDisplayLines) {
 	let ycoord = attr0 & 0xff;
 	// not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
@@ -65,26 +113,46 @@ fn draw_simple_obj(attr0: u16, attr1: u16, attr2: u16, memory: &GbaMemory, line:
 	let horizontal_flip = ((attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((attr1 >> 13) & 1) == 1;
 
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+		if ((attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
+		else { get_simple_obj_dot_4bpp_1d }
+	} else {
+		if ((attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
+		else { get_simple_obj_dot_4bpp_2d }
+	};
+
 	let size = {
 		let shape = (attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
 		let size = (attr1 >> 14) & 0x3;
 		OBJ_SIZES[((shape << 1) + size) as usize]
 	};
 
-	let (in_y_bounds, oy) = check_obj_y_bounds(line, ycoord, size.1);
+	// let (in_y_bounds, oy) = check_obj_y_bounds(line, ycoord, size.1);
+	let bottom = (ycoord + size.1) & 0xff;
+	let in_y_bounds;
+	let mut oy;
+	if ycoord >= 160 {
+		in_y_bounds = bottom >= line && bottom < 160; // bottom < 160 because we want to catch the parts that wrapped and nothing else.
+		oy = (size.1 - 1) - (bottom - line)
+	} else {
+		in_y_bounds = line >= ycoord && line < ((ycoord + size.1) & 0xff);
+		oy = line - ycoord
+	}
+
+	if vertical_flip { oy = (size.1 - 1) - oy; }
 
 	if in_y_bounds {
 		for sx in xcoord..(xcoord + size.0) {
 			if (sx & 0x1ff) < 240 {
-				let ox = sx - xcoord;
-				let fragment = ((oy >> 3) << size.2) + (ox >> 3); // like...I don't even know anymore.
-				lines.obj[(sx & 0x1ff) as usize] = rand_color!(fragment);
+				let mut ox = sx - xcoord;
+				if horizontal_flip { ox = (size.0 - 1) - ox; }
+				lines.obj[(sx & 0x1ff) as usize] = get_dot(tile_region, palette_region, attr2, ox, oy, size);
 			}
 		}
 	}
 }
 
-fn draw_rot_scale_obj(attr0: u16, attr1: u16, attr2: u16, attr_affine: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], attr0: u16, attr1: u16, attr2: u16, attr_affine: u16, line: u16, lines: &mut GbaDisplayLines) {
 	pyrite_debugging!({
 		println!("drawing rot/scale object ({}): [0x{:04x}] [0x{:04x}] [0x{:04x}]", line, attr0, attr1, attr2);
 	});

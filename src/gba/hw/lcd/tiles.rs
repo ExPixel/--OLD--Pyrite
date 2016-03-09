@@ -55,7 +55,8 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
 
 	let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
-	let mosaic = ((bgcnt >> 6) & 0x1) == 1;
+	// #TODO implement mosaics
+	// let mosaic = ((bgcnt >> 6) & 0x1) == 1;
 
 	let palette_type = ((bgcnt >> 7) & 0x1) == 1; // 0=16/16 (4bit), 1=256/1 (8bit)
 	let tile_copy: fn(&[u8], &[u8], &mut [Pixel], u16, u32, u32) = if palette_type {
@@ -63,7 +64,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	} else {
 		copy_tile_line4bpp
 	};
-	let palette = memory.get_slice(0x05000000, 0x050001FF);
+	let palette = memory.get_slice(0x05000000, 0x050001FF); // different location from obj palettes
 
 	let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
 
@@ -146,7 +147,7 @@ pub struct BGRotScaleParams {
 	pub dmy_reg: IORegister16 // pd
 }
 
-pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
+pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut GbaMemory, bg_line: &mut GbaBGLine) {
 	// I work with signed types in this function instead of the normal u32
 	// for reasons that I immediately forgot after writing it. (◕‿◕✿)
 	let sx = memory.internal_regs.bg2x as i32;
@@ -161,7 +162,8 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 	{
 		let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
 		let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
-		let mosaic = ((bgcnt >> 6) & 0x1) == 1;
+		// #TODO implement mosaics
+		// let mosaic = ((bgcnt >> 6) & 0x1) == 1;
 		let palette = memory.get_slice(0x05000000, 0x050001FF);
 		let screen_base_block = (((bgcnt >> 8) & 0x1f) as u32) * kbytes!(2); // (0-31, in units of 2 KBytes) (=BG Map Data)
 		let wraparound = ((bgcnt >> 13) & 0x1) == 1; // (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
@@ -203,7 +205,6 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 				y += dy;
 			}
 		} else {
-			let mut r = true;
 			for column in 0..240 {
 				let pixel_x = x >> 8;
 				let pixel_y = y >> 8;
