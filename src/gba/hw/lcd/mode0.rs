@@ -3,12 +3,10 @@ use super::super::super::core::memory::*;
 use super::tiles::*;
 use super::obj::*;
 
-const TILE_ADDR: (u32, u32) = (0x06000000, 0x0600FFFF);
-
 pub fn render_mode_0(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	// I use this in both render_mode0 and render_mode1, maybe I could just make a common function for them or something?
 	// I would only need to pass in dispcnt and line.
-	let mut try_render_text_bg = |enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
+	let try_render_text_bg = |enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 
 								bg_line: &mut GbaBGLine| {
 		if ((dispcnt >> enable) & 1) != 0 {
 			draw_tiles_text_mode(

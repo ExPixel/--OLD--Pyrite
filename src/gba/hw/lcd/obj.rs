@@ -46,10 +46,6 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 ];
 
 /*
-4bit depth (16 colors, 16 palettes)
-Each tile occupies 32 bytes of memory, the first 4 bytes for the topmost row of the tile, and so on. 
-Each byte representing two dots, the lower 4 bits define the color for the left (!) dot, the upper 4 bits the color for the right dot.
-
 8bit depth (256 colors, 1 palette)
 Each tile occupies 64 bytes of memory, the first 8 bytes for the topmost row of the tile, and so on. 
 Each byte selects the palette entry for each dot.
@@ -80,7 +76,7 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	}
 }
 
-pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> Pixel {
 	let tile = attr2 & 0x1ff;
 	let tx = ox & 7;
 	let ty = oy & 7;
@@ -88,11 +84,11 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	// turning oy into tile y
 	// 32 bytes per tile
 	// 32 tiles per line (put together with the one above it)
-	let yoffset = (((oy as usize) >> 3) << 10);
+	let yoffset = ((oy as usize) >> 3) << 10;
 
 	// turning ox into tile x
 	// 32 bytes per tile
-	let xoffset = (((ox as usize) >> 3) << 5);
+	let xoffset = ((ox as usize) >> 3) << 5;
 
 	// ((ty as usize) << 2) + ((tx as usize) >> 1)
 	// 4 bytes per tile line
@@ -116,7 +112,7 @@ pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 			attr2, ox, oy
 		);
 	});
-	(0, 0, 0, 0)
+	(255, 0, 255, 255)
 }
 
 pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
@@ -126,7 +122,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 			attr2, ox, oy
 		);
 	});
-	(0, 0, 0, 0)
+	(255, 0, 255, 255)
 }
 
 /// Draw an object with no rotation/scaling.
@@ -135,8 +131,8 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	// not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
 	let xcoord = attr1 & 0x1ff;
-	let mosaic = ((attr0 >> 12) & 1) == 1;
-	let palette_type = ((attr0 >> 13) & 1) == 1; // (0=16/16, 1=256/1)
+	// #TODO implement mosaics
+	// let mosaic = ((attr0 >> 12) & 1) == 1;
 	let horizontal_flip = ((attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((attr1 >> 13) & 1) == 1;
 
