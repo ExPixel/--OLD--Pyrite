@@ -282,8 +282,8 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 		if pindex != 0 || ((tx & 1) == 0) {
 			// left pixel
 			let left_dot = (two_dots >> left_dot_shift) & 0xf;
-			if (left_dot & 15) == 0 {
-				// If the color number is a multiple of 16 or 0, 
+			if left_dot == 0 {
+				// If the color number is 0, 
 				// that means that it is color 0 of its palette, making it transparent.
 				output[pindex] = (0, 0, 0, 0);
 			} else {
@@ -298,8 +298,8 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 
 		// right pixel
 		let right_dot = (two_dots >> right_dot_shift) & 0xf;
-		if (right_dot & 15) == 0 {
-			// If the color number is a multiple of 16 or 0, 
+		if right_dot == 0 {
+			// If the color number is 0, 
 			// that means that it is color 0 of its palette, making it transparent.
 			output[pindex] = (0, 0, 0, 0);
 		} else {
