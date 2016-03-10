@@ -3,6 +3,8 @@ use super::super::super::core::memory::*;
 // use super::super::super::core::memory::ioreg::IORegister16;
 // use super::super::super::core::memory::ioreg::IORegister32;
 
+
+
 /*
  When Rotation/Scaling used (Attribute 0, bit 8 set):
     9     Double-Size Flag     (0=Normal, 1=Double)
@@ -46,7 +48,7 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 ];
 
 pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
-	let tile = attr2 & 0x1ff;
+	let tile = attr2 & 0x3ff;
 	// dividing by 8 to get width and height in 8x8 tiles.
 	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
 	let tx = ox & 7;
@@ -71,7 +73,7 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 }
 
 pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> Pixel {
-	let tile = attr2 & 0x1ff;
+	let tile = attr2 & 0x3ff;
 	let tx = ox & 7;
 	let ty = oy & 7;
 
@@ -108,17 +110,17 @@ Each byte selects the palette entry for each dot.
 */
 
 pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
-	let tile = attr2 & 0x1ff;
+	let mut tile = (attr2 & 0x3ff) & !1; // ignores bit 1
+
 	// dividing by 8 to get width and height in 8x8 tiles.
 	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
 	let tx = ox & 7;
 	let ty = oy & 7;
-	let offset = (((tile as usize) + (fragment as usize)) << 6) + ((ty as usize) << 3) + (tx as usize);
-	let dot = tiles[offset] as usize;
 
-	pyrite_debugging!({
-		println!("tile: 0x{:x}", tile);
-	});
+	// tile index only references 32 bytes at a time.
+	let offset = ((tile as usize) << 5) + ((fragment as usize) << 6) + ((ty as usize) << 3) + (tx as usize);
+
+	let dot = tiles[offset] as usize;
 
 	return if dot == 0 { 
 		(0, 0, 0, 0)
@@ -129,7 +131,7 @@ pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 }
 
 pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
-	let tile = attr2 & 0x1ff;
+	let tile = (attr2 & 0x3ff) & !1;
 	let tx = ox & 7;
 	let ty = oy & 7;
 
@@ -142,7 +144,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	// 64 bytes per tile
 	let xoffset = ((ox as usize) >> 3) << 6;
 
-	let offset = ((tile as usize) << 6) + yoffset + xoffset + ((ty as usize) << 3) + (tx as usize);
+	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 3) + (tx as usize);
 	let dot = tiles[offset] as usize;
 	return if dot == 0 { 
 		(0, 0, 0, 0)
