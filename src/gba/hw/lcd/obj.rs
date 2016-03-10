@@ -45,12 +45,6 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 	(8, 8, 0), (16, 16, 1), (32, 32, 2), (64, 64, 3)  // Prohibited (we mirror square, though) #TODO might remove this.
 ];
 
-/*
-8bit depth (256 colors, 1 palette)
-Each tile occupies 64 bytes of memory, the first 8 bytes for the topmost row of the tile, and so on. 
-Each byte selects the palette entry for each dot.
-*/
-
 pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
 	let tile = attr2 & 0x1ff;
 	// dividing by 8 to get width and height in 8x8 tiles.
@@ -90,9 +84,11 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	// 32 bytes per tile
 	let xoffset = ((ox as usize) >> 3) << 5;
 
+	// ((tile as usize) << 5)
+	//     32 bytes per tile
 	// ((ty as usize) << 2) + ((tx as usize) >> 1)
-	// 4 bytes per tile line
-	// 1/2 byte per tile column
+	//     4 bytes per tile line
+	//     1/2 byte per tile column
 	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 2) + ((tx as usize) >> 1);
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
@@ -105,24 +101,55 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	}
 }
 
+/*
+8bit depth (256 colors, 1 palette)
+Each tile occupies 64 bytes of memory, the first 8 bytes for the topmost row of the tile, and so on. 
+Each byte selects the palette entry for each dot.
+*/
+
 pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+	let tile = attr2 & 0x1ff;
+	// dividing by 8 to get width and height in 8x8 tiles.
+	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
+	let tx = ox & 7;
+	let ty = oy & 7;
+	let offset = (((tile as usize) + (fragment as usize)) << 6) + ((ty as usize) << 3) + (tx as usize);
+	let dot = tiles[offset] as usize;
+
 	pyrite_debugging!({
-		debug_println!(
-			"get_simple_obj_dot_8bpp_1d",
-			attr2, ox, oy
-		);
+		println!("tile: 0x{:x}", tile);
 	});
-	(255, 0, 255, 255)
+
+	return if dot == 0 { 
+		(0, 0, 0, 0)
+	} else {
+		// 2 bytes per color entry
+		convert_rgb5_to_rgba8(palette.direct_read16(dot << 1))
+	}
 }
 
 pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
-	pyrite_debugging!({
-		debug_println!(
-			"get_simple_obj_dot_8bpp_2d",
-			attr2, ox, oy
-		);
-	});
-	(255, 0, 255, 255)
+	let tile = attr2 & 0x1ff;
+	let tx = ox & 7;
+	let ty = oy & 7;
+
+	// turning oy into tile y
+	// 64 bytes per tile
+	// 32 tiles per line (put together with the one above it)
+	let yoffset = (((oy as usize) >> 3) << 6) << 5;
+
+	// turning ox into tile x
+	// 64 bytes per tile
+	let xoffset = ((ox as usize) >> 3) << 6;
+
+	let offset = ((tile as usize) << 6) + yoffset + xoffset + ((ty as usize) << 3) + (tx as usize);
+	let dot = tiles[offset] as usize;
+	return if dot == 0 { 
+		(0, 0, 0, 0)
+	} else {
+		// 2 bytes per color entry
+		convert_rgb5_to_rgba8(palette.direct_read16(dot << 1))
+	}
 }
 
 /// Draw an object with no rotation/scaling.
