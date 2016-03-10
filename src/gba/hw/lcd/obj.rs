@@ -12,28 +12,44 @@ use super::super::super::core::memory::*;
     9     OBJ Disable          (0=Normal, 1=Not displayed)
 */
 
+#[derive(Default, Copy, Clone)]
+struct ObjData {
+	attr0: u16,
+	attr1: u16,
+	attr2: u16
+}
+
+#[derive(Default, Copy, Clone)]
+struct ObjAffineData {
+	pa: u16, // dx
+	pb: u16, // dmx
+	pc: u16, // dy
+	pd: u16  // dmy
+}
+
 pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
 	let tile_region = memory.get_slice(tiles_region.0, tiles_region.1);
 	let palette_region = memory.get_slice(0x05000200, 0x050003FF); // OBJ palettes are in a different location from tiles.
 	let oam_region = memory.get_region(MEM_OAM);
+
+	let mut obj_data: ObjData = Default::default();
+	let mut affine_data: ObjAffineData = Default::default();
+
 	let mut attr_addr = 0;
 
 	for _ in 0..128 {
-		let attr0 = oam_region.direct_read16(attr_addr);
-
-		if ((attr0 >> 8) & 1) == 0 {
-			if ((attr0 >> 9) & 1) == 0 {
-				let attr1 = oam_region.direct_read16(attr_addr + 2);
-				let attr2 = oam_region.direct_read16(attr_addr + 4);
-				draw_simple_obj(one_dim, tile_region, palette_region, attr0, attr1, attr2, line, lines);
+		obj_data.attr0 = oam_region.direct_read16(attr_addr);
+		if ((obj_data.attr0 >> 8) & 1) == 0 {
+			if ((obj_data.attr0 >> 9) & 1) == 0 {
+				obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
+				obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
+				draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines);
 			}
 		} else {
-			let attr1 = oam_region.direct_read16(attr_addr + 2);
-			let attr2 = oam_region.direct_read16(attr_addr + 4);
-			let attr_affine = oam_region.direct_read16(attr_addr + 6);
-			draw_rot_scale_obj(one_dim, tile_region, palette_region, attr0, attr1, attr2, attr_affine, line, lines);
+			obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
+			obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
+			draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 		}
-
 		attr_addr += 8; // there's an empty slot for rot/scale
 	} 
 }
@@ -110,7 +126,7 @@ Each byte selects the palette entry for each dot.
 */
 
 pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
-	let mut tile = (attr2 & 0x3ff) & !1; // ignores bit 1
+	let tile = (attr2 & 0x3ff) & !1; // ignores bit 1
 
 	// dividing by 8 to get width and height in 8x8 tiles.
 	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
@@ -155,27 +171,27 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 }
 
 /// Draw an object with no rotation/scaling.
-fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], attr0: u16, attr1: u16, attr2: u16, line: u16, lines: &mut GbaDisplayLines) {
-	let ycoord = attr0 & 0xff;
+fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
+	let ycoord = obj.attr0 & 0xff;
 	// not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
-	let xcoord = attr1 & 0x1ff;
+	let xcoord = obj.attr1 & 0x1ff;
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
-	let horizontal_flip = ((attr1 >> 12) & 1) == 1;
-	let vertical_flip = ((attr1 >> 13) & 1) == 1;
+	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
+	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
 
 	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
-		if ((attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
 		else { get_simple_obj_dot_4bpp_1d }
 	} else {
-		if ((attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
 		else { get_simple_obj_dot_4bpp_2d }
 	};
 
 	let size = {
-		let shape = (attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
-		let size = (attr1 >> 14) & 0x3;
+		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
+		let size = (obj.attr1 >> 14) & 0x3;
 		OBJ_SIZES[((shape << 1) + size) as usize]
 	};
 
@@ -198,7 +214,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 			if (sx & 0x1ff) < 240 {
 				let mut ox = sx - xcoord;
 				if horizontal_flip { ox = (size.0 - 1) - ox; }
-				let dot = get_dot(tile_region, palette_region, attr2, ox, oy, size);
+				let dot = get_dot(tile_region, palette_region, obj.attr2, ox, oy, size);
 				if dot.3 != 0 {
 					lines.obj[(sx & 0x1ff) as usize] = dot;
 				}
@@ -207,10 +223,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	}
 }
 
-fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], attr0: u16, attr1: u16, attr2: u16, attr_affine: u16, line: u16, lines: &mut GbaDisplayLines) {
-	pyrite_debugging!({
-		println!("drawing rot/scale object ({}): [0x{:04x}] [0x{:04x}] [0x{:04x}]", line, attr0, attr1, attr2);
-	});
+fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
 }
 
 /*
