@@ -42,7 +42,7 @@ uniform sampler2D tex;
 
 void main() {
 	vec4 tcolor = texture(tex, v_tex_coords);
-	tcolor.rgb = pow(tcolor.rgb, vec3(GAMMA)); // Since you can't really see the lower half of the GBA's color intensities very well.
+	tcolor.rgb = pow(tcolor.rgb, vec3(GAMMA));
     color = tcolor;
 }
 "#;
