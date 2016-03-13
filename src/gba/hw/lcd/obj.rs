@@ -37,23 +37,44 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 
 	let mut attr_addr = 0;
 
-	for _ in 0..128 {
-		obj_data.attr0 = oam_region.direct_read16(attr_addr);
-		if ((obj_data.attr0 >> 8) & 1) == 0 {
-			if ((obj_data.attr0 >> 9) & 1) == 0 {
+	for lol in 0..128 {
+
+		if lol == 0 {
+			obj_data.attr0 = oam_region.direct_read16(attr_addr);
+			if ((obj_data.attr0 >> 8) & 1) == 0 {
+				if ((obj_data.attr0 >> 9) & 1) == 0 {
+					obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
+					obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
+					draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines);
+				}
+			} else {
 				obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
 				obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
-				draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines);
+				let rot_scale_params_off = (((obj_data.attr1 >> 9) & 0x1f) as usize) << 3;
+
+				affine_data.pa = oam_region.direct_read16( 6 + rot_scale_params_off );
+				affine_data.pb = oam_region.direct_read16( 14 + rot_scale_params_off );
+				affine_data.pc = oam_region.direct_read16( 22 + rot_scale_params_off );
+				affine_data.pd = oam_region.direct_read16( 30 + rot_scale_params_off );
+
+				// pyrite_debugging!({
+				// 	println!("----- OBJ -----");
+				// 	println!("attr0: 0x{:04x}", obj_data.attr0);
+				// 	println!("attr1: 0x{:04x}", obj_data.attr1);
+				// 	println!("attr2: 0x{:04x}", obj_data.attr2);
+				// 	println!("PA: 0x{:04x}", affine_data.pa);
+				// 	println!("PB: 0x{:04x}", affine_data.pb);
+				// 	println!("PC: 0x{:04x}", affine_data.pc);
+				// 	println!("PD: 0x{:04x}", affine_data.pd);
+				// 	println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
+				// 	println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
+				// 	println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
+				// 	println!("PC-Loc: 0x{:04x}", 22 + rot_scale_params_off);
+				// 	println!("PD-Loc: 0x{:04x}", 30 + rot_scale_params_off);
+				// });
+
+				draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 			}
-		} else {
-			obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
-			obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
-			let rot_scale_params_off = (((obj_data.attr1 >> 9) & 0x1f) as usize) << 3;
-			affine_data.pa = oam_region.direct_read16( 3 + rot_scale_params_off );
-			affine_data.pb = oam_region.direct_read16( 7 + rot_scale_params_off );
-			affine_data.pc = oam_region.direct_read16( 11 + rot_scale_params_off );
-			affine_data.pd = oam_region.direct_read16( 15 + rot_scale_params_off );
-			draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 		}
 		attr_addr += 8; // there's an empty slot for rot/scale
 	} 
@@ -262,19 +283,26 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 		oy = line - ycoord
 	}
 
+	let mut xinc = affine.pb * oy;
+	let mut yinc = affine.pd * oy;
+
 	if in_y_bounds {
+		let rox = 0;
+		let roy = 0;
 		for sx in xcoord..(xcoord + size.0) {
 			if (sx & 0x1ff) < 240 {
-				let mut ox = sx - xcoord;
+				let nox = rox + (((xinc as i16) >> 8) as u16);
+				let noy = roy + (((yinc as i16) >> 8) as u16);
 
-				let _ox = ox + ((ox * affine.pa) >> 8) + ((oy * affine.pb) >> 8);
-				let _oy = oy + ((ox * affine.pc) >> 8) + ((oy * affine.pd) >> 8);
-
-				let dot = get_dot(tile_region, palette_region, obj.attr2, _ox, _oy, size);
-				if dot.3 != 0 {
-					lines.obj[(sx & 0x1ff) as usize] = dot;
+				if nox < size.0 && noy < size.1 {
+					let dot = get_dot(tile_region, palette_region, obj.attr2, nox, noy, size);
+					if dot.3 != 0 {
+						lines.obj[(sx & 0x1ff) as usize] = dot;
+					}
 				}
 			}
+			xinc += affine.pa;
+			yinc += affine.pc;
 		}
 	}
 }
