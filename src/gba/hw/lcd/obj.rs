@@ -3,7 +3,8 @@ use super::super::super::core::memory::*;
 // use super::super::super::core::memory::ioreg::IORegister16;
 // use super::super::super::core::memory::ioreg::IORegister32;
 
-
+// #TODO Limit the number of OBJs that can be drawn per line
+// #TODO Implement the cycle counting for OBJ rendering. ^
 
 /*
  When Rotation/Scaling used (Attribute 0, bit 8 set):
@@ -19,12 +20,15 @@ struct ObjData {
 	attr2: u16
 }
 
+// These use i16s instead of u16s
+// because I multiply them
+// with other numbers, and missing a cast makes bad things happen
 #[derive(Default, Copy, Clone)]
 struct ObjAffineData {
-	pa: u16, // dx
-	pb: u16, // dmx
-	pc: u16, // dy
-	pd: u16  // dmy
+	dx: i16,  // pa
+	dmx: i16, // pb
+	dy: i16,  // pc
+	dmy: i16  // pd
 }
 
 pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
@@ -58,20 +62,20 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 			obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
 			let rot_scale_params_off = (((obj_data.attr1 >> 9) & 0x1f) as usize) << 5;
 
-			affine_data.pa = oam_region.direct_read16( 6 + rot_scale_params_off );
-			affine_data.pb = oam_region.direct_read16( 14 + rot_scale_params_off );
-			affine_data.pc = oam_region.direct_read16( 22 + rot_scale_params_off );
-			affine_data.pd = oam_region.direct_read16( 30 + rot_scale_params_off );
+			affine_data.dx = oam_region.direct_read16( 6 + rot_scale_params_off ) as i16;
+			affine_data.dmx = oam_region.direct_read16( 14 + rot_scale_params_off ) as i16;
+			affine_data.dy = oam_region.direct_read16( 22 + rot_scale_params_off ) as i16;
+			affine_data.dmy = oam_region.direct_read16( 30 + rot_scale_params_off ) as i16;
 
 			pyrite_debugging!({
 				println!("----- OBJ [{}] -----", o);
 				println!("attr0: 0x{:04x}", obj_data.attr0);
 				println!("attr1: 0x{:04x}", obj_data.attr1);
 				println!("attr2: 0x{:04x}", obj_data.attr2);
-				println!("PA: 0x{:04x}", affine_data.pa);
-				println!("PB: 0x{:04x}", affine_data.pb);
-				println!("PC: 0x{:04x}", affine_data.pc);
-				println!("PD: 0x{:04x}", affine_data.pd);
+				println!("PA (DX):  0x{:04x}", affine_data.dx);
+				println!("PB (DMX): 0x{:04x}", affine_data.dmx);
+				println!("PC (DY):  0x{:04x}", affine_data.dy);
+				println!("PD (DMY): 0x{:04x}", affine_data.dmy);
 				println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
 				println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
 				println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
@@ -244,7 +248,10 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 			for tx in 0..width {
 				if px < 240 {
 					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
-					lines.obj[px as usize] = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
+					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
+					if dot.3 != 0 {
+						lines.obj[px as usize] = dot;
+					}
 				}
 				px = (px + 1) & 0x1ff;
 			}
@@ -253,6 +260,77 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 }
 
 fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
+	let ycoord = obj.attr0 & 0xff;
+	// not worrying about the obj mode for now.
+	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
+	let xcoord = obj.attr1 & 0x1ff;
+	// #TODO implement mosaics
+	// let mosaic = ((attr0 >> 12) & 1) == 1;
+
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
+		else { get_simple_obj_dot_4bpp_1d }
+	} else {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
+		else { get_simple_obj_dot_4bpp_2d }
+	};
+
+	// These are now the texture width & height
+	let (t_width, t_height, line_shift) = {
+		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
+		let size = (obj.attr1 >> 14) & 0x3;
+		OBJ_SIZES[((shape << 1) + size) as usize]
+	};
+
+	// actual width & height
+	let (width, height) = if (((obj.attr0) >> 9) & 1) == 1 {
+		// double size flag is on
+		(t_width << 1, t_height << 1)
+	} else {
+		// double size flag is off
+		(t_width, t_height)
+	};
+
+	let mut px = obj.attr1 & 0x1ff;
+	let mut py = obj.attr0 & 0xff;
+
+	if py + height > 256 {
+		py -= 256;
+	}
+
+	/*
+	int realX = ((sizeX) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + t * dmx;
+	int realY = ((sizeY) << 7) - (fieldX >> 1)*dy - (fieldY>>1)*dmy + t * dmy;
+	*/
+
+	if (line - py) < height { // negatives will wrap (making them larger)
+		let ty = line - py;// texture y (before transformations and stuff)
+		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
+		if (px < 240) || tx_offset != 0 {
+			// affine x and y
+			let mut ax = ((t_width as i16) << 7) - ((width as i16) >> 1) * affine.dx - ((height as i16) >> 1) * affine.dmx + (ty as i16) * affine.dmx;
+			let mut ay = ((t_height as i16) << 7) - ((width as i16) >> 1) * affine.dy - ((height as i16) >> 1) * affine.dmy + (ty as i16) * affine.dmy;
+
+			for _ in 0..width {
+				// ax & ay without the fractional parts.
+				let i_ax = ax >> 8;
+				let i_ay = ay >> 8;
+
+				if i_ax >= 0 && i_ax < (t_width as i16) && i_ay >= 0 && i_ay < (t_height as i16) && px < 240 {
+					let dot = get_dot(tile_region, palette_region, obj.attr2, i_ax as u16, i_ay as u16, (t_width, t_height, line_shift));
+					if dot.3 != 0 {
+						lines.obj[px as usize] = dot;
+					}
+				} else {
+					lines.obj[px as usize] = (255, 0, 255, 50);
+				}
+
+				px = (px + 1) & 0x1ff;
+				ax += affine.dx;
+				ay += affine.dy;
+			}
+		}
+	}
 }
 
 /*
