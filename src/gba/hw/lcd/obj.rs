@@ -37,7 +37,15 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 
 	let mut attr_addr = 0;
 
-	for _ in 0..128 {
+	for o in 0..128 {
+		// #debug debug code for the obj demo.
+		pyrite_debugging!({
+			if o == 1 {
+				attr_addr += 8;
+				continue;
+			}
+		});
+
 		obj_data.attr0 = oam_region.direct_read16(attr_addr);
 		if ((obj_data.attr0 >> 8) & 1) == 0 {
 			if ((obj_data.attr0 >> 9) & 1) == 0 {
@@ -48,28 +56,28 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 		} else {
 			obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
 			obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
-			let rot_scale_params_off = (((obj_data.attr1 >> 9) & 0x1f) as usize) << 3;
+			let rot_scale_params_off = (((obj_data.attr1 >> 9) & 0x1f) as usize) << 5;
 
 			affine_data.pa = oam_region.direct_read16( 6 + rot_scale_params_off );
 			affine_data.pb = oam_region.direct_read16( 14 + rot_scale_params_off );
 			affine_data.pc = oam_region.direct_read16( 22 + rot_scale_params_off );
 			affine_data.pd = oam_region.direct_read16( 30 + rot_scale_params_off );
 
-			// pyrite_debugging!({
-			// 	println!("----- OBJ -----");
-			// 	println!("attr0: 0x{:04x}", obj_data.attr0);
-			// 	println!("attr1: 0x{:04x}", obj_data.attr1);
-			// 	println!("attr2: 0x{:04x}", obj_data.attr2);
-			// 	println!("PA: 0x{:04x}", affine_data.pa);
-			// 	println!("PB: 0x{:04x}", affine_data.pb);
-			// 	println!("PC: 0x{:04x}", affine_data.pc);
-			// 	println!("PD: 0x{:04x}", affine_data.pd);
-			// 	println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
-			// 	println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
-			// 	println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
-			// 	println!("PC-Loc: 0x{:04x}", 22 + rot_scale_params_off);
-			// 	println!("PD-Loc: 0x{:04x}", 30 + rot_scale_params_off);
-			// });
+			pyrite_debugging!({
+				println!("----- OBJ [{}] -----", o);
+				println!("attr0: 0x{:04x}", obj_data.attr0);
+				println!("attr1: 0x{:04x}", obj_data.attr1);
+				println!("attr2: 0x{:04x}", obj_data.attr2);
+				println!("PA: 0x{:04x}", affine_data.pa);
+				println!("PB: 0x{:04x}", affine_data.pb);
+				println!("PC: 0x{:04x}", affine_data.pc);
+				println!("PD: 0x{:04x}", affine_data.pd);
+				println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
+				println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
+				println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
+				println!("PC-Loc: 0x{:04x}", 22 + rot_scale_params_off);
+				println!("PD-Loc: 0x{:04x}", 30 + rot_scale_params_off);
+			});
 
 			draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 		}
@@ -195,117 +203,9 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 
 /// Draw an object with no rotation/scaling.
 fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
-	let ycoord = obj.attr0 & 0xff;
-	// not worrying about the obj mode for now.
-	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
-	let xcoord = obj.attr1 & 0x1ff;
-	// #TODO implement mosaics
-	// let mosaic = ((attr0 >> 12) & 1) == 1;
-	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
-	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
-
-	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
-		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
-		else { get_simple_obj_dot_4bpp_1d }
-	} else {
-		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
-		else { get_simple_obj_dot_4bpp_2d }
-	};
-
-	let size = {
-		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
-		let size = (obj.attr1 >> 14) & 0x3;
-		OBJ_SIZES[((shape << 1) + size) as usize]
-	};
-
-	// let (in_y_bounds, oy) = check_obj_y_bounds(line, ycoord, size.1);
-	let bottom = (ycoord + size.1) & 0xff;
-	let in_y_bounds;
-	let mut oy;
-	if ycoord >= 160 {
-		in_y_bounds = bottom >= line && bottom < 160; // bottom < 160 because we want to catch the parts that wrapped and nothing else.
-		oy = (size.1 - 1) - (bottom - line)
-	} else {
-		in_y_bounds = line >= ycoord && line < ((ycoord + size.1) & 0xff);
-		oy = line - ycoord
-	}
-
-	if vertical_flip { oy = (size.1 - 1) - oy; }
-
-	if in_y_bounds {
-		for sx in xcoord..(xcoord + size.0) {
-			if (sx & 0x1ff) < 240 {
-				let mut ox = sx - xcoord;
-				if horizontal_flip { ox = (size.0 - 1) - ox; }
-				let dot = get_dot(tile_region, palette_region, obj.attr2, ox, oy, size);
-				if dot.3 != 0 {
-					lines.obj[(sx & 0x1ff) as usize] = dot;
-				}
-			}
-		}
-	}
 }
 
 fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
-	let ycoord = obj.attr0 & 0xff;
-	// not worrying about the obj mode for now.
-	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
-	let xcoord = obj.attr1 & 0x1ff;
-	// #TODO implement mosaics
-	// let mosaic = ((attr0 >> 12) & 1) == 1;
-
-	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
-		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
-		else { get_simple_obj_dot_4bpp_1d }
-	} else {
-		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
-		else { get_simple_obj_dot_4bpp_2d }
-	};
-
-	let mut size = {
-		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
-		let size = (obj.attr1 >> 14) & 0x3;
-		OBJ_SIZES[((shape << 1) + size) as usize]
-	};
-	let real_size = size;
-	if ((obj.attr0 >> 9) & 1) == 1 {
-		size = (size.0 << 1, size.1 << 1, size.2 + 1);
-	}
-
-	// let (in_y_bounds, oy) = check_obj_y_bounds(line, ycoord, size.1);
-	let bottom = (ycoord + size.1) & 0xff;
-	let in_y_bounds;
-	let mut oy;
-	if ycoord >= 160 {
-		in_y_bounds = bottom >= line && bottom < 160; // bottom < 160 because we want to catch the parts that wrapped and nothing else.
-		oy = (size.1 - 1) - (bottom - line)
-	} else {
-		in_y_bounds = line >= ycoord && line < ((ycoord + size.1) & 0xff);
-		oy = line - ycoord
-	}
-
-	let mut xinc = affine.pb * oy;
-	let mut yinc = affine.pd * oy;
-
-	if in_y_bounds {
-		let mut rox = 0;
-		let roy = 0;
-		for sx in xcoord..(xcoord + size.0) {
-			if (sx & 0x1ff) < 240 {
-				let nox = rox + (((xinc as i16) >> 8) as u16);
-				let noy = roy + (((yinc as i16) >> 8) as u16);
-
-				if nox < size.0 && noy < size.1 {
-					let dot = get_dot(tile_region, palette_region, obj.attr2, nox, noy, real_size);
-					if dot.3 != 0 {
-						lines.obj[(sx & 0x1ff) as usize] = dot;
-					}
-				}
-			}
-			xinc += affine.pa;
-			yinc += affine.pc;
-		}
-	}
 }
 
 /*
