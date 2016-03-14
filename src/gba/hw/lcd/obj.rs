@@ -17,7 +17,9 @@ use super::super::super::core::memory::*;
 struct ObjData {
 	attr0: u16,
 	attr1: u16,
-	attr2: u16
+	attr2: u16,
+	mosaic_x: u16,
+	mosaic_y: u16
 }
 
 // These use i16s instead of u16s
@@ -38,6 +40,10 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 
 	let mut obj_data: ObjData = Default::default();
 	let mut affine_data: ObjAffineData = Default::default();
+
+	let mosaic = memory.get_reg(ioreg::MOSAIC);
+	obj_data.mosaic_x = ((mosaic >> 8) & 0xf) + 1;
+	obj_data.mosaic_y = ((mosaic >> 12) & 0xf) + 1;
 
 	let mut attr_addr = 0;
 
@@ -217,6 +223,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
+	let mosaic = ((obj.attr0 >> 12) & 1) == 1;
 
 	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
 		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
@@ -240,9 +247,13 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	}
 
 	if (line - py) < height { // negatives will wrap (making them larger)
-		let ty = line - py;// texture y
-		let f_ty = if vertical_flip { height - ty } else { ty }; // possibly flipped ty
+		let mut ty = line - py;// texture y
 
+		ty -= ty % obj.mosaic_y;
+
+		// #TODO I have no idea wtf mosaic X does exactly.
+
+		let f_ty = if vertical_flip { height - ty } else { ty }; // possibly flipped ty
 		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
 		if (px < 240) || tx_offset != 0 {
 			for tx in 0..width {
@@ -306,6 +317,10 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 
 	if (line - py) < height { // negatives will wrap (making them larger)
 		let ty = line - py;// texture y (before transformations and stuff)
+
+		ty -= ty % obj.mosaic_y;
+
+		// #TODO I have no idea wtf mosaic X does exactly.
 		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
 		if (px < 240) || tx_offset != 0 {
 			// affine x and y
