@@ -34,7 +34,8 @@ pub struct GbaDisplayLines {
 	pub bg1: GbaBGLine,
 	pub bg2: GbaBGLine,
 	pub bg3: GbaBGLine,
-	pub obj: GbaBGLine
+	pub obj: GbaBGLine,
+	pub obj_priorities: [u8; 240]
 }
 
 pub struct GbaLcd {
@@ -51,7 +52,8 @@ impl GbaLcd {
 				bg1: [(0, 0, 0, 0); 240],
 				bg2: [(0, 0, 0, 0); 240],
 				bg3: [(0, 0, 0, 0); 240],
-				obj: [(0, 0, 0, 0); 240]
+				obj: [(0, 0, 0, 0); 240],
+				obj_priorities: [0u8; 240]
 			}
 		}
 	}
@@ -76,8 +78,9 @@ impl GbaLcd {
 	}
 
 	fn clear_obj_line(&mut self) {
-		for i in 0..self.lines.obj.len() {
+		for i in 0..240 {
 			self.lines.obj[i] = (0, 0, 0, 0);
+			self.lines.obj_priorities[i] = 0;
 		}
 	}
 

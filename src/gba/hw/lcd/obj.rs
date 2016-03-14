@@ -246,11 +246,12 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
 		if (px < 240) || tx_offset != 0 {
 			for tx in 0..width {
-				if px < 240 {
+				if px < 240 && lines.obj_priorities[px as usize] == 0 { // on screen and nothing has been drawn there
 					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
 					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
 					if dot.3 != 0 {
 						lines.obj[px as usize] = dot;
+						lines.obj_priorities[px as usize] = (((obj.attr2 >> 10) & 0x3) + 1) as u8;
 					}
 				}
 				px = (px + 1) & 0x1ff;
@@ -312,19 +313,19 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 			let mut ay = ((t_height as i16) << 7) - ((width as i16) >> 1) * affine.dy - ((height as i16) >> 1) * affine.dmy + (ty as i16) * affine.dmy;
 
 			for _ in 0..width {
-				// ax & ay without the fractional parts.
-				let i_ax = ax >> 8;
-				let i_ay = ay >> 8;
+				if lines.obj_priorities[px as usize] == 0 { // nothing has been drawn there
+					// ax & ay without the fractional parts.
+					let i_ax = ax >> 8;
+					let i_ay = ay >> 8;
 
-				if i_ax >= 0 && i_ax < (t_width as i16) && i_ay >= 0 && i_ay < (t_height as i16) && px < 240 {
-					let dot = get_dot(tile_region, palette_region, obj.attr2, i_ax as u16, i_ay as u16, (t_width, t_height, line_shift));
-					if dot.3 != 0 {
-						lines.obj[px as usize] = dot;
+					if i_ax >= 0 && i_ax < (t_width as i16) && i_ay >= 0 && i_ay < (t_height as i16) && px < 240 {
+						let dot = get_dot(tile_region, palette_region, obj.attr2, i_ax as u16, i_ay as u16, (t_width, t_height, line_shift));
+						if dot.3 != 0 {
+							lines.obj[px as usize] = dot;
+							lines.obj_priorities[px as usize] = (((obj.attr2 >> 10) & 0x3) + 1) as u8;
+						}
 					}
-				} else {
-					lines.obj[px as usize] = (255, 0, 255, 50);
 				}
-
 				px = (px + 1) & 0x1ff;
 				ax += affine.dx;
 				ay += affine.dy;
