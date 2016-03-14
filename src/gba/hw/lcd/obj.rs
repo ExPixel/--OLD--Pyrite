@@ -97,17 +97,18 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
 	let tile = attr2 & 0x3ff;
 	// dividing by 8 to get width and height in 8x8 tiles.
-	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
+	let fragment = ((oy >> 3) * (size.1 >> 3)) + (ox >> 3);
 	let tx = ox & 7;
 	let ty = oy & 7;
 
 	// (((tile as usize) + (fragment as usize)) << 5)
 	//     fragment is a tile 
-	//     32 byte sper tile
+	//     32 bytes per tile
 	// ((ty as usize) << 2) + ((tx as usize) >> 1)
 	//     4 bytes per tile line
 	//     1/2 byte per tile column
 	let offset = (((tile as usize) + (fragment as usize)) << 5) + ((ty as usize) << 2) + ((tx as usize) >> 1);
+	if offset >= tiles.len() { return (0, 0, 0, 0) }
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
 		(0, 0, 0, 0)
@@ -139,6 +140,7 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	//     4 bytes per tile line
 	//     1/2 byte per tile column
 	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 2) + ((tx as usize) >> 1);
+	if offset >= tiles.len() { return (0, 0, 0, 0) }
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
 		(0, 0, 0, 0)
@@ -166,9 +168,8 @@ pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 
 	// tile index only references 32 bytes at a time.
 	let offset = ((tile as usize) << 5) + ((fragment as usize) << 6) + ((ty as usize) << 3) + (tx as usize);
-
+	if offset >= tiles.len() { return (0, 0, 0, 0) }
 	let dot = tiles[offset] as usize;
-
 	return if dot == 0 { 
 		(0, 0, 0, 0)
 	} else {
@@ -192,6 +193,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	let xoffset = ((ox as usize) >> 3) << 6;
 
 	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 3) + (tx as usize);
+	if offset >= tiles.len() { return (0, 0, 0, 0) }
 	let dot = tiles[offset] as usize;
 	return if dot == 0 { 
 		(0, 0, 0, 0)
@@ -203,6 +205,51 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 
 /// Draw an object with no rotation/scaling.
 fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
+	let ycoord = obj.attr0 & 0xff;
+	// not worrying about the obj mode for now.
+	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
+	let xcoord = obj.attr1 & 0x1ff;
+	// #TODO implement mosaics
+	// let mosaic = ((attr0 >> 12) & 1) == 1;
+	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
+	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
+
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
+		else { get_simple_obj_dot_4bpp_1d }
+	} else {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
+		else { get_simple_obj_dot_4bpp_2d }
+	};
+
+	let (width, height, line_shift) = {
+		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
+		let size = (obj.attr1 >> 14) & 0x3;
+		OBJ_SIZES[((shape << 1) + size) as usize]
+	};
+
+	let mut px = obj.attr1 & 0x1ff;
+	let mut py = obj.attr0 & 0xff;
+
+	if py + height > 256 {
+		py -= 256;
+	}
+
+	if (line - py) < height { // negatives will wrap (making them larger)
+		let ty = line - py;// texture y
+		let f_ty = if vertical_flip { height - ty } else { ty }; // possibly flipped ty
+
+		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
+		if (px < 240) || tx_offset != 0 {
+			for tx in 0..width {
+				if px < 240 {
+					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
+					lines.obj[px as usize] = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
+				}
+				px = (px + 1) & 0x1ff;
+			}
+		}
+	}
 }
 
 fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
