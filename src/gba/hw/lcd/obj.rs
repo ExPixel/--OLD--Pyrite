@@ -188,7 +188,7 @@ pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	}
 }
 
-pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> Pixel {
 	let tile = (attr2 & 0x3ff) & !1;
 	let tx = ox & 7;
 	let ty = oy & 7;
@@ -215,15 +215,11 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 
 /// Draw an object with no rotation/scaling.
 fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
-	let ycoord = obj.attr0 & 0xff;
-	// not worrying about the obj mode for now.
+	// #TODO not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
-	let xcoord = obj.attr1 & 0x1ff;
 	// #TODO implement mosaics
-	// let mosaic = ((attr0 >> 12) & 1) == 1;
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
-	let mosaic = ((obj.attr0 >> 12) & 1) == 1;
 
 	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
 		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
@@ -249,7 +245,9 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	if (line - py) < height { // negatives will wrap (making them larger)
 		let mut ty = line - py;// texture y
 
-		ty -= ty % obj.mosaic_y;
+		if ((obj.attr0 >> 12) & 1) == 1 { // if mosaic bit is on.
+			ty -= ty % obj.mosaic_y;
+		}
 
 		// #TODO I have no idea wtf mosaic X does exactly.
 
@@ -272,10 +270,8 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 }
 
 fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
-	let ycoord = obj.attr0 & 0xff;
-	// not worrying about the obj mode for now.
+	// #TODO not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
-	let xcoord = obj.attr1 & 0x1ff;
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
 
@@ -310,15 +306,12 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 		py -= 256;
 	}
 
-	/*
-	int realX = ((sizeX) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + t * dmx;
-	int realY = ((sizeY) << 7) - (fieldX >> 1)*dy - (fieldY>>1)*dmy + t * dmy;
-	*/
-
 	if (line - py) < height { // negatives will wrap (making them larger)
-		let ty = line - py;// texture y (before transformations and stuff)
+		let mut ty = line - py;// texture y (before transformations and stuff)
 
-		ty -= ty % obj.mosaic_y;
+		if ((obj.attr0 >> 12) & 1) == 1 { // if mosaic bit is on.
+			ty -= ty % obj.mosaic_y;
+		}
 
 		// #TODO I have no idea wtf mosaic X does exactly.
 		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
