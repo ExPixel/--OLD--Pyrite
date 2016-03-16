@@ -85,15 +85,12 @@ impl GbaLcd {
 	}
 
 	fn blend(&mut self, line: u16, memory: &GbaMemory) {
+		pyrite_measure_start!(0); // #TODO remove testing code.
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
 		let transparent = memory.read16(0x05000000);
 		let transparent_color = convert_rgb5_to_rgb8(transparent);
 		let output = &mut self.screen_buffer[line as usize][0..240];
-
-		for idx in 0..240 {
-			output[idx] = transparent_color; // Make the line transparent to start with.
-		}
 
 		let bg0_enabled = ((dispcnt >> 8) & 1) != 0;
 		let bg1_enabled = ((dispcnt >> 9) & 1) != 0;
@@ -105,19 +102,63 @@ impl GbaLcd {
 		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
 		let bg3_priority = memory.get_reg(ioreg::BG3CNT) & 0x3;
 
-		// #optim: I can turn this into one operation, by organizing the lines into one array
-		// of arrays and then using that instead...
-		// blend_pixels( lines[0][idx] )
-		// blend_pixels( lines[1][idx] )
-		// ...
+		let mut rendering_order: [Option<&GbaBGLine>; 4] = [None, None, None, None];
+		let mut rendering_order_idx = 0;
 		for priority in (0..4).rev() {
-			if bg3_enabled && bg3_priority == priority { Self::blend_lines(&self.lines.bg3, output);}
-			if bg2_enabled && bg2_priority == priority { Self::blend_lines(&self.lines.bg2, output);}
-			if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output);}
-			if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output);}
+			if bg0_enabled && bg0_priority == priority { rendering_order[rendering_order_idx] = Some(&self.lines.bg0); }
+			if bg1_enabled && bg1_priority == priority { rendering_order[rendering_order_idx] = Some(&self.lines.bg1); }
+			if bg2_enabled && bg2_priority == priority { rendering_order[rendering_order_idx] = Some(&self.lines.bg2); }
+			if bg3_enabled && bg3_priority == priority { rendering_order[rendering_order_idx] = Some(&self.lines.bg3); }
+			rendering_order_idx += 1;
 		}
 
-		Self::blend_lines(&self.lines.obj, output); // For giggles
+		// I'll have borrowing issues if I don't define this here like so:
+		let obj_priorities = self.lines.obj_priorities;
+		let obj_line = self.lines.obj;
+
+		let process_pixel = |priority: u8, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
+			let mut dest_pixel = dest[pixel_idx];
+
+			// First we draw the BG's pixel (if there is one)
+			if let Some(line) = maybe_line {
+				let src_pixel = line[pixel_idx];
+				dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+			}
+
+			// Then we draw the OBJ's pixel on top if there is one at this priority.
+			if obj_priorities[pixel_idx] == priority {
+				let obj_pixel = obj_line[pixel_idx];
+				dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
+			}
+
+			dest[pixel_idx] = dest_pixel;
+		};
+
+		for pix in 0..240 {
+			output[pix] = transparent_color; // Make the pixel transparent to start with.
+			process_pixel(3, pix, output, rendering_order[0]);
+			process_pixel(2, pix, output, rendering_order[1]);
+			process_pixel(1, pix, output, rendering_order[2]);
+			process_pixel(0, pix, output, rendering_order[3]);
+		}
+
+		// for idx in 0..240 {
+		// 	output[idx] = transparent_color; // Make the line transparent to start with.
+		// }
+		// // #optim: I can turn this into one operation, by organizing the lines into one array
+		// // of arrays and then using that instead...
+		// // blend_pixels( lines[0][idx] )
+		// // blend_pixels( lines[1][idx] )
+		// // ...
+		// for priority in (0..4).rev() {
+		// 	if bg3_enabled && bg3_priority == priority { Self::blend_lines(&self.lines.bg3, output);}
+		// 	if bg2_enabled && bg2_priority == priority { Self::blend_lines(&self.lines.bg2, output);}
+		// 	if bg1_enabled && bg1_priority == priority { Self::blend_lines(&self.lines.bg1, output);}
+		// 	if bg0_enabled && bg0_priority == priority { Self::blend_lines(&self.lines.bg0, output);}
+		// }
+
+		// Self::blend_lines(&self.lines.obj, output); // For giggles
+		pyrite_measure_end!(0); // #TODO remove testing code.
 	}
 
 	fn blend_lines(src: &[Pixel], dest: &mut [GbaPixel]) {

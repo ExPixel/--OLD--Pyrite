@@ -142,6 +142,9 @@ pub struct InternalRegisters {
 	pub bg3x: u32,
 	pub bg3y: u32,
 
+	pub halted: bool,
+	pub stopped: bool,
+
 	pub dma_dirty: bool
 }
 
@@ -153,6 +156,7 @@ impl InternalRegisters {
 	// This should almost never happen.
 	pub fn on_write8(&mut self, address: u32, value: u8, iodata: &[u8]) {
 		let register = address & 0x3fe;
+		self.on_reg_write8(address, value);
 		let value16 = if (address & 1) == 1 {
 			(iodata.direct_read16(register as usize) & 0xFF) | ((value as u16) << 8)
 		} else {
@@ -180,6 +184,24 @@ impl InternalRegisters {
 		self.on_reg_write(0x000003A, iodata.direct_read16(0x000003A));
 		self.on_reg_write(0x000003C, iodata.direct_read16(0x000003C));
 		self.on_reg_write(0x000003E, iodata.direct_read16(0x000003E));
+	}
+
+	pub fn on_reg_write8(&mut self, register: u32, value: u8) {
+		match register {
+			0x4000301 => {
+				let low_power_bit = (value >> 7) & 1;
+				if low_power_bit == 1 {
+					self.stopped = true;
+					self.halted = false;
+					println!("CPU NOW IN STOPPED MODE."); // #TODO remove testing code.
+				} else {
+					self.halted = true;
+					self.stopped = false;
+					println!("CPU NOW IN HALT MODE."); // #TODO remove testing code.
+				}
+			},
+			_ => {}
+		}
 	}
 
 	pub fn on_reg_write(&mut self, register: u32, value: u16) {

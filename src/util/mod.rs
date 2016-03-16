@@ -1,9 +1,43 @@
 pub mod frame_counter;
 
-
 // These should be in the debug module, but whatever.
 
 pub static mut PYRITE_DYN_DEBUG_ENABLED: bool = false;
+
+// (last_start, last_time, total_samples, total_time)
+pub static mut PYRITE_MEASURES: [(u64, u64, u64, u64); 16] = [(0u64, 0u64, 0u64, 0u64); 16];
+
+macro_rules! pyrite_measure_start {
+	($index:expr) => (
+		unsafe {
+			::util::PYRITE_MEASURES[$index].0 = ::time::precise_time_ns();
+		}
+	)
+}
+
+macro_rules! pyrite_measure_end {
+	($index:expr) => (
+		unsafe {
+			::util::PYRITE_MEASURES[$index].1 = ::time::precise_time_ns() - ::util::PYRITE_MEASURES[$index].0;
+			::util::PYRITE_MEASURES[$index].3 += ::util::PYRITE_MEASURES[$index].1;
+			::util::PYRITE_MEASURES[$index].2 += 1;
+		}
+	)
+}
+
+macro_rules! pyrite_measure_print {
+	($index:expr) => (
+		unsafe {
+			println!("------ PYRITE MEASURE [{}] ------", $index);
+			println!("Last Time: {}ns", ::util::PYRITE_MEASURES[$index].1);
+			println!("Total Samples: {}", ::util::PYRITE_MEASURES[$index].2);
+			println!("Total Time: {}ns", ::util::PYRITE_MEASURES[$index].3);
+			if ::util::PYRITE_MEASURES[$index].2 > 0 {
+				println!("Avg. Time: {:.3}ns", (::util::PYRITE_MEASURES[$index].3 as f64) / (::util::PYRITE_MEASURES[$index].2 as f64));
+			}
+		}
+	)
+}
 
 macro_rules! set_pyrite_dyn_debug {
 	($value:expr) => (

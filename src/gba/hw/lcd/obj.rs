@@ -47,15 +47,7 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 
 	let mut attr_addr = 0;
 
-	for o in 0..128 {
-		// #debug debug code for the obj demo.
-		pyrite_debugging!({
-			if o == 1 {
-				attr_addr += 8;
-				continue;
-			}
-		});
-
+	for _ in 0..128 {
 		obj_data.attr0 = oam_region.direct_read16(attr_addr);
 		if ((obj_data.attr0 >> 8) & 1) == 0 {
 			if ((obj_data.attr0 >> 9) & 1) == 0 {
@@ -73,21 +65,21 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 			affine_data.dy = oam_region.direct_read16( 22 + rot_scale_params_off ) as i16;
 			affine_data.dmy = oam_region.direct_read16( 30 + rot_scale_params_off ) as i16;
 
-			pyrite_debugging!({
-				println!("----- OBJ [{}] -----", o);
-				println!("attr0: 0x{:04x}", obj_data.attr0);
-				println!("attr1: 0x{:04x}", obj_data.attr1);
-				println!("attr2: 0x{:04x}", obj_data.attr2);
-				println!("PA (DX):  0x{:04x}", affine_data.dx);
-				println!("PB (DMX): 0x{:04x}", affine_data.dmx);
-				println!("PC (DY):  0x{:04x}", affine_data.dy);
-				println!("PD (DMY): 0x{:04x}", affine_data.dmy);
-				println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
-				println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
-				println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
-				println!("PC-Loc: 0x{:04x}", 22 + rot_scale_params_off);
-				println!("PD-Loc: 0x{:04x}", 30 + rot_scale_params_off);
-			});
+			// pyrite_debugging!({
+			// 	println!("----- OBJ [{}] -----", o);
+			// 	println!("attr0: 0x{:04x}", obj_data.attr0);
+			// 	println!("attr1: 0x{:04x}", obj_data.attr1);
+			// 	println!("attr2: 0x{:04x}", obj_data.attr2);
+			// 	println!("PA (DX):  0x{:04x}", affine_data.dx);
+			// 	println!("PB (DMX): 0x{:04x}", affine_data.dmx);
+			// 	println!("PC (DY):  0x{:04x}", affine_data.dy);
+			// 	println!("PD (DMY): 0x{:04x}", affine_data.dmy);
+			// 	println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
+			// 	println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
+			// 	println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
+			// 	println!("PC-Loc: 0x{:04x}", 22 + rot_scale_params_off);
+			// 	println!("PD-Loc: 0x{:04x}", 30 + rot_scale_params_off);
+			// });
 
 			draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 		}

@@ -9,13 +9,14 @@ Core:
   ☐ Complete CPU exceptions. (titled 'ARM CPU Exceptions' in GBAtek.)
   ✔ Complete DMAs @done (16-03-02 18:43)
   LCD:
-    ☐ Complete All Rendering
-      ☐ Complete Mode 0 Rendering
-      ☐ Complete Mode 1 Rendering
-      ☐ Complete Mode 2 Rendering
-      ☐ Complete Mode 3 Rendering
-      ☐ Complete Mode 4 Rendering
-      ☐ Complete Window Rendering
+    ☐ Complete All Rendering @critical
+      ☐ Complete Mode 0 Rendering @critical
+      ☐ Complete Mode 1 Rendering @critical
+      ☐ Complete Mode 2 Rendering @critical
+      ☐ Complete Mode 3 Rendering @critical
+      ☐ Complete Mode 4 Rendering @critical
+      ☐ Complete Window Rendering @critical
+      ☐ Complete Mosaics @low
   GBA:
     ✔ Add a good way for handling software interrupts outside of the CPU @done (16-02-05 15:37)
        Maybe by adding an optional containing a u32 with the interrupt's instruction

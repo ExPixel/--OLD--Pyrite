@@ -179,6 +179,7 @@ impl Gba {
 		self.cpu.memory.internal_regs.on_frame_end(
 			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
 		);
+		pyrite_debugging!({ pyrite_measure_print!(0); }); // #TODO remove testing code.
 	}
 
 	/// Attempts to fire an vblank interrupt
@@ -234,15 +235,26 @@ impl Gba {
 	/// To enable a specific interrupt you need to set the appropriate bit in REG_IE. 
 	/// When an interrupt occurs, the corresponding bit in REG_IF will be set.
 	fn hardware_interrupt(&mut self, mask: u16) {
-		if !self.cpu.allow_irq_interrupt() { return; }
 		let reg_ime = self.cpu.memory.get_reg(ioreg::IME);
 		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
 		let reg_ie = self.cpu.memory.get_reg(ioreg::IE);
 		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
+		self.wake_up_cpu(mask); // At this point the CPU can wake up.
 		let mut reg_if = self.cpu.memory.get_reg(ioreg::IF);
 		reg_if |= mask; // set the corresponding bit in IF.
 		self.cpu.memory.set_reg(ioreg::IF, reg_if);
+		if !self.cpu.allow_irq_interrupt() { return; }
 		self.cpu.irq_interrupt();
+	}
+
+	/// Wakes up the CPU if it was halted.
+	fn wake_up_cpu(&mut self, mask: u16) {
+		// #TODO remove testing code:
+		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped {
+			println!("WAKING UP CPU: 0x{:0x}", mask);
+		}
+		self.cpu.memory.internal_regs.halted = false;
+		self.cpu.memory.internal_regs.stopped = false; // Not sure if this is supposed to be here.
 	}
 
 	fn check_line_coincidence(&mut self, vcount: u16) {
@@ -313,6 +325,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	}
 
 	fn run_cpu_cycles(&mut self, cycles: u64) {
+		// #TODO have another look at this one.
+		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
+
 		let mut cycles = cycles;
 		let mut target = self.cpu.clock.cycles + cycles;
 		'cpu_loop: while self.cpu.clock.cycles < target {
@@ -328,6 +343,8 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					}
 				} else {
 					self.cpu.tick();
+					// Now sure about this one either.
+					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 
 					// #TODO I should check if the DMA is registers are dirty or something.
 					// This loses me about 40-50 FPS. I could probably check by using something in the memory
