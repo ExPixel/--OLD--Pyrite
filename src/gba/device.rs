@@ -33,6 +33,8 @@ static FRAGMENT_SHADER_SRC: &'static str = r#"
 #version 140
 
 // The Gamma of the GBA screen.
+// Got these values from:
+// http://codewitchgamedev.blogspot.com/2015/08/emulating-gbas-display-with-gamma.html
 #define GAMMA_R 4.0
 #define GAMMA_G 3.0
 #define GAMMA_B 1.4
