@@ -58,8 +58,6 @@ impl GbaLcd {
 		}
 	}
 
-	/// Causes the LCD to render a single line.
-	#[allow(unused_variables)] // #TODO remove this
 	pub fn render_line(&mut self, memory: &mut GbaMemory, line: u16) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 		self.clear_obj_line();
@@ -86,7 +84,7 @@ impl GbaLcd {
 
 	fn blend(&mut self, line: u16, memory: &GbaMemory) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
-		
+
 		let transparent_color = convert_rgb5_to_rgb8(memory.read16(0x05000000));
 		let output = &mut self.screen_buffer[line as usize][0..240];
 
@@ -171,7 +169,7 @@ impl GbaLcd {
 
 	#[inline(always)]
 	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
-		if a.3 == 0 { return b } // It's not going to show up.
+		if a.3 == 0 { return b }
 
 		let aa = (a.3 as u32) + 1; // alpha component of a
 		let aa_inv = 256 - (a.3 as u32);
@@ -183,13 +181,6 @@ impl GbaLcd {
 		(_blend(a.0, b.0), _blend(a.1, b.1), _blend(a.2, b.2))
 	}
 }
-
-/*
-rOut = (rA * aA / 255) + (rB * aB * (255 - aA) / (255*255))
-gOut = (gA * aA / 255) + (gB * aB * (255 - aA) / (255*255))
-bOut = (bA * aA / 255) + (bB * aB * (255 - aA) / (255*255))
-aOut = aA + (aB * (255 - aA) / 255)
-*/
 
 /// Bit   Expl.
 /// 0-4   Red Intensity   (0-31)
