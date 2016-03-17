@@ -179,7 +179,6 @@ impl Gba {
 		self.cpu.memory.internal_regs.on_frame_end(
 			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
 		);
-		pyrite_debugging!({ pyrite_measure_print!(0); }); // #TODO remove testing code.
 	}
 
 	/// Attempts to fire an vblank interrupt
