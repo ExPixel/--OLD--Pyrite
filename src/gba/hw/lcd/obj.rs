@@ -313,7 +313,7 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 			let mut ay = ((t_height as i16) << 7) - ((width as i16) >> 1) * affine.dy - ((height as i16) >> 1) * affine.dmy + (ty as i16) * affine.dmy;
 
 			for _ in 0..width {
-				if lines.obj_priorities[px as usize] == 0 { // nothing has been drawn there
+				if px < 240 && lines.obj_priorities[px as usize] == 0 { // nothing has been drawn there
 					// ax & ay without the fractional parts.
 					let i_ax = ax >> 8;
 					let i_ay = ay >> 8;
