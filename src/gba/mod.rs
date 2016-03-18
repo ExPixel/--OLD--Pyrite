@@ -91,7 +91,8 @@ impl Gba {
 	}
 
 	pub fn init(&mut self) {
-		self.cpu.set_pc(0x8000000);
+		self.cpu.set_pc(0x08000000);
+		self.cpu.registers.set_mode(registers::MODE_SVC);
 
 		self.cpu.registers.set_mode(registers::MODE_SYS);
 
@@ -248,10 +249,10 @@ impl Gba {
 
 	/// Wakes up the CPU if it was halted.
 	fn wake_up_cpu(&mut self, mask: u16) {
-		// #TODO remove testing code:
-		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped {
-			println!("WAKING UP CPU: 0x{:0x}", mask);
-		}
+		// // #TODO remove testing code:
+		// if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped {
+		// 	println!("WAKING UP CPU: 0x{:0x}", mask);
+		// }
 		self.cpu.memory.internal_regs.halted = false;
 		self.cpu.memory.internal_regs.stopped = false; // Not sure if this is supposed to be here.
 	}

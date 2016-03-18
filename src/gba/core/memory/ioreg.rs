@@ -193,11 +193,11 @@ impl InternalRegisters {
 				if low_power_bit == 1 {
 					self.stopped = true;
 					self.halted = false;
-					println!("CPU NOW IN STOPPED MODE."); // #TODO remove testing code.
+					// println!("CPU NOW IN STOPPED MODE."); // #TODO remove testing code.
 				} else {
 					self.halted = true;
 					self.stopped = false;
-					println!("CPU NOW IN HALT MODE."); // #TODO remove testing code.
+					// println!("CPU NOW IN HALT MODE."); // #TODO remove testing code.
 				}
 			},
 			_ => {}
