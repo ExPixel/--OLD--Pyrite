@@ -318,10 +318,10 @@ impl ArmCpu {
 		// #TODO I'm seeing the point of this less and less.
 		// sure fully emulating the bios is great but what's the point?
 		if self.thumb_mode() {
-			println!("EXECUTING SWI (T): 0x{:02x}, instruction: 0x{:04x}", interrupt, swi_instr & 0xffff);
+			// println!("EXECUTING SWI (T): 0x{:02x}, instruction: 0x{:04x}", interrupt, swi_instr & 0xffff);
 			self.handle_thumb_swi();
 		} else {
-			println!("EXECUTING SWI (A): 0x{:02x}, instruction: 0x{:08x}", interrupt, swi_instr);
+			// println!("EXECUTING SWI (A): 0x{:02x}, instruction: 0x{:08x}", interrupt, swi_instr);
 			self.handle_arm_swi();
 		}
 	}
@@ -401,7 +401,7 @@ impl ArmCpu {
 	}
 
 	pub fn allow_irq_interrupt(&mut self) -> bool {
-		self.registers.getf_i()
+		!self.registers.getf_i()
 	}
 
 	/// The branch part of the hardware interrupt with the state
@@ -417,8 +417,11 @@ impl ArmCpu {
 	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
 	///    (which you, the programmer, never see)
 	pub fn irq_interrupt(&mut self) {
+		self.clock.code_access32_nonseq(SWI_VECTOR);
+		self.clock.code_access32_seq(SWI_VECTOR + 4);
+		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_IRQ);
-		self.registers.cpsr_to_spsr();
+		self.registers.set_spsr(cpsr);
 		let next_pc = if self.thumb_mode() {
 			self.get_pc() - 2
 		} else {
@@ -426,8 +429,17 @@ impl ArmCpu {
 		};
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
-		self.reg_dump_pretty();
-		panic!("picnic -- hardware interrupt");
+
+		if self.thumb_mode() {
+			self.registers.clearf_t(); // Enters ARM mode.
+			self.align_pc();
+			self.thumb_pipeline.flush();
+			self.branched = false;
+		} else {
+			self.align_pc();
+			self.arm_pipeline.flush();
+			self.branched = false;
+		}
 	}
 
 	/// The CPU has hit an undefined instruction.
@@ -511,7 +523,7 @@ impl ArmCpu {
 const DEBUG_STOP: bool = false;
 const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x00000144;
+const DEBUG_ADDR: u32 = 0x03000018;
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]
