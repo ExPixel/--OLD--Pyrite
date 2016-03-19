@@ -218,8 +218,8 @@ impl InternalRegisters {
 			0x000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 			0x000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
-			0x40000BA | 0x40000C6 | 
-			0x40000D2 | 0x40000DE => { self.dma_dirty = true },
+			0x00000BA | 0x00000C6 | 
+			0x00000D2 | 0x00000DE => { self.dma_dirty = true },
 
 			_ => {}
 		}

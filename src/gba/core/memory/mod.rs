@@ -151,7 +151,8 @@ impl GbaMemory {
 			// Port Size: 32 bit
 			// Mirrors: Every 0x400 bytes from 0x07000000 to 0x07FFFFFF
 			0x07000000 ... 0x07FFFFFF => (address % 0x400) + MEM_OAM.local_addr,
-			_ => 0
+
+			_ => panic!("Attempted to map unreachable address (0x{:08X})", address)
 		}
 	}
 

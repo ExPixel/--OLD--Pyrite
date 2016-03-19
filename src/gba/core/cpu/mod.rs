@@ -382,7 +382,7 @@ impl ArmCpu {
 		// it's actually already at the next instruction.
 		let next_pc = self.get_pc() - 4; // 0x08000e6f
 
-		self.rset(REG_LR, next_pc); // setting bit 0 so that bx brings this back into thumb mode.
+		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		self.registers.clearf_t(); // Enters ARM mode.
 		self.align_pc();
@@ -422,6 +422,7 @@ impl ArmCpu {
 		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.set_spsr(cpsr);
+		self.registers.setf_i();
 		let next_pc = if self.thumb_mode() {
 			self.get_pc() - 2
 		} else {
@@ -429,17 +430,12 @@ impl ArmCpu {
 		};
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
+		self.registers.clearf_t(); // Enters ARM mode.
+		self.thumb_pipeline.flush();
+		self.arm_pipeline.flush();
+		self.align_pc();
+		self.branched = false;
 
-		if self.thumb_mode() {
-			self.registers.clearf_t(); // Enters ARM mode.
-			self.align_pc();
-			self.thumb_pipeline.flush();
-			self.branched = false;
-		} else {
-			self.align_pc();
-			self.arm_pipeline.flush();
-			self.branched = false;
-		}
 	}
 
 	/// The CPU has hit an undefined instruction.
@@ -521,9 +517,9 @@ impl ArmCpu {
 }
 
 const DEBUG_STOP: bool = false;
-const DEBUG_THUMB: Option<bool> = Some(false);
+const DEBUG_THUMB: Option<bool> = None;
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x03000018;
+const DEBUG_ADDR: u32 = 0x080006A8;
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]

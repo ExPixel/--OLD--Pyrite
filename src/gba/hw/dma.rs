@@ -9,6 +9,7 @@ pub const DMA_TIMING_HBLANK: u16 = 2;
 pub const DMA_TIMING_SPECIAL: u16 = 3; // #TODO where the fuck?
 
 struct DmaChannel {
+	index: u8,
 	reg_sad: IORegister32,
 	reg_dad: IORegister32,
 	reg_cnt_l: IORegister16,
@@ -20,7 +21,8 @@ struct DmaChannel {
 }
 
 const CHANNELS: [DmaChannel; 4] = [
-	DmaChannel { 
+	DmaChannel {
+		index: 0,
 		reg_sad: ioreg::DMA0SAD,
 		reg_dad: ioreg::DMA0DAD,
 		reg_cnt_l: ioreg::DMA0CNT_L,
@@ -30,6 +32,7 @@ const CHANNELS: [DmaChannel; 4] = [
 		max_units: 0x4000
 	},
 	DmaChannel {
+		index: 1,
 		reg_sad: ioreg::DMA1SAD,
 		reg_dad: ioreg::DMA1DAD,
 		reg_cnt_l: ioreg::DMA1CNT_L,
@@ -39,6 +42,7 @@ const CHANNELS: [DmaChannel; 4] = [
 		max_units: 0x4000
 	},
 	DmaChannel {
+		index: 2,
 		reg_sad: ioreg::DMA2SAD,
 		reg_dad: ioreg::DMA2DAD,
 		reg_cnt_l: ioreg::DMA2CNT_L,
@@ -48,6 +52,7 @@ const CHANNELS: [DmaChannel; 4] = [
 		max_units: 0x4000
 	},
 	DmaChannel {
+		index: 3,
 		reg_sad: ioreg::DMA3SAD,
 		reg_dad: ioreg::DMA3DAD,
 		reg_cnt_l: ioreg::DMA3CNT_L,
@@ -97,10 +102,14 @@ impl DmaHandler {
 		if ((dma_cnt_h >> 10) & 1) != 0 {
 			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
 			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
+			println!("DMA32[{}] {} units from 0x{:08x} to 0x{:08x} | {}, {}", channel.index, units, src_addr, dest_addr,
+				src_inc as i32, dest_inc as i32);
 			ending_dest = self.do_dma_transfer32(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
 		} else {
 			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
 			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
+			println!("DMA16[{}] {} units from 0x{:08x} to 0x{:08x} | {}, {}", channel.index, units, src_addr, dest_addr,
+				src_inc as i32, dest_inc as i32);
 			ending_dest = self.do_dma_transfer16(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
 		}
 
@@ -159,8 +168,8 @@ impl DmaHandler {
 		let mut src = src_addr;
 		let mut dest = dest_addr;
 		for _ in 0..units {
-			let data = cpu.memory.read16(src);
-			cpu.memory.write16(dest, data);
+			let data = cpu.memory.read32(src);
+			cpu.memory.write32(dest, data);
 			src += src_inc;
 			dest += dest_inc;
 		}
