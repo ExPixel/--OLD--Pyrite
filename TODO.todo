@@ -8,6 +8,9 @@ General:
 Core:
   ☐ Complete CPU exceptions. (titled 'ARM CPU Exceptions' in GBAtek.)
   ✔ Complete DMAs @done (16-03-02 18:43)
+  ☐ Complete Timers
+  ☐ Complete Comm. Ports
+  ☐ Complete System Control (Dynamic Memory Timings, ect...)
   LCD:
     ☐ Complete All Rendering @critical
       ☐ Complete Mode 0 Rendering @critical
@@ -16,6 +19,7 @@ Core:
       ☐ Complete Mode 3 Rendering @critical
       ☐ Complete Mode 4 Rendering @critical
       ☐ Complete Window Rendering @critical
+      ☐ Complete Alpha Blending @critical
       ☐ Complete Mosaics @low
   GBA:
     ✔ Add a good way for handling software interrupts outside of the CPU @done (16-02-05 15:37)
