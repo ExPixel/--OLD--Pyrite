@@ -152,7 +152,8 @@ impl GbaMemory {
 			// Mirrors: Every 0x400 bytes from 0x07000000 to 0x07FFFFFF
 			0x07000000 ... 0x07FFFFFF => (address % 0x400) + MEM_OAM.local_addr,
 
-			_ => panic!("Attempted to map unreachable address (0x{:08X})", address)
+			// #TODO Reading from Unused Memory (00004000-01FFFFFF,10000000-FFFFFFFF)
+			_ => 0 /* panic!("Attempted to map unreachable address (0x{:08X})", address) */
 		}
 	}
 
@@ -233,6 +234,7 @@ impl GbaMemory {
 	fn __write8__(&mut self, address: u32, value: u8) {
 		match address {
 			0x08000000 ... 0x0Dffffff => self.rom_write8(address, value),
+			0x0E000000 ... 0x0E00FFFF => {}, // #TODO SRAM and shit.
 			_ => {
 				let local_addr = self.transform(address);
 				match address {
@@ -252,6 +254,7 @@ impl GbaMemory {
 	fn __read8__(&self, address: u32) -> u8 {
 		match address {
 			0x08000000 ... 0x0Dffffff => self.rom_read8(address),
+			0x0E000000 ... 0x0E00FFFF => 0, // #TODO SRAM and shit.
 			_ => {
 				let local_addr = self.transform(address);
 				self.internal_data[local_addr]
