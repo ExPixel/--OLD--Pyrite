@@ -78,3 +78,12 @@ Core:
         For now there is no difference between them and all of the the GBA's other internal
         memory.
     ✔ Implement IO Registers. @done (16-01-20 15:27)
+
+ Bugs To Track Down:
+   ☐ Attempting to run unexecutable address when running the GBA test suite's timing tests.
+      The error I get is 'Attempting to execute at unexecutable address 0xf0000000!' Luckily that's
+      not an address that can be reached without a jump, so it should be easy to find where the
+      problem starts.
+   ☐ When running the GBA test suite's memory tests, the test hangs.
+   ☐ When running the GBA test suite's video tests, the 'actual' and 'expected' labels are cut off.
+      Only the top left corner is drawn.
