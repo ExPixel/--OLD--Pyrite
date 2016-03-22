@@ -23,6 +23,10 @@ const LIMIT_FPS: bool = false;
 /// delay for a 60fps frame in nanoseconds.
 const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
 
+/// #TODO remove this debug code.
+/// true if the starting address should be 0 in SVC mode.
+const STARTUP_BIOS: bool = false;
+
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
 
@@ -91,15 +95,19 @@ impl Gba {
 	}
 
 	pub fn init(&mut self) {
-		self.cpu.set_pc(0x08000000);
-		self.cpu.registers.set_mode(registers::MODE_SVC);
+		self.cpu.registers.setf_f(); // The FIQ flag should always be high.
 
-		self.cpu.registers.set_mode(registers::MODE_SYS);
-
-		// #FIXME I this these should be set by the BIOS but doing it here for now.
-		self.cpu.registers.set_with_mode(registers::MODE_USR, registers::REG_SP, 0x03007F00); // Also System
-		self.cpu.registers.set_with_mode(registers::MODE_IRQ, registers::REG_SP, 0x03007FA0);
-		self.cpu.registers.set_with_mode(registers::MODE_SVC, registers::REG_SP, 0x03007FE0);
+		if STARTUP_BIOS {
+			self.cpu.set_pc(0x00000000);
+			self.cpu.registers.set_mode(registers::MODE_SVC);
+		} else {
+			self.cpu.set_pc(0x08000000);
+			self.cpu.registers.set_mode(registers::MODE_SYS);
+			self.cpu.registers.set_with_mode(registers::MODE_USR, registers::REG_SP, 0x03007F00); // Also System
+			self.cpu.registers.set_with_mode(registers::MODE_IRQ, registers::REG_SP, 0x03007FA0);
+			self.cpu.registers.set_with_mode(registers::MODE_SVC, registers::REG_SP, 0x03007FE0);
+			// #TODO some IO registers need to be set here.
+		}
 
 		self.cpu.memory.set_reg(ioreg::KEYINPUT, 0xffff); // make sure all keys are marked as released.
 	}

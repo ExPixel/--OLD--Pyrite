@@ -4,6 +4,11 @@ use super::tiles::*;
 use super::obj::*;
 
 pub fn render_mode_1(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+	lines.bg0_enable = true;
+	lines.bg1_enable = true;
+	lines.bg2_enable = true;
+	lines.bg3_enable = false;
+
 	// I use this in both render_mode0 and render_mode1, maybe I could just make a common function for them or something?
 	// I would only need to pass in dispcnt and line.
 	let try_render_text_bg = |memory: &GbaMemory, enable: u16, bgcnt: ioreg::IORegister16, bghofs: ioreg::IORegister16, bgvofs: ioreg::IORegister16, 

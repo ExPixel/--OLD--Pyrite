@@ -4,6 +4,11 @@ use super::tiles::*;
 use super::obj::*;
 
 pub fn render_mode_2(dispcnt: u16, memory: &mut GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+	lines.bg0_enable = false;
+	lines.bg1_enable = false;
+	lines.bg2_enable = true;
+	lines.bg3_enable = true;
+
 	if ((dispcnt >> 10) & 1) != 0 {
 		let params = BGRotScaleParams {
 			ref_x_reg: ioreg::BG2X,

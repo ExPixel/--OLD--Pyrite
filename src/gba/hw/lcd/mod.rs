@@ -23,6 +23,47 @@ pub type GbaPixel = (u8, u8, u8);
 pub type GbaLcdLine = Vec<GbaPixel>;
 pub type GbaBGLine = [Pixel; 240];
 
+pub struct ObjLineInfo {
+	/// I stuff all of the object's metadata in here.
+	/// bits 0-2 priority
+	/// bit  3   window
+	/// bit  4   semi-transparent
+	pub data: [u8; 240]
+}
+
+impl ObjLineInfo {
+	#[inline(always)]
+	pub fn get_priority(&self, idx: usize) -> u8 {
+		self.data[idx] & 0x7
+	}
+
+	#[inline(always)]
+	pub fn set_priority(&mut self, idx: usize, priority: u8) {
+		self.data[idx] &= !0x7; // priorities can be overwritten...and stuff.
+		self.data[idx] |= priority & 0x7;
+	}
+
+	#[inline(always)]
+	pub fn is_window(&self, idx: usize) -> bool {
+		((self.data[idx] >> 3) & 1) == 1
+	}
+
+	#[inline(always)]
+	pub fn set_window(&mut self, idx: usize) {
+		self.data[idx] |= 0x8;
+	}
+
+	#[inline(always)]
+	pub fn is_transparent(&self, idx: usize) -> bool {
+		((self.data[idx] >> 4) & 1) == 1
+	}
+
+	#[inline(always)]
+	pub fn set_transparent(&mut self, idx: usize) {
+		self.data[idx] |= 0x10;
+	}
+}
+
 // No point in having a secondary screen buffer
 // since the GBA renders in scan lines anyway.
 pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
@@ -35,7 +76,13 @@ pub struct GbaDisplayLines {
 	pub bg2: GbaBGLine,
 	pub bg3: GbaBGLine,
 	pub obj: GbaBGLine,
-	pub obj_priorities: [u8; 240]
+
+	pub bg0_enable: bool,
+	pub bg1_enable: bool,
+	pub bg2_enable: bool,
+	pub bg3_enable: bool,
+
+	pub obj_info: ObjLineInfo
 }
 
 pub struct GbaLcd {
@@ -53,7 +100,11 @@ impl GbaLcd {
 				bg2: [(0, 0, 0, 0); 240],
 				bg3: [(0, 0, 0, 0); 240],
 				obj: [(0, 0, 0, 0); 240],
-				obj_priorities: [0u8; 240]
+				bg0_enable: false,
+				bg1_enable: false,
+				bg2_enable: false,
+				bg3_enable: false,
+				obj_info: ObjLineInfo { data: [0u8; 240] }
 			}
 		}
 	}
@@ -78,7 +129,7 @@ impl GbaLcd {
 	fn clear_obj_line(&mut self) {
 		for i in 0..240 {
 			self.lines.obj[i] = (0, 0, 0, 0);
-			self.lines.obj_priorities[i] = 0;
+			self.lines.obj_info.data[i] = 0;
 		}
 	}
 
@@ -88,10 +139,10 @@ impl GbaLcd {
 		let transparent_color = convert_rgb5_to_rgb8(memory.read16(0x05000000));
 		let output = &mut self.screen_buffer[line as usize][0..240];
 
-		let bg0_enabled = ((dispcnt >> 8) & 1) != 0;
-		let bg1_enabled = ((dispcnt >> 9) & 1) != 0;
-		let bg2_enabled = ((dispcnt >> 10) & 1) != 0;
-		let bg3_enabled = ((dispcnt >> 11) & 1) != 0;
+		let bg0_enabled = self.lines.bg0_enable && (((dispcnt >> 8) & 1) != 0);
+		let bg1_enabled = self.lines.bg1_enable && (((dispcnt >> 9) & 1) != 0);
+		let bg2_enabled = self.lines.bg2_enable && (((dispcnt >> 10) & 1) != 0);
+		let bg3_enabled = self.lines.bg3_enable && (((dispcnt >> 11) & 1) != 0);
 
 		let bg0_priority = memory.get_reg(ioreg::BG0CNT) & 0x3;
 		let bg1_priority = memory.get_reg(ioreg::BG1CNT) & 0x3;
@@ -126,8 +177,8 @@ impl GbaLcd {
 		}
 
 		// I'll have borrowing issues if I don't define this here like so:
-		let obj_priorities = self.lines.obj_priorities;
-		let obj_line = self.lines.obj;
+		let obj_info = &self.lines.obj_info;
+		let obj_line = &self.lines.obj;
 
 		let process_pixel = |priority: u8, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
 			let mut dest_pixel = dest[pixel_idx];
@@ -139,7 +190,7 @@ impl GbaLcd {
 			}
 
 			// Then we draw the OBJ's pixel on top if there is one at this priority.
-			let obj_priority = obj_priorities[pixel_idx];
+			let obj_priority = obj_info.get_priority(pixel_idx);
 			if obj_priority > 0 && (obj_priority - 1) == priority {
 				let obj_pixel = obj_line[pixel_idx];
 				dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	

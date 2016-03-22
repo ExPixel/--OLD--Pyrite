@@ -19,6 +19,11 @@ use super::obj::*;
 /// not allowing to redraw an invisible second frame in background, 
 /// so this mode is mostly recommended for still images only.
 pub fn render_mode_3(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+	lines.bg0_enable = false;
+	lines.bg1_enable = false;
+	lines.bg2_enable = true;
+	lines.bg3_enable = false;
+
 	let vram = memory.get_region(MEM_VRAM);
 	let frame_line_offset = 480 * line as usize;
 	for col in 0..240 {
