@@ -101,16 +101,11 @@ impl GbaLcd {
 		// (priority, line)
 		let mut rendering_order: [(u8, Option<&GbaBGLine>); 4] = [(0, None), (0, None), (0, None), (0, None)];
 		let mut rendering_order_idx = 0;
-		for priority in 0..4 {
+		for priority in (0..4).rev() {
 			let mut temp_priority = rendering_order_idx;
 
-			if bg0_enabled && bg0_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg0));
-				rendering_order_idx += 1;
-			}
-
-			if bg1_enabled && bg1_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg1));
+			if bg3_enabled && bg3_priority == priority {
+				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg3));
 				rendering_order_idx += 1;
 			}
 
@@ -119,8 +114,13 @@ impl GbaLcd {
 				rendering_order_idx += 1;
 			}
 
-			if bg3_enabled && bg3_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg3));
+			if bg1_enabled && bg1_priority == priority {
+				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg1));
+				rendering_order_idx += 1;
+			}
+
+			if bg0_enabled && bg0_priority == priority {
+				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg0));
 				rendering_order_idx += 1;
 			}
 		}
