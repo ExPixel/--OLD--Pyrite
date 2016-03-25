@@ -239,6 +239,10 @@ impl GbaLcd {
 			let blend_sources = bldcnt & 0x3f;
 			let blend_targets = (bldcnt >> 8) & 0x3f;
 
+			let blend_alpha = memory.get_reg(ioreg::BLDALPHA);
+			let blend_eva = min!(16, blend_alpha & 0x1f);
+			let blend_evb = min!(16, (blend_alpha >> 8) & 0x1f);
+
 			#[derive(Default)]
 			struct BlendingShit {
 				target_drawn: bool,
@@ -300,11 +304,14 @@ impl GbaLcd {
 				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
 				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_shit);
 
-				pyrite_debugging!({
-					if blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top {
-						output[pix] = blending_shit.target_pixel;
-					}
-				});
+				if blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top {
+					let out_pix = (
+						min!(255, (((blending_shit.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
+						min!(255, (((blending_shit.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
+						min!(255, (((blending_shit.target_pixel.2 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.2 as u16) * blend_eva) >> 4)) as u8,
+					);
+					output[pix] = out_pix;
+				}
 
 				blending_shit.target_drawn = false;
 				blending_shit.source_on_top = false;

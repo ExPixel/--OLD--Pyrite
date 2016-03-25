@@ -1,6 +1,22 @@
 pub mod frame_counter;
 
-// These should be in the debug module, but whatever.
+macro_rules! max {
+	($a:expr, $b:expr) => ({
+		let a = $a;
+		let b = $b;
+		if a > b { a } else { b }
+	})
+}
+
+macro_rules! min {
+	($a:expr, $b:expr) => ({
+		let a = $a;
+		let b = $b;
+		if a < b { a } else { b }
+	})
+}
+
+// These should be in the debug module, but whatever (I'll take time out to refactor this one day):
 
 pub static mut PYRITE_DYN_DEBUG_ENABLED: bool = false;
 
