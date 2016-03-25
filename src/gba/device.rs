@@ -5,7 +5,7 @@ use glium::texture::UncompressedFloatFormat;
 use glium::texture::MipmapsOption;
 
 use super::hw::lcd::GbaLcdScreenBuffer;
-use ::util::frame_counter::FrameCounter;
+// use ::util::frame_counter::FrameCounter;
 
 const ENABLE_VSYNC: bool = true;
 

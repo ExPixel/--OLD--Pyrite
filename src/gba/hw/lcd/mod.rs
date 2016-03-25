@@ -16,8 +16,6 @@ pub mod mode3;
 pub mod mode4;
 pub mod mode5;
 
-
-
 pub type Pixel = (u8, u8, u8, u8);
 pub type GbaPixel = (u8, u8, u8);
 pub type GbaLcdLine = Vec<GbaPixel>;
@@ -214,28 +212,6 @@ impl GbaLcd {
 				process_pixel(rendering_order[3].0, pix, output, rendering_order[3].2);
 			}
 		} else if blend_mode == 1 {
-			/*
-				4000050h - BLDCNT - Color Special Effects Selection (R/W)
-					Bit   Expl.
-					0     BG0 1st Target Pixel (Background 0)
-					1     BG1 1st Target Pixel (Background 1)
-					2     BG2 1st Target Pixel (Background 2)
-					3     BG3 1st Target Pixel (Background 3)
-					4     OBJ 1st Target Pixel (Top-most OBJ pixel)
-					5     BD  1st Target Pixel (Backdrop)
-					6-7   Color Special Effect (0-3, see below)
-					     0 = None                (Special effects disabled)
-					     1 = Alpha Blending      (1st+2nd Target mixed)
-					     2 = Brightness Increase (1st Target becomes whiter)
-					     3 = Brightness Decrease (1st Target becomes blacker)
-					8     BG0 2nd Target Pixel (Background 0)
-					9     BG1 2nd Target Pixel (Background 1)
-					10    BG2 2nd Target Pixel (Background 2)
-					11    BG3 2nd Target Pixel (Background 3)
-					12    OBJ 2nd Target Pixel (Top-most OBJ pixel)
-					13    BD  2nd Target Pixel (Backdrop)
-					14-15 Not used
-			*/
 			let blend_sources = bldcnt & 0x3f;
 			let blend_targets = (bldcnt >> 8) & 0x3f;
 
@@ -254,7 +230,6 @@ impl GbaLcd {
 
 			let mut blending_shit = Default::default();
 
-			// #TODO have this method return a darkened or brightened pixel as well, if we're doing that.
 			let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, blending_shit: &mut BlendingShit| {
 				if color.3 != 0 {
 					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
@@ -272,8 +247,6 @@ impl GbaLcd {
 				}
 			};
 
-			on_pixel_drawn(5, (backdrop.0, backdrop.1, backdrop.2, 255), &mut blending_shit);
-
 			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
 					blending_shit: &mut BlendingShit| {
 				let mut dest_pixel = dest[pixel_idx];
@@ -290,7 +263,9 @@ impl GbaLcd {
 				if obj_priority > 0 && (obj_priority - 1) == priority {
 					let obj_pixel = obj_line[pixel_idx];
 					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
-					on_pixel_drawn(4, obj_pixel, blending_shit);
+					if obj_info.is_transparent(pixel_idx) {
+						on_pixel_drawn(4, obj_pixel, blending_shit);
+					}
 				}
 
 				dest[pixel_idx] = dest_pixel;
@@ -299,6 +274,7 @@ impl GbaLcd {
 			for pix in 0..240 {
 				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
 				output[pix] = backdrop;
+				on_pixel_drawn(5, (backdrop.0, backdrop.1, backdrop.2, 255), &mut blending_shit);
 				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_shit);
 				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_shit);
 				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
@@ -318,12 +294,100 @@ impl GbaLcd {
 				blending_shit.target_overwritten = false;
 			}
 		} else if blend_mode == 2 {
+			let blend_sources = bldcnt & 0x3f;
+			let bldy = memory.get_reg(ioreg::BLDY);
+			let blend_evy = bldy & 0x1f;
+
+			// I1st + (31-I1st)*EVY
+			let mut brighten_pixel = |layer_idx: u16, color: Pixel| -> Pixel {
+				if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
+					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+						return (
+							((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
+							((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
+							((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8,
+							color.3
+						)
+					}
+				}
+				return color
+			};
+
+			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
+				let mut dest_pixel = dest[pixel_idx];
+
+				// First we draw the BG's pixel (if there is one)
+				if let Some(line) = maybe_line {
+					let src_pixel = brighten_pixel(bg, line[pixel_idx]);
+					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+				}
+
+				// Then we draw the OBJ's pixel on top if there is one at this priority.
+				let obj_priority = obj_info.get_priority(pixel_idx);
+				if obj_priority > 0 && (obj_priority - 1) == priority {
+					let obj_pixel = if obj_info.is_transparent(pixel_idx) { brighten_pixel(4, obj_line[pixel_idx]) } else { obj_line[pixel_idx] };
+					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);
+				}
+
+				dest[pixel_idx] = dest_pixel;
+			};
+
 			for pix in 0..240 {
-				output[pix] = (pix as u8, line as u8, pix as u8)
+				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
+				let backdrop_bright = brighten_pixel(5, (backdrop.0, backdrop.1, backdrop.2, 255));
+				output[pix] = (backdrop_bright.0, backdrop_bright.1, backdrop_bright.2);
+				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2);
+				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2);
+				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2);
+				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2);
 			}
 		} else if blend_mode == 3 {
+			let blend_sources = bldcnt & 0x3f;
+			let bldy = memory.get_reg(ioreg::BLDY);
+			let blend_evy = bldy & 0x1f;
+
+			// I1st - (I1st)*EVY
+			let mut darken_pixel = |layer_idx: u16, color: Pixel| -> Pixel {
+				if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
+					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+						return (
+							((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
+							((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
+							((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8,
+							color.3
+						)
+					}
+				}
+				return color
+			};
+
+			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
+				let mut dest_pixel = dest[pixel_idx];
+
+				// First we draw the BG's pixel (if there is one)
+				if let Some(line) = maybe_line {
+					let src_pixel = darken_pixel(bg, line[pixel_idx]);
+					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+				}
+
+				// Then we draw the OBJ's pixel on top if there is one at this priority.
+				let obj_priority = obj_info.get_priority(pixel_idx);
+				if obj_priority > 0 && (obj_priority - 1) == priority {
+					let obj_pixel = if obj_info.is_transparent(pixel_idx) { darken_pixel(4, obj_line[pixel_idx]) } else { obj_line[pixel_idx] };
+					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);
+				}
+
+				dest[pixel_idx] = dest_pixel;
+			};
+
 			for pix in 0..240 {
-				output[pix] = (pix as u8, pix as u8, line as u8)
+				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
+				let backdrop_dark = darken_pixel(5, (backdrop.0, backdrop.1, backdrop.2, 255));
+				output[pix] = (backdrop_dark.0, backdrop_dark.1, backdrop_dark.2);
+				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2);
+				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2);
+				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2);
+				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2);
 			}
 		}
 	}
@@ -338,17 +402,27 @@ impl GbaLcd {
 	}
 
 	#[inline(always)]
+	#[cfg(feature = "true-alpha-blend")]
 	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
-		if a.3 == 0 { return b }
+		if a.3 == 0 {
+			b
+		} else {
+			let aa = a.3 as u32; // alpha component of a
+			let aa_inv = 255 - aa;
+			let _blend = |ca, cb| -> u8 {
+				let ca = ca as u32; // color component of a
+				let cb = cb as u32; // color component of b
+				((aa * ca + aa_inv * cb) >> 8) as u8
+			};
+			(_blend(a.0, b.0), _blend(a.1, b.1), _blend(a.2, b.2))
+		}
+	}
 
-		let aa = (a.3 as u32) + 1; // alpha component of a
-		let aa_inv = 255 - (a.3 as u32);
-		let _blend = |ca, cb| -> u8 {
-			let ca = ca as u32; // color component of a
-			let cb = cb as u32; // color component of b
-			((aa * ca + aa_inv * cb) >> 8) as u8
-		};
-		(_blend(a.0, b.0), _blend(a.1, b.1), _blend(a.2, b.2))
+	#[inline(always)]
+	#[cfg(not(feature = "true-alpha-blend"))]
+	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
+		if a.3 == 0 { b }
+		else { (a.0, a.1, a.2) }
 	}
 }
 

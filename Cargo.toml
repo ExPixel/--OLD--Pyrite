@@ -10,6 +10,11 @@ default = ["emulate-swi"]
 # jumping to the code in the BIOS.
 emulate-swi = []
 
+# If this feature is on, the LCD will actually try to do alpha blending
+# rather than just assuming 0/255 alpha values as one can expect the emulator to
+# generate.
+true-alpha-blend = []
+
 [profile.dev]
 # Ideally I would just like to turn overflow checking off
 # because overflows happen so frequently, but this is fine I guess.
