@@ -136,7 +136,7 @@ impl GbaLcd {
 	fn blend(&mut self, line: u16, memory: &GbaMemory) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
-		let transparent_color = convert_rgb5_to_rgb8(memory.read16(0x05000000));
+		let backdrop = convert_rgb5_to_rgb8(memory.read16(0x05000000));
 		let output = &mut self.screen_buffer[line as usize][0..240];
 
 		let bg0_enabled = self.lines.bg0_enable && (((dispcnt >> 8) & 1) != 0);
@@ -149,29 +149,32 @@ impl GbaLcd {
 		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
 		let bg3_priority = memory.get_reg(ioreg::BG3CNT) & 0x3;
 
-		// (priority, line)
-		let mut rendering_order: [(u8, Option<&GbaBGLine>); 4] = [(0, None), (0, None), (0, None), (0, None)];
+		let bldcnt = memory.get_reg(ioreg::BLDCNT);
+		let blend_mode = (bldcnt >> 6) & 0x3;
+
+		// (priority, bg, line)
+		let mut rendering_order: [(u8, u16, Option<&GbaBGLine>); 4] = [(0, 0, None), (0, 0, None), (0, 0, None), (0, 0, None)];
 		let mut rendering_order_idx = 0;
 		for priority in (0..4).rev() {
 			let mut temp_priority = rendering_order_idx;
 
 			if bg3_enabled && bg3_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg3));
+				rendering_order[rendering_order_idx] = (priority as u8, 3, Some(&self.lines.bg3));
 				rendering_order_idx += 1;
 			}
 
 			if bg2_enabled && bg2_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg2));
+				rendering_order[rendering_order_idx] = (priority as u8, 2, Some(&self.lines.bg2));
 				rendering_order_idx += 1;
 			}
 
 			if bg1_enabled && bg1_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg1));
+				rendering_order[rendering_order_idx] = (priority as u8, 1, Some(&self.lines.bg1));
 				rendering_order_idx += 1;
 			}
 
 			if bg0_enabled && bg0_priority == priority {
-				rendering_order[rendering_order_idx] = (0, Some(&self.lines.bg0));
+				rendering_order[rendering_order_idx] = (priority as u8, 0, Some(&self.lines.bg0));
 				rendering_order_idx += 1;
 			}
 		}
@@ -180,32 +183,141 @@ impl GbaLcd {
 		let obj_info = &self.lines.obj_info;
 		let obj_line = &self.lines.obj;
 
-		let process_pixel = |priority: u8, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
-			let mut dest_pixel = dest[pixel_idx];
+		// #TODO split this into different functions that just take a pointer
+		// to the rendering order because that's all they need, really.
+		if blend_mode == 0 { // Alpha blending is disabled.
+			let process_pixel = |priority: u8, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
+				let mut dest_pixel = dest[pixel_idx];
 
-			// First we draw the BG's pixel (if there is one)
-			if let Some(line) = maybe_line {
-				let src_pixel = line[pixel_idx];
-				dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+				// First we draw the BG's pixel (if there is one)
+				if let Some(line) = maybe_line {
+					let src_pixel = line[pixel_idx];
+					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+				}
+
+				// Then we draw the OBJ's pixel on top if there is one at this priority.
+				let obj_priority = obj_info.get_priority(pixel_idx);
+				if obj_priority > 0 && (obj_priority - 1) == priority {
+					let obj_pixel = obj_line[pixel_idx];
+					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
+				}
+
+				dest[pixel_idx] = dest_pixel;
+			};
+
+			for pix in 0..240 {
+				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
+				output[pix] = backdrop;
+				process_pixel(rendering_order[0].0, pix, output, rendering_order[0].2);
+				process_pixel(rendering_order[1].0, pix, output, rendering_order[1].2);
+				process_pixel(rendering_order[2].0, pix, output, rendering_order[2].2);
+				process_pixel(rendering_order[3].0, pix, output, rendering_order[3].2);
 			}
+		} else if blend_mode == 1 {
+			/*
+				4000050h - BLDCNT - Color Special Effects Selection (R/W)
+					Bit   Expl.
+					0     BG0 1st Target Pixel (Background 0)
+					1     BG1 1st Target Pixel (Background 1)
+					2     BG2 1st Target Pixel (Background 2)
+					3     BG3 1st Target Pixel (Background 3)
+					4     OBJ 1st Target Pixel (Top-most OBJ pixel)
+					5     BD  1st Target Pixel (Backdrop)
+					6-7   Color Special Effect (0-3, see below)
+					     0 = None                (Special effects disabled)
+					     1 = Alpha Blending      (1st+2nd Target mixed)
+					     2 = Brightness Increase (1st Target becomes whiter)
+					     3 = Brightness Decrease (1st Target becomes blacker)
+					8     BG0 2nd Target Pixel (Background 0)
+					9     BG1 2nd Target Pixel (Background 1)
+					10    BG2 2nd Target Pixel (Background 2)
+					11    BG3 2nd Target Pixel (Background 3)
+					12    OBJ 2nd Target Pixel (Top-most OBJ pixel)
+					13    BD  2nd Target Pixel (Backdrop)
+					14-15 Not used
+			*/
+			let blend_sources = bldcnt & 0x3f;
+			let blend_targets = (bldcnt >> 8) & 0x3f;
 
-			// Then we draw the OBJ's pixel on top if there is one at this priority.
-			let obj_priority = obj_info.get_priority(pixel_idx);
-			if obj_priority > 0 && (obj_priority - 1) == priority {
-				let obj_pixel = obj_line[pixel_idx];
-				dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
+			#[derive(Default)]
+			struct BlendingShit {
+				target_drawn: bool,
+				source_on_top: bool,
+				target_overwritten: bool,
+				source_pixel: (u8, u8, u8),
+				target_pixel: (u8, u8, u8)
+			};
+
+			let mut blending_shit = Default::default();
+
+			// #TODO have this method return a darkened or brightened pixel as well, if we're doing that.
+			let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, blending_shit: &mut BlendingShit| {
+				if color.3 != 0 {
+					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+						blending_shit.source_on_top = true;
+						blending_shit.source_pixel = (color.0, color.1, color.2);
+					} else if ((blend_targets >> layer_idx) & 1) == 1 { // This is a target layer.
+						if blending_shit.target_drawn {
+							blending_shit.target_overwritten = true;
+						} else {
+							blending_shit.target_drawn = true;
+							blending_shit.target_pixel = (color.0, color.1, color.2);
+						}
+						blending_shit.source_on_top = false;
+					}
+				}
+			};
+
+			on_pixel_drawn(5, (backdrop.0, backdrop.1, backdrop.2, 255), &mut blending_shit);
+
+			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
+					blending_shit: &mut BlendingShit| {
+				let mut dest_pixel = dest[pixel_idx];
+
+				// First we draw the BG's pixel (if there is one)
+				if let Some(line) = maybe_line {
+					let src_pixel = line[pixel_idx];
+					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+					on_pixel_drawn(bg, src_pixel, blending_shit);
+				}
+
+				// Then we draw the OBJ's pixel on top if there is one at this priority.
+				let obj_priority = obj_info.get_priority(pixel_idx);
+				if obj_priority > 0 && (obj_priority - 1) == priority {
+					let obj_pixel = obj_line[pixel_idx];
+					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
+					on_pixel_drawn(4, obj_pixel, blending_shit);
+				}
+
+				dest[pixel_idx] = dest_pixel;
+			};
+
+			for pix in 0..240 {
+				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
+				output[pix] = backdrop;
+				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_shit);
+				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_shit);
+				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
+				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_shit);
+
+				pyrite_debugging!({
+					if blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top {
+						output[pix] = blending_shit.target_pixel;
+					}
+				});
+
+				blending_shit.target_drawn = false;
+				blending_shit.source_on_top = false;
+				blending_shit.target_overwritten = false;
 			}
-
-			dest[pixel_idx] = dest_pixel;
-		};
-
-		for pix in 0..240 {
-			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-			output[pix] = transparent_color;
-			process_pixel(rendering_order[0].0, pix, output, rendering_order[0].1);
-			process_pixel(rendering_order[1].0, pix, output, rendering_order[1].1);
-			process_pixel(rendering_order[2].0, pix, output, rendering_order[2].1);
-			process_pixel(rendering_order[3].0, pix, output, rendering_order[3].1);
+		} else if blend_mode == 2 {
+			for pix in 0..240 {
+				output[pix] = (pix as u8, line as u8, pix as u8)
+			}
+		} else if blend_mode == 3 {
+			for pix in 0..240 {
+				output[pix] = (pix as u8, pix as u8, line as u8)
+			}
 		}
 	}
 
@@ -223,7 +335,7 @@ impl GbaLcd {
 		if a.3 == 0 { return b }
 
 		let aa = (a.3 as u32) + 1; // alpha component of a
-		let aa_inv = 256 - (a.3 as u32);
+		let aa_inv = 255 - (a.3 as u32);
 		let _blend = |ca, cb| -> u8 {
 			let ca = ca as u32; // color component of a
 			let cb = cb as u32; // color component of b

@@ -58,8 +58,7 @@ pub struct GbaDevice {
 	vertex_buffer: glium::vertex::VertexBuffer<Vertex>,
 	indices: glium::index::NoIndices,
 	program: glium::program::Program,
-	pub screen_texture: Texture2d,
-	pub fps_counter: FrameCounter,
+	pub screen_texture: Texture2d
 }
 
 impl GbaDevice {
@@ -91,8 +90,7 @@ impl GbaDevice {
 			vertex_buffer: vertex_buffer,
 			indices: indices,
 			program: program,
-			screen_texture: texture,
-			fps_counter: FrameCounter::new()
+			screen_texture: texture
 		}
 	}
 
@@ -119,6 +117,5 @@ impl GbaDevice {
 		target.draw(&self.vertex_buffer, &self.indices, &self.program, &uniform,
             &Default::default()).unwrap();
 		target.finish().unwrap();
-		self.fps_counter.record_frame();
 	}
 }

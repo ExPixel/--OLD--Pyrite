@@ -3,6 +3,7 @@ use super::super::ArmCpu;
 use super::thumb_impl::*;
 use super::thumb_dp_impl::*;
 
+// #TODO make this a match statement instead. (Measure first!)
 pub static THUMB_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 16]; 16] = [
 [thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsl_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm, thumb_lsr_imm],
 [thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_asr_imm, thumb_add_reg, thumb_add_reg, thumb_sub_reg, thumb_sub_reg, thumb_add_imm3, thumb_add_imm3, thumb_sub_imm3, thumb_sub_imm3],

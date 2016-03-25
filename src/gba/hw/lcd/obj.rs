@@ -209,6 +209,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
 	// #TODO not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
+	let semi_transparent = ((obj.attr0 >> 10) & 0x3) == 1;
 	// #TODO implement mosaics
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
@@ -253,6 +254,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 					if dot.3 != 0 {
 						lines.obj[px as usize] = dot;
 						lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
+						lines.obj_info.set_transparent(px as usize);
 					}
 				}
 				px = (px + 1) & 0x1ff;
@@ -264,6 +266,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
 	// #TODO not worrying about the obj mode for now.
 	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
+	let semi_transparent = ((obj.attr0 >> 10) & 0x3) == 1;
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
 
@@ -323,6 +326,7 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 						if dot.3 != 0 {
 							lines.obj[px as usize] = dot;
 							lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
+							lines.obj_info.set_transparent(px as usize);
 						}
 					}
 				}

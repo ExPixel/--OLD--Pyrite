@@ -52,7 +52,15 @@ macro_rules! pyrite_debugging {
 		if unsafe {::util::PYRITE_DYN_DEBUG_ENABLED} {
 			$b
 		}
-	)
+	);
+
+	($b:block, $c:block) => (
+		if unsafe {::util::PYRITE_DYN_DEBUG_ENABLED} {
+			$b
+		} else {
+			$c
+		}
+	);
 }
 
 #[macro_export]

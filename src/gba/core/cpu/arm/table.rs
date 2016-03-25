@@ -2,6 +2,7 @@ use super::super::ArmCpu;
 // use super::super::super::memory::GbaMemory;
 use super::arm_impl::*;
 
+// #TODO make this a match statement instead. (Measure first!)
 pub static ARM_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 16]; 256] = [
 [arm_and_lli, arm_and_llr, arm_and_lri, arm_and_lrr, arm_and_ari, arm_and_arr, arm_and_rri, arm_and_rrr, arm_and_lli, arm_mul, arm_and_lri, arm_strh_ptrm, arm_and_ari, arm_undefined, arm_and_rri, arm_undefined],
 [arm_ands_lli, arm_ands_llr, arm_ands_lri, arm_ands_lrr, arm_ands_ari, arm_ands_arr, arm_ands_rri, arm_ands_rrr, arm_ands_lli, arm_muls, arm_ands_lri, arm_ldrh_ptrm, arm_ands_ari, arm_ldrsb_ptrm, arm_ands_rri, arm_ldrsh_ptrm],

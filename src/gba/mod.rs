@@ -114,35 +114,39 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.init();
+		let mut frame: u64 = 0;
 		'running: loop {
 			if LIMIT_FPS {
 				let start_time = time::precise_time_ns();
-				self.tick();
+				self.tick(frame);
 				let delta = time::precise_time_ns() - start_time;
 				let sleep_time_millis = if delta > FPS_60_DELTA_NS { FPS_60_DELTA_NS } else { FPS_60_DELTA_NS - delta } / 1000000;
 				thread::sleep(Duration::from_millis(sleep_time_millis));
 			} else { // #TODO remove debug code.
-				self.tick();
+				self.tick(frame);
 			}
 			if self.request_exit { break 'running; }
+			frame += 1;
 		}
 		self.request_exit = false; // in case we don't actually close here.
 		println!("-- Shutdown successfully.");
 	}
 
-	fn tick(&mut self) {
+	fn tick(&mut self, frame: u64) {
+		let frame_start_time = time::precise_time_ns();
 		self.frame();
-		self.update_window_title();
+		let render_start_time = time::precise_time_ns();
 		self.device.render(&self.lcd.screen_buffer);
+		let end_time = time::precise_time_ns();
+		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
 	}
 
-	fn update_window_title(&mut self) {
-		if self.device.fps_counter.fps_available { // So we don't sample too much.
-			let fps = self.device.fps_counter.fps;
-			let speed = ((fps as f64) / 60f64) * 100f64;
-			let window = self.device.display.get_window().expect("Failed to get device window.");
-			window.set_title(&format!("Pyrite - {} FPS ({}% GBA)", fps, speed as i64));
-		}
+	fn update_window_title(&mut self, frame: u64, frame_start_time: f64, render_start_time: f64, end_time: f64) {
+		let frame_build_time = (render_start_time - frame_start_time) / 1000000.0;
+		let render_to_screen_time = (end_time - render_start_time) / 1000000.0;
+		let frame_build_and_render_time = (end_time - frame_start_time) / 1000000.0;
+		let window = self.device.display.get_window().expect("Failed to get device window.");
+		window.set_title(&format!("Pyrite - {:.1}ms [f: {:.1}ms, r: {:.1}ms]", frame_build_and_render_time, frame_build_time, render_to_screen_time));
 	}
 
 	fn frame(&mut self) {
