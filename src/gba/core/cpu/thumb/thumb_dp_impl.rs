@@ -60,13 +60,13 @@ gen_alu!(thumb_dp_lsr, thumb_fn_lrr);
 /// Arithmetic Right-shift
 gen_alu!(thumb_dp_asr, thumb_fn_arr);
 
-/// ADD 
-/// Add
-gen_alu!(thumb_dp_add, arm_fn_add_s);
+/// ADC 
+/// Add with carry
+gen_alu!(thumb_dp_adc, arm_fn_adc_s);
 
-/// SUB 
-/// Subtract
-gen_alu!(thumb_dp_sub, arm_fn_sub_s);
+/// SBC 
+/// Subtract with carry
+gen_alu!(thumb_dp_sbc, arm_fn_sbc_s);
 
 /// ROR 
 /// Rotate right

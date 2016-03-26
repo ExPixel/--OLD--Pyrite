@@ -25,7 +25,7 @@ pub static THUMB_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 16]; 16] = [
 
 pub static THUMB_DP_OPCODE_TABLE:[[fn(&mut ArmCpu, u32); 4]; 4] = [
 [thumb_dp_and, thumb_dp_eor, thumb_dp_lsl, thumb_dp_lsr],
-[thumb_dp_asr, thumb_dp_add, thumb_dp_sub, thumb_dp_ror],
+[thumb_dp_asr, thumb_dp_adc, thumb_dp_sbc, thumb_dp_ror],
 [thumb_dp_tst, thumb_dp_neg, thumb_dp_cmp, thumb_dp_cmn],
 [thumb_dp_orr, thumb_dp_mul, thumb_dp_bic, thumb_dp_mvn]
 ];
