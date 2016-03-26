@@ -2,6 +2,9 @@
 
 A GBA Emulator
 
+- For quick tests of the emulator's functionality, use ```cargo build``` and ```cargo run -- [ROM]``` (< 60 FPS, maybe < 30 FPS)
+- The run the emulator at full speed, ```cargo build --release``` and ```cargo run --release -- [ROM]``` (60 FPS+)
+
 Some Screenshots:
 
 ![Affine Background Demo](https://raw.githubusercontent.com/ExPixel/Pyrite2/master/misc/screenshots/sbb-aff/PyriteSbbAffGif.gif)
