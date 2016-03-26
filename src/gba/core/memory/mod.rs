@@ -68,8 +68,8 @@ impl GbaMemory {
 	/// This should never try to slice memory across regions or mirrors. Bad things might happen.
 	/// NOTE: Ranges in this are inclusive!
 	pub fn get_slice(&self, start_address: u32, end_address: u32) -> &[u8] {
-		let start_index = self.transform(start_address);
-		let end_index = self.transform(end_address);
+		let (start_index, _) = self.transform(start_address);
+		let (end_index, _) = self.transform(end_address);
 		&self.internal_data[start_index..(end_index + 1)]
 	}
 
@@ -80,7 +80,8 @@ impl GbaMemory {
 
 	/// Transforms a global GBA memory address
 	/// into a local index in our internal data array.
-	pub fn transform(&self, address32: u32) -> usize {
+	/// returns address and true if write is allowed.
+	pub fn transform(&self, address32: u32) -> (usize, bool) {
 		let address = address32 as usize;
 		match address {
 			// System ROM (BIOS):
@@ -89,7 +90,7 @@ impl GbaMemory {
 			// Size: 16kb 
 			// Port Size: 32 bit
 			// Wait State: 0
-			0x0 ... 0x3fff => address + MEM_BIOS.local_addr,
+			0x0 ... 0x3fff => (address + MEM_BIOS.local_addr, false),
 
 			// External Work RAM (On-Board):
 			// Start: 0x02000000
@@ -97,7 +98,7 @@ impl GbaMemory {
 			// Size:  256kb
 			// Port Size: 16 bit
 			// Mirrors:  Every 0x40000 bytes from 0x02000000 to 0x02FFFFFF
-			0x02000000 ... 0x02FFFFFF => (address % 0x40000) + MEM_WRAM_B.local_addr,
+			0x02000000 ... 0x02FFFFFF => ((address % 0x40000) + MEM_WRAM_B.local_addr, true),
 
 			// Internal Work RAM (On-Chip):
 			// Start: 0x03000000
@@ -105,12 +106,12 @@ impl GbaMemory {
 			// Size:  32kb
 			// Port Size: 32 bit
 			// Mirrors:  Every 0x8000 bytes from 0x03000000 to 0x03FFFFFF
-			0x03000000 ... 0x03FFFFFF => (address % 0x8000) + MEM_WRAM_C.local_addr,
+			0x03000000 ... 0x03FFFFFF => ((address % 0x8000) + MEM_WRAM_C.local_addr, true),
 
 			0x04000000 ... 0x04FFFFFF => {
 				let _addrmasked = address & 0xFFFF;
-				if _addrmasked >= 0x0800  && _addrmasked <= 0x0803 { MEM_IOREG.local_addr + _addrmasked }
-				else if address <= 0x04000804 { address - 0x04000000 + MEM_IOREG.local_addr }
+				if _addrmasked >= 0x0800  && _addrmasked <= 0x0803 { (MEM_IOREG.local_addr + _addrmasked, true) }
+				else if address <= 0x04000804 { (address - 0x04000000 + MEM_IOREG.local_addr, true) }
 				else { panic!("Invalid IO register address. Not sure how to handle this! {:08x}", address) }
 			}
 
@@ -120,7 +121,7 @@ impl GbaMemory {
 			// Size:  1kb
 			// Port Size:  16 bit
 			// Mirrors: Every 0x400 bytes from 0x05000000 to 0x5FFFFFF
-			0x05000000 ... 0x5FFFFFF => (address % 0x400) + MEM_PAL.local_addr,
+			0x05000000 ... 0x5FFFFFF => ((address % 0x400) + MEM_PAL.local_addr, true),
 
 			// VRAM:
 			// Start: 0x06000000
@@ -141,7 +142,7 @@ impl GbaMemory {
 				} else {
 					vram_128k
 				};
-				vram_offset + MEM_VRAM.local_addr
+				(vram_offset + MEM_VRAM.local_addr, true)
 			}
 
 			// OAM:
@@ -150,10 +151,10 @@ impl GbaMemory {
 			// Size:  1kb
 			// Port Size: 32 bit
 			// Mirrors: Every 0x400 bytes from 0x07000000 to 0x07FFFFFF
-			0x07000000 ... 0x07FFFFFF => (address % 0x400) + MEM_OAM.local_addr,
+			0x07000000 ... 0x07FFFFFF => ((address % 0x400) + MEM_OAM.local_addr, true),
 
 			// #TODO Reading from Unused Memory (00004000-01FFFFFF,10000000-FFFFFFFF)
-			_ => 0 /* panic!("Attempted to map unreachable address (0x{:08X})", address) */
+			_ => (0, false)
 		}
 	}
 
@@ -236,15 +237,17 @@ impl GbaMemory {
 			0x08000000 ... 0x0Dffffff => self.rom_write8(address, value),
 			0x0E000000 ... 0x0E00FFFF => {}, // #TODO SRAM and shit.
 			_ => {
-				let local_addr = self.transform(address);
-				match address {
-					// Handles the weirdness of writing to the IF register.
-					// When one of the bits is set, it's actually cleared.
-					// #FIXME take a look at this again at some point.
-					//        because I'm not sure if this is exactly what
-					//        is supposed to be happening.
-					0x4000202 | 0x4000203 => self.internal_data[local_addr] &= !value,
-					_ => self.internal_data[local_addr] = value
+				let (local_addr, writeable) = self.transform(address);
+				if writeable {
+					match address {
+						// Handles the weirdness of writing to the IF register.
+						// When one of the bits is set, it's actually cleared.
+						// #FIXME take a look at this again at some point.
+						//        because I'm not sure if this is exactly what
+						//        is supposed to be happening.
+						0x4000202 | 0x4000203 => self.internal_data[local_addr] &= !value,
+						_ => self.internal_data[local_addr] = value
+					}
 				}
 			}	
 		}
@@ -256,7 +259,7 @@ impl GbaMemory {
 			0x08000000 ... 0x0Dffffff => self.rom_read8(address),
 			0x0E000000 ... 0x0E00FFFF => 0, // #TODO SRAM and shit.
 			_ => {
-				let local_addr = self.transform(address);
+				let (local_addr, _) = self.transform(address);
 				self.internal_data[local_addr]
 			}
 		}

@@ -181,214 +181,132 @@ impl GbaLcd {
 		let obj_info = &self.lines.obj_info;
 		let obj_line = &self.lines.obj;
 
-		// #TODO split this into different functions that just take a pointer
-		// to the rendering order because that's all they need, really.
-		if blend_mode == 0 { // Alpha blending is disabled.
-			let process_pixel = |priority: u8, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
-				let mut dest_pixel = dest[pixel_idx];
+		let blend_sources = bldcnt & 0x3f;
+		let blend_targets = (bldcnt >> 8) & 0x3f;
 
-				// First we draw the BG's pixel (if there is one)
-				if let Some(line) = maybe_line {
-					let src_pixel = line[pixel_idx];
-					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
+		let blend_alpha = memory.get_reg(ioreg::BLDALPHA);
+		let blend_eva = min!(16, blend_alpha & 0x1f);
+		let blend_evb = min!(16, (blend_alpha >> 8) & 0x1f);
+
+		let bldy = memory.get_reg(ioreg::BLDY);
+		let blend_evy = bldy & 0x1f;
+
+		// I1st + (31-I1st)*EVY
+		fn brighten_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
+			if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
+				if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+					return (
+						((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
+						((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
+						((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8,
+						color.3
+					)
 				}
-
-				// Then we draw the OBJ's pixel on top if there is one at this priority.
-				let obj_priority = obj_info.get_priority(pixel_idx);
-				if obj_priority > 0 && (obj_priority - 1) == priority {
-					let obj_pixel = obj_line[pixel_idx];
-					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
-				}
-
-				dest[pixel_idx] = dest_pixel;
-			};
-
-			for pix in 0..240 {
-				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-				output[pix] = backdrop;
-				process_pixel(rendering_order[0].0, pix, output, rendering_order[0].2);
-				process_pixel(rendering_order[1].0, pix, output, rendering_order[1].2);
-				process_pixel(rendering_order[2].0, pix, output, rendering_order[2].2);
-				process_pixel(rendering_order[3].0, pix, output, rendering_order[3].2);
 			}
-		} else if blend_mode == 1 {
-			let blend_sources = bldcnt & 0x3f;
-			let blend_targets = (bldcnt >> 8) & 0x3f;
+			return color
+		};
 
-			let blend_alpha = memory.get_reg(ioreg::BLDALPHA);
-			let blend_eva = min!(16, blend_alpha & 0x1f);
-			let blend_evb = min!(16, (blend_alpha >> 8) & 0x1f);
-
-			#[derive(Default)]
-			struct BlendingShit {
-				target_drawn: bool,
-				source_on_top: bool,
-				target_overwritten: bool,
-				source_pixel: (u8, u8, u8),
-				target_pixel: (u8, u8, u8)
-			};
-
-			let mut blending_shit = Default::default();
-
-			let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, blending_shit: &mut BlendingShit| {
-				if color.3 != 0 {
-					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-						blending_shit.source_on_top = true;
-						blending_shit.source_pixel = (color.0, color.1, color.2);
-					} else if ((blend_targets >> layer_idx) & 1) == 1 { // This is a target layer.
-						if blending_shit.target_drawn {
-							blending_shit.target_overwritten = true;
-						} else {
-							blending_shit.target_drawn = true;
-							blending_shit.target_pixel = (color.0, color.1, color.2);
-						}
-						blending_shit.source_on_top = false;
-					}
+		// I1st - (I1st)*EVY
+		fn darken_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
+			if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
+				if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+					return (
+						((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
+						((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
+						((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8,
+						color.3
+					)
 				}
-			};
-
-			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
-					blending_shit: &mut BlendingShit| {
-				let mut dest_pixel = dest[pixel_idx];
-
-				// First we draw the BG's pixel (if there is one)
-				if let Some(line) = maybe_line {
-					let src_pixel = line[pixel_idx];
-					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
-					on_pixel_drawn(bg, src_pixel, blending_shit);
-				}
-
-				// Then we draw the OBJ's pixel on top if there is one at this priority.
-				let obj_priority = obj_info.get_priority(pixel_idx);
-				if obj_priority > 0 && (obj_priority - 1) == priority {
-					let obj_pixel = obj_line[pixel_idx];
-					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);	
-					if obj_info.is_transparent(pixel_idx) {
-						on_pixel_drawn(4, obj_pixel, blending_shit);
-					}
-				}
-
-				dest[pixel_idx] = dest_pixel;
-			};
-
-			for pix in 0..240 {
-				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-				output[pix] = backdrop;
-				on_pixel_drawn(5, (backdrop.0, backdrop.1, backdrop.2, 255), &mut blending_shit);
-				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_shit);
-				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_shit);
-				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
-				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_shit);
-
-				if blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top {
-					let out_pix = (
-						min!(255, (((blending_shit.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
-						min!(255, (((blending_shit.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
-						min!(255, (((blending_shit.target_pixel.2 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.2 as u16) * blend_eva) >> 4)) as u8,
-					);
-					output[pix] = out_pix;
-				}
-
-				blending_shit.target_drawn = false;
-				blending_shit.source_on_top = false;
-				blending_shit.target_overwritten = false;
 			}
-		} else if blend_mode == 2 {
-			let blend_sources = bldcnt & 0x3f;
-			let bldy = memory.get_reg(ioreg::BLDY);
-			let blend_evy = bldy & 0x1f;
+			return color
+		};
 
-			// I1st + (31-I1st)*EVY
-			let mut brighten_pixel = |layer_idx: u16, color: Pixel| -> Pixel {
-				if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
-					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-						return (
-							((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
-							((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
-							((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8,
-							color.3
-						)
+		fn let_the_pixel_live_its_life(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel { color };
+
+		let change_pixel_brightness: fn(u16, u16, u16, Pixel) -> Pixel = match blend_mode {
+			2 => brighten_pixel,
+			3 => darken_pixel,
+			_ => let_the_pixel_live_its_life
+		};
+
+		#[derive(Default)]
+		struct BlendingShit {
+			target_drawn: bool,
+			source_on_top: bool,
+			target_overwritten: bool,
+			source_pixel: (u8, u8, u8),
+			target_pixel: (u8, u8, u8),
+			force_obj_blend: bool
+		};
+
+		let mut blending_shit = Default::default();
+
+		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_shit: &mut BlendingShit| {
+			if color.3 != 0 {
+				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+					blending_shit.source_on_top = true;
+					blending_shit.source_pixel = (color.0, color.1, color.2);
+				} else if ((blend_targets >> layer_idx) & 1) == 1 { // This is a target layer.
+					if blending_shit.target_drawn {
+						blending_shit.target_overwritten = true;
+					} else {
+						blending_shit.target_drawn = true;
+						blending_shit.target_pixel = (color.0, color.1, color.2);
 					}
+					blending_shit.source_on_top = false;
 				}
-				return color
-			};
-
-			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
-				let mut dest_pixel = dest[pixel_idx];
-
-				// First we draw the BG's pixel (if there is one)
-				if let Some(line) = maybe_line {
-					let src_pixel = brighten_pixel(bg, line[pixel_idx]);
-					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
-				}
-
-				// Then we draw the OBJ's pixel on top if there is one at this priority.
-				let obj_priority = obj_info.get_priority(pixel_idx);
-				if obj_priority > 0 && (obj_priority - 1) == priority {
-					let obj_pixel = if obj_info.is_transparent(pixel_idx) { brighten_pixel(4, obj_line[pixel_idx]) } else { obj_line[pixel_idx] };
-					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);
-				}
-
-				dest[pixel_idx] = dest_pixel;
-			};
-
-			for pix in 0..240 {
-				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-				let backdrop_bright = brighten_pixel(5, (backdrop.0, backdrop.1, backdrop.2, 255));
-				output[pix] = (backdrop_bright.0, backdrop_bright.1, backdrop_bright.2);
-				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2);
-				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2);
-				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2);
-				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2);
 			}
-		} else if blend_mode == 3 {
-			let blend_sources = bldcnt & 0x3f;
-			let bldy = memory.get_reg(ioreg::BLDY);
-			let blend_evy = bldy & 0x1f;
+		};
 
-			// I1st - (I1st)*EVY
-			let mut darken_pixel = |layer_idx: u16, color: Pixel| -> Pixel {
-				if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
-					if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-						return (
-							((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
-							((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
-							((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8,
-							color.3
-						)
-					}
-				}
-				return color
-			};
+		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
+				blending_shit: &mut BlendingShit| {
+			let mut dest_pixel = dest[pixel_idx];
 
-			let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>| {
-				let mut dest_pixel = dest[pixel_idx];
-
-				// First we draw the BG's pixel (if there is one)
-				if let Some(line) = maybe_line {
-					let src_pixel = darken_pixel(bg, line[pixel_idx]);
-					dest_pixel = Self::blend_pixels(src_pixel, dest_pixel);
-				}
-
-				// Then we draw the OBJ's pixel on top if there is one at this priority.
-				let obj_priority = obj_info.get_priority(pixel_idx);
-				if obj_priority > 0 && (obj_priority - 1) == priority {
-					let obj_pixel = if obj_info.is_transparent(pixel_idx) { darken_pixel(4, obj_line[pixel_idx]) } else { obj_line[pixel_idx] };
-					dest_pixel = Self::blend_pixels(obj_pixel, dest_pixel);
-				}
-
-				dest[pixel_idx] = dest_pixel;
-			};
-
-			for pix in 0..240 {
-				// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-				let backdrop_dark = darken_pixel(5, (backdrop.0, backdrop.1, backdrop.2, 255));
-				output[pix] = (backdrop_dark.0, backdrop_dark.1, backdrop_dark.2);
-				process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2);
-				process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2);
-				process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2);
-				process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2);
+			// First we draw the BG's pixel (if there is one)
+			if let Some(line) = maybe_line {
+				let mut src_pixel = line[pixel_idx];
+				on_pixel_drawn(bg, src_pixel, false, blending_shit);
+				dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, bg, src_pixel), dest_pixel);
 			}
+
+			// Then we draw the OBJ's pixel on top if there is one at this priority.
+			let obj_priority = obj_info.get_priority(pixel_idx);
+			if obj_priority > 0 && (obj_priority - 1) == priority {
+				let obj_pixel = obj_line[pixel_idx];
+				on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_shit);
+				dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, 4, obj_pixel), dest_pixel);	
+				blending_shit.force_obj_blend |= obj_info.is_transparent(pixel_idx);
+			}
+
+			dest[pixel_idx] = dest_pixel;
+		};
+
+		for pix in 0..240 {
+			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
+			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel)
+			let mut backdrop4 = (backdrop.0, backdrop.1, backdrop.2, 255);
+			on_pixel_drawn(5, backdrop4, false, &mut blending_shit);
+			backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4);
+			output[pix] = (backdrop4.0, backdrop4.1, backdrop4.2);
+
+			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_shit);
+			process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_shit);
+			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
+			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_shit);
+
+			if (blend_mode == 1 || blending_shit.force_obj_blend) && (blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top) {
+				let out_pix = (
+					min!(255, (((blending_shit.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((blending_shit.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((blending_shit.target_pixel.2 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.2 as u16) * blend_eva) >> 4)) as u8,
+				);
+				output[pix] = out_pix;
+			}
+
+			blending_shit.target_drawn = false;
+			blending_shit.source_on_top = false;
+			blending_shit.target_overwritten = false;
+			blending_shit.force_obj_blend = false;
 		}
 	}
 
