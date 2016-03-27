@@ -294,7 +294,7 @@ impl GbaLcd {
 			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
 			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_shit);
 
-			if (blend_mode == 1 || blending_shit.force_obj_blend) && (blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top) {
+			if (blend_mode == 1 || (blending_shit.force_obj_blend && blend_mode > 0)) && (blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top) {
 				let out_pix = (
 					min!(255, (((blending_shit.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
 					min!(255, (((blending_shit.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
