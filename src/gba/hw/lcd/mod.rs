@@ -121,7 +121,7 @@ impl GbaLcd {
 			_ => unreachable!()
 		}
 
-		self.blend(line, memory);
+		self.blend_line(line, memory);
 	}
 
 	fn clear_obj_line(&mut self) {
@@ -131,7 +131,7 @@ impl GbaLcd {
 		}
 	}
 
-	fn blend(&mut self, line: u16, memory: &GbaMemory) {
+	fn blend_line(&mut self, line: u16, memory: &GbaMemory) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
 		let backdrop = convert_rgb5_to_rgb8(memory.read16(0x05000000));
@@ -307,15 +307,6 @@ impl GbaLcd {
 			blending_shit.source_on_top = false;
 			blending_shit.target_overwritten = false;
 			blending_shit.force_obj_blend = false;
-		}
-	}
-
-	fn blend_lines(src: &[Pixel], dest: &mut [GbaPixel]) {
-		for idx in 0..240 {
-			let dest_pixel = dest[idx];
-			let src_pixel = src[idx];
-			let out_pixel = Self::blend_pixels(src_pixel, dest_pixel);
-			dest[idx] = out_pixel;
 		}
 	}
 
