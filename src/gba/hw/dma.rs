@@ -94,7 +94,7 @@ impl DmaHandler {
 		if units == 0 {
 			units = channel.max_units
 		} else {
-			units &= channel.max_units - 1;
+			units &= channel.max_units - 1; // max_units are all powers of two so we can mask them like this.
 		}
 
 		let ending_dest;
