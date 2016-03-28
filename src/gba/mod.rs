@@ -215,26 +215,53 @@ impl Gba {
 	}
 
 	fn check_dmas(&mut self, timing: u16) {
-		if self.cpu.memory.internal_regs.dma_dirty {
+		// We only check if the DMA registers are dirty if the timing is immediate
+		// otherwise we try to start the DMA anyway.
+		if timing != DMA_TIMING_IMMEDIATE || self.cpu.memory.internal_regs.dma_dirty {
 			let mut interrupt = None;
+			let mut dirty = false;
 
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) && ((self.cpu.memory.get_reg(ioreg::DMA0CNT_H) >> 14) & 1) != 0 { 
-				interrupt = Some(INT_DMA0);
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) {
+				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA0CNT_H);
+				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
+					interrupt = Some(INT_DMA0);
+				}
+				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
+					dirty |= true;
+				}
 			}
 
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 1) && ((self.cpu.memory.get_reg(ioreg::DMA1CNT_H) >> 14) & 1) != 0 {
-				interrupt = Some(INT_DMA1);
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 1) {
+				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA1CNT_H);
+				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
+					interrupt = Some(INT_DMA1);
+				}
+				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
+					dirty |= true;
+				}
 			}
 
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 2) && ((self.cpu.memory.get_reg(ioreg::DMA2CNT_H) >> 14) & 1) != 0 {
-				interrupt = Some(INT_DMA2);
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 2) {
+				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA2CNT_H);
+				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
+					interrupt = Some(INT_DMA2);
+				}
+				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
+					dirty |= true;
+				}
 			}
 
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 3) && ((self.cpu.memory.get_reg(ioreg::DMA3CNT_H) >> 14) & 1) != 0 {
-				interrupt = Some(INT_DMA3);
+			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 3) {
+				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA3CNT_H);
+				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
+					interrupt = Some(INT_DMA3);
+				}
+				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
+					dirty |= true;
+				}
 			}
 
-			self.cpu.memory.internal_regs.dma_dirty = false;
+			self.cpu.memory.internal_regs.dma_dirty = dirty;
 
 			if let Some(mask) = interrupt { self.hardware_interrupt(mask) }
 		}

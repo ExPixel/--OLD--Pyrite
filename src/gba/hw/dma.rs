@@ -86,7 +86,7 @@ impl DmaHandler {
 	}
 
 	/// Checks a DMA channel and starts it and returns true if a DMA transfer was done.
-	fn start_dma(&mut self, cpu: &mut ArmCpu, dma_cnt_h: u16, channel: &DmaChannel) {
+	fn start_dma(&mut self, cpu: &mut ArmCpu, dma_cnt_h: u16, channel: &DmaChannel) -> bool {
 		let src_addr = cpu.memory.get_reg(channel.reg_sad) & channel.src_mask;
 		let dest_addr = cpu.memory.get_reg(channel.reg_dad) & channel.dest_mask;
 		let mut units = cpu.memory.get_reg(channel.reg_cnt_l) as u32;
@@ -119,7 +119,9 @@ impl DmaHandler {
 
 		if ((dma_cnt_h >> 9) & 1) == 0 { // If this is not repeating.
 			cpu.memory.set_reg(channel.reg_cnt_h, dma_cnt_h & 0x7fff); // clears the enable bit.
+			return false
 		}
+		return true
 	}
 
 	fn get_increment(n: u16, size: i32) -> u32 {
