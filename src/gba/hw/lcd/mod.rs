@@ -220,6 +220,10 @@ impl GbaLcd {
 		let winin = memory.get_reg(ioreg::WININ);
 		let winout = memory.get_reg(ioreg::WINOUT);
 
+		let win0_enabled = ((dispcnt >> 13) & 1) == 1;
+		let win1_enabled = ((dispcnt >> 14) & 1) == 1;
+		let win_obj_enabled = ((dispcnt >> 15) & 1) == 1;
+
 		let win0_left = (win0h >> 8) & 0xff;
 		let win0_right = ((win0h & 0xff) - 1) & 0xff;
 		let win0_top = (win0v >> 8) & 0xff;
@@ -233,6 +237,7 @@ impl GbaLcd {
 		let win0_in = winin & 0x1f;
 		let win1_in = (winin >> 8) & 0x1f;
 		let winout_in = winout & 0x1f;
+		let win_obj_in = (winout >> 8) & 0x1f;
 
 		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_params: &mut BlendingParams| {
 			if color.3 != 0 && !blending_params.window_blending_disabled {
@@ -258,11 +263,13 @@ impl GbaLcd {
 		let darkened_backdrop = (backdrop4.0, backdrop4.1, backdrop4.2);
 
 		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
-			// #TODO add a case for the object window.
+			if !win0_enabled && !win1_enabled && !win_obj_enabled { // Windowing is turned off.
+				return true;
+			}
 			let mut pwindow_priority = 0;
 			let window_disables_blending;
-			if window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom) {
-				pwindow_priority = 3;
+			if win0_enabled && window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom) {
+				pwindow_priority = 4;
 				window_disables_blending = ((winin >> 5) & 1) == 0;
 				if ((win0_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
@@ -279,10 +286,28 @@ impl GbaLcd {
 					}
 					return false;
 				}
-			} else if window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom) {
-				pwindow_priority = 2;
+			} else if win1_enabled && window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom) {
+				pwindow_priority = 3;
 				window_disables_blending = ((winin >> 13) & 1) == 0;
 				if ((win1_in >> layer_idx) & 1) == 0 {
+					if pwindow_priority > blending_params.current_window_prio {
+						blending_params.target_drawn = false;
+						blending_params.source_on_top = false;
+						blending_params.target_overwritten = false;
+						blending_params.force_obj_blend = false;
+						blending_params.window_blending_disabled = window_disables_blending;
+						blending_params.current_window_prio = pwindow_priority;
+
+						// we basically act like the backdrop has been drawn again.
+						*dest_pixel = darkened_backdrop;
+						on_pixel_drawn(5, backdrop4, false, blending_params);
+					}
+					return false;
+				}
+			} else if obj_info.is_window(column as usize) {
+				pwindow_priority = 2;
+				window_disables_blending = ((winout >> 13) & 1) == 0;
+				if ((win_obj_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
 						blending_params.target_drawn = false;
 						blending_params.source_on_top = false;

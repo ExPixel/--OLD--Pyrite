@@ -53,7 +53,11 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 			if ((obj_data.attr0 >> 9) & 1) == 0 {
 				obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
 				obj_data.attr2 = oam_region.direct_read16(attr_addr + 4);
-				draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines);
+				if ((obj_data.attr0 >> 10) & 0x3) == 2 {
+					draw_simple_obj_window(one_dim, tile_region, palette_region, obj_data, line, lines);
+				} else {
+					draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines);
+				}
 			}
 		} else {
 			obj_data.attr1 = oam_region.direct_read16(attr_addr + 2);
@@ -65,23 +69,11 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 			affine_data.dy = oam_region.direct_read16( 22 + rot_scale_params_off ) as i16;
 			affine_data.dmy = oam_region.direct_read16( 30 + rot_scale_params_off ) as i16;
 
-			// pyrite_debugging!({
-			// 	println!("----- OBJ [{}] -----", o);
-			// 	println!("attr0: 0x{:04x}", obj_data.attr0);
-			// 	println!("attr1: 0x{:04x}", obj_data.attr1);
-			// 	println!("attr2: 0x{:04x}", obj_data.attr2);
-			// 	println!("PA (DX):  0x{:04x}", affine_data.dx);
-			// 	println!("PB (DMX): 0x{:04x}", affine_data.dmx);
-			// 	println!("PC (DY):  0x{:04x}", affine_data.dy);
-			// 	println!("PD (DMY): 0x{:04x}", affine_data.dmy);
-			// 	println!("P-Select: 0x{:04x}", ((obj_data.attr1 >> 9) & 0x1f));
-			// 	println!("PA-Loc: 0x{:04x}", 6 + rot_scale_params_off);
-			// 	println!("PB-Loc: 0x{:04x}", 14 + rot_scale_params_off);
-			// 	println!("PC-Loc: 0x{:04x}", 22 + rot_scale_params_off);
-			// 	println!("PD-Loc: 0x{:04x}", 30 + rot_scale_params_off);
-			// });
-
-			draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
+			if ((obj_data.attr0 >> 10) & 0x3) == 2 {
+				draw_rot_scale_obj_window(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
+			} else {
+				draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
+			}
 		}
 		attr_addr += 8; // there's an empty slot for rot/scale
 	} 
@@ -207,8 +199,6 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 
 /// Draw an object with no rotation/scaling.
 fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
-	// #TODO not worrying about the obj mode for now.
-	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
 	let semi_transparent = ((obj.attr0 >> 10) & 0x3) == 1;
 	// #TODO implement mosaics
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
@@ -230,10 +220,6 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 
 	let mut px = obj.attr1 & 0x1ff;
 	let mut py = obj.attr0 & 0xff;
-
-	pyrite_debugging!({
-		println!("Location: {} [0x{:04x}], {} [0x{:04x}]", px, py, obj.attr1, obj.attr0);
-	});
 
 	if py + height > 256 {
 		py -= 256;
@@ -258,7 +244,9 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 					if dot.3 != 0 {
 						lines.obj[px as usize] = dot;
 						lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
-						lines.obj_info.set_transparent(px as usize);
+						if semi_transparent {
+							lines.obj_info.set_transparent(px as usize);
+						}
 					}
 				}
 				px = (px + 1) & 0x1ff;
@@ -268,8 +256,6 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 }
 
 fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
-	// #TODO not worrying about the obj mode for now.
-	// let mode = (attr0 >> 10) & 0x3 // (0=Normal, 1=Semi-Transparent, 2=OBJ Window, 3=Prohibited)
 	let semi_transparent = ((obj.attr0 >> 10) & 0x3) == 1;
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
@@ -330,7 +316,137 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 						if dot.3 != 0 {
 							lines.obj[px as usize] = dot;
 							lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
-							lines.obj_info.set_transparent(px as usize);
+							if semi_transparent {
+								lines.obj_info.set_transparent(px as usize);
+							}
+						}
+					}
+				}
+				px = (px + 1) & 0x1ff;
+				ax += affine.dx;
+				ay += affine.dy;
+			}
+		}
+	}
+}
+
+/// Draw an object with no rotation/scaling.
+fn draw_simple_obj_window(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
+	// #TODO implement mosaics
+	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
+	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
+
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
+		else { get_simple_obj_dot_4bpp_1d }
+	} else {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
+		else { get_simple_obj_dot_4bpp_2d }
+	};
+
+	let (width, height, line_shift) = {
+		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
+		let size = (obj.attr1 >> 14) & 0x3;
+		OBJ_SIZES[((shape << 1) + size) as usize]
+	};
+
+	let mut px = obj.attr1 & 0x1ff;
+	let mut py = obj.attr0 & 0xff;
+
+	if py + height > 256 {
+		py -= 256;
+	}
+
+	if (line - py) < height { // negatives will wrap (making them larger)
+		let mut ty = line - py;// texture y
+
+		if ((obj.attr0 >> 12) & 1) == 1 { // if mosaic bit is on.
+			ty -= ty % obj.mosaic_y;
+		}
+
+		// #TODO I have no idea wtf mosaic X does exactly.
+
+		let f_ty = if vertical_flip { height - ty } else { ty }; // possibly flipped ty
+		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
+		if (px < 240) || tx_offset != 0 {
+			for tx in 0..width {
+				// #TODO not sure if OBJ windows care about priority.
+				if px < 240 /* && lines.obj_info.get_priority(px as usize) == 0 */ { // on screen and nothing has been drawn there
+					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
+					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
+					if dot.3 != 0 {
+						lines.obj[px as usize] = dot;
+						lines.obj_info.set_window(px as usize);
+					}
+				}
+				px = (px + 1) & 0x1ff;
+			}
+		}
+	}
+}
+
+fn draw_rot_scale_obj_window(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
+	// #TODO implement mosaics
+	// let mosaic = ((attr0 >> 12) & 1) == 1;
+
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
+		else { get_simple_obj_dot_4bpp_1d }
+	} else {
+		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_2d }
+		else { get_simple_obj_dot_4bpp_2d }
+	};
+
+	// These are now the texture width & height
+	let (t_width, t_height, line_shift) = {
+		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
+		let size = (obj.attr1 >> 14) & 0x3;
+		OBJ_SIZES[((shape << 1) + size) as usize]
+	};
+
+	// actual width & height
+	let (width, height) = if (((obj.attr0) >> 9) & 1) == 1 {
+		// double size flag is on
+		(t_width << 1, t_height << 1)
+	} else {
+		// double size flag is off
+		(t_width, t_height)
+	};
+
+	let mut px = obj.attr1 & 0x1ff;
+	let mut py = obj.attr0 & 0xff;
+
+	if py + height > 256 {
+		py -= 256;
+	}
+
+	if (line - py) < height { // negatives will wrap (making them larger)
+		let mut ty = line - py;// texture y (before transformations and stuff)
+
+		if ((obj.attr0 >> 12) & 1) == 1 { // if mosaic bit is on.
+			ty -= ty % obj.mosaic_y;
+		}
+
+		// #TODO I have no idea wtf mosaic X does exactly.
+		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
+		if (px < 240) || tx_offset != 0 {
+			// affine x and y
+			let mut ax = ((t_width as i16) << 7) - ((width as i16) >> 1) * affine.dx - ((height as i16) >> 1) * affine.dmx + (ty as i16) * affine.dmx;
+			let mut ay = ((t_height as i16) << 7) - ((width as i16) >> 1) * affine.dy - ((height as i16) >> 1) * affine.dmy + (ty as i16) * affine.dmy;
+
+			for _ in 0..width {
+				// #TODO not sure if OBJ windows care about priority.
+				if px < 240 /* && lines.obj_info.get_priority(px as usize) == 0 */ { // nothing has been drawn there
+					// ax & ay without the fractional parts.
+					let i_ax = ax >> 8;
+					let i_ay = ay >> 8;
+
+					if i_ax >= 0 && i_ax < (t_width as i16) && i_ay >= 0 && i_ay < (t_height as i16) && px < 240 {
+						let dot = get_dot(tile_region, palette_region, obj.attr2, i_ax as u16, i_ay as u16, (t_width, t_height, line_shift));
+						if dot.3 != 0 {
+							lines.obj[px as usize] = dot;
+							// lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
+							lines.obj_info.set_window(px as usize);
 						}
 					}
 				}
