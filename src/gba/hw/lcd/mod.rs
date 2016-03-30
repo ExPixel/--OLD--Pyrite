@@ -257,46 +257,18 @@ impl GbaLcd {
 		let winout = memory.get_reg(ioreg::WINOUT);
 
 		let win0_left = (win0h >> 8) & 0xff;
-		let win0_right = win0h & 0xff;
+		let win0_right = ((win0h & 0xff) - 1) & 0xff;
 		let win0_top = (win0v >> 8) & 0xff;
-		let win0_bottom = win0v & 0xff;
+		let win0_bottom = ((win0v & 0xff) - 1) & 0xff;
 
 		let win1_left = (win1h >> 8) & 0xff;
-		let win1_right = win1h & 0xff;
+		let win1_right = ((win1h & 0xff) - 1) & 0xff;
 		let win1_top = (win1v >> 8) & 0xff;
-		let win1_bottom = win1v & 0xff;
+		let win1_bottom = ((win1v & 0xff) - 1) & 0xff;
 
 		let win0_in = winin & 0x1f;
 		let win1_in = (winin >> 8) & 0x1f;
 		let winout_in = winout & 0x1f;
-
-		// #TODO handle disabling blending by clearing the blending params.
-		//       Use a variable in blending params that on_pixel_drawn uses to disable blending.
-		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
-			// #TODO add a case for the object window.
-			let mut pixel_window = 0; // The window that this new pixel is in.
-			if window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom)
-				&& ((win0_in >> layer_idx) & 1) == 1 {
-				pixel_window = 2;
-			} else if window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom)
-				&& ((win1_in >> layer_idx) & 1) == 1 {
-				pixel_window = 1;
-			} else {
-				pixel_window = 0;
-			}
-
-			if pixel_window < blending_params.current_window {
-				return false
-			} else if pixel_window > blending_params.current_window {
-				*dest_pixel = backdrop;
-				blending_params.target_drawn = false;
-				blending_params.source_on_top = false;
-				blending_params.target_overwritten = false;
-				blending_params.force_obj_blend = false;
-				blending_params.current_window = pixel_window;
-			}
-			return true
-		};
 
 		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_params: &mut BlendingParams| {
 			if color.3 != 0 {
@@ -315,14 +287,57 @@ impl GbaLcd {
 			}
 		};
 
-		let mut process_pixel = |line: u16, column: u16, priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
+
+		let mut backdrop4 = (backdrop.0, backdrop.1, backdrop.2, 255);
+		on_pixel_drawn(5, backdrop4, false, &mut blending_params);
+		backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4);
+		let darkened_backdrop = (backdrop4.0, backdrop4.1, backdrop4.2);
+
+		// #TODO handle disabling blending by clearing the blending params.
+		//       Use a variable in blending params that on_pixel_drawn uses to disable blending.
+		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
+			// #TODO add a case for the object window.
+			let mut pixel_window = 0; // The window that this new pixel is in.
+			if window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom)
+				&& ((win0_in >> layer_idx) & 1) == 1 {
+				pixel_window = 2;
+			} else if window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom)
+				&& ((win1_in >> layer_idx) & 1) == 1 {
+				pixel_window = 1;
+			} else {
+				if ((winout_in >> layer_idx) & 1) == 0 {
+					return false;
+				}
+				pixel_window = 0;
+			}
+
+			if pixel_window < blending_params.current_window {
+				return false
+			} else if pixel_window > blending_params.current_window {
+				blending_params.target_drawn = false;
+				blending_params.source_on_top = false;
+				blending_params.target_overwritten = false;
+				blending_params.force_obj_blend = false;
+				blending_params.current_window = pixel_window;
+
+				// we basically act like the backdrop has been drawn again.
+				on_pixel_drawn(5, backdrop4, false, blending_params);
+				*dest_pixel = darkened_backdrop;
+			}
+			return true
+		};
+
+		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
 				blending_params: &mut BlendingParams| {
+			// #TODO instead of doing this little lookup all of the time,
+			//       maybe I could just pass in a "working pixel" instead
+			//       and have the eventually put into the output array.
 			let mut dest_pixel = dest[pixel_idx];
 
 			// First we draw the BG's pixel (if there is one)
 			if let Some(bg_line) = maybe_line {
 				let mut src_pixel = bg_line[pixel_idx];
-				if window_clip_pixel(line, column, src_pixel, bg, &mut dest_pixel, blending_params) {
+				if window_clip_pixel(line, pixel_idx as u16, src_pixel, bg, &mut dest_pixel, blending_params) {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
 					// on pixel drawn and blend_pixels functions in order to remove redundancy.
 					on_pixel_drawn(bg, src_pixel, false, blending_params);
@@ -334,7 +349,7 @@ impl GbaLcd {
 			let obj_priority = obj_info.get_priority(pixel_idx);
 			if obj_priority > 0 && (obj_priority - 1) == priority {
 				let obj_pixel = obj_line[pixel_idx];
-				if window_clip_pixel(line, column, obj_pixel, 4, &mut dest_pixel, blending_params) {
+				if window_clip_pixel(line, pixel_idx as u16, obj_pixel, 4, &mut dest_pixel, blending_params) {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
 					// on pixel drawn and blend_pixels functions in order to remove redundancy.
 					on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_params);
@@ -349,15 +364,12 @@ impl GbaLcd {
 		for pix in 0..240 {
 			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
 			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel)
-			let mut backdrop4 = (backdrop.0, backdrop.1, backdrop.2, 255);
-			on_pixel_drawn(5, backdrop4, false, &mut blending_params);
-			backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4);
-			output[pix] = (backdrop4.0, backdrop4.1, backdrop4.2);
+			output[pix] = darkened_backdrop;
 
-			process_pixel(line, pix as u16, rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_params);
-			process_pixel(line, pix as u16, rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_params);
-			process_pixel(line, pix as u16, rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_params);
-			process_pixel(line, pix as u16, rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_params);
+			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_params);
+			process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_params);
+			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_params);
+			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_params);
 
 			if (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
 				let out_pix = (
