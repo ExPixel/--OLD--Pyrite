@@ -208,47 +208,11 @@ impl GbaLcd {
 			source_pixel: (u8, u8, u8),
 			target_pixel: (u8, u8, u8),
 			force_obj_blend: bool,
-			current_window: u8
+			current_window_prio: u8,
+			window_blending_disabled: bool
 		};
 		let mut blending_params: BlendingParams = Default::default();
 
-		// 4000040h - WIN0H - Window 0 Horizontal Dimensions (W)
-		// 4000042h - WIN1H - Window 1 Horizontal Dimensions (W)
-		//   Bit   Expl.
-		//   0-7   X2, Rightmost coordinate of window, plus 1
-		//   8-15  X1, Leftmost coordinate of window
-		// Garbage values of X2>240 or X1>X2 are interpreted as X2=240.
-
-		// 4000044h - WIN0V - Window 0 Vertical Dimensions (W)
-		// 4000046h - WIN1V - Window 1 Vertical Dimensions (W)
-		//   Bit   Expl.
-		//   0-7   Y2, Bottom-most coordinate of window, plus 1
-		//   8-15  Y1, Top-most coordinate of window
-		// Garbage values of Y2>160 or Y1>Y2 are interpreted as Y2=160.
-
-		// 4000048h - WININ - Control of Inside of Window(s) (R/W)
-		//   Bit   Expl.
-		//   0-3   Window 0 BG0-BG3 Enable Bits     (0=No Display, 1=Display)
-		//   4     Window 0 OBJ Enable Bit          (0=No Display, 1=Display)
-		//   5     Window 0 Color Special Effect    (0=Disable, 1=Enable)
-		//   6-7   Not used
-		//   8-11  Window 1 BG0-BG3 Enable Bits     (0=No Display, 1=Display)
-		//   12    Window 1 OBJ Enable Bit          (0=No Display, 1=Display)
-		//   13    Window 1 Color Special Effect    (0=Disable, 1=Enable)
-		//   14-15 Not used
-
-		// 400004Ah - WINOUT - Control of Outside of Windows & Inside of OBJ Window (R/W)
-		//   Bit   Expl.
-		//   0-3   Outside BG0-BG3 Enable Bits      (0=No Display, 1=Display)
-		//   4     Outside OBJ Enable Bit           (0=No Display, 1=Display)
-		//   5     Outside Color Special Effect     (0=Disable, 1=Enable)
-		//   6-7   Not used
-		//   8-11  OBJ Window BG0-BG3 Enable Bits   (0=No Display, 1=Display)
-		//   12    OBJ Window OBJ Enable Bit        (0=No Display, 1=Display)
-		//   13    OBJ Window Color Special Effect  (0=Disable, 1=Enable)
-		//   14-15 Not used
-
-		// The window that the current pixel is in.
 		let win0h = memory.get_reg(ioreg::WIN0H);
 		let win1h = memory.get_reg(ioreg::WIN1H);
 		let win0v = memory.get_reg(ioreg::WIN0V);
@@ -271,7 +235,7 @@ impl GbaLcd {
 		let winout_in = winout & 0x1f;
 
 		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_params: &mut BlendingParams| {
-			if color.3 != 0 {
+			if color.3 != 0 && !blending_params.window_blending_disabled {
 				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
 					blending_params.source_on_top = true;
 					blending_params.source_pixel = (color.0, color.1, color.2);
@@ -293,36 +257,79 @@ impl GbaLcd {
 		backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4);
 		let darkened_backdrop = (backdrop4.0, backdrop4.1, backdrop4.2);
 
-		// #TODO handle disabling blending by clearing the blending params.
-		//       Use a variable in blending params that on_pixel_drawn uses to disable blending.
 		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
 			// #TODO add a case for the object window.
-			let mut pixel_window = 0; // The window that this new pixel is in.
-			if window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom)
-				&& ((win0_in >> layer_idx) & 1) == 1 {
-				pixel_window = 2;
-			} else if window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom)
-				&& ((win1_in >> layer_idx) & 1) == 1 {
-				pixel_window = 1;
-			} else {
-				if ((winout_in >> layer_idx) & 1) == 0 {
+			let mut pwindow_priority = 0;
+			let window_disables_blending;
+			if window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom) {
+				pwindow_priority = 3;
+				window_disables_blending = ((winin >> 5) & 1) == 0;
+				if ((win0_in >> layer_idx) & 1) == 0 {
+					if pwindow_priority > blending_params.current_window_prio {
+						blending_params.target_drawn = false;
+						blending_params.source_on_top = false;
+						blending_params.target_overwritten = false;
+						blending_params.force_obj_blend = false;
+						blending_params.window_blending_disabled = window_disables_blending;
+						blending_params.current_window_prio = pwindow_priority;
+
+						// we basically act like the backdrop has been drawn again.
+						*dest_pixel = darkened_backdrop;
+						on_pixel_drawn(5, backdrop4, false, blending_params);
+					}
 					return false;
 				}
-				pixel_window = 0;
+			} else if window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom) {
+				pwindow_priority = 2;
+				window_disables_blending = ((winin >> 13) & 1) == 0;
+				if ((win1_in >> layer_idx) & 1) == 0 {
+					if pwindow_priority > blending_params.current_window_prio {
+						blending_params.target_drawn = false;
+						blending_params.source_on_top = false;
+						blending_params.target_overwritten = false;
+						blending_params.force_obj_blend = false;
+						blending_params.window_blending_disabled = window_disables_blending;
+						blending_params.current_window_prio = pwindow_priority;
+
+						// we basically act like the backdrop has been drawn again.
+						*dest_pixel = darkened_backdrop;
+						on_pixel_drawn(5, backdrop4, false, blending_params);
+					}
+					return false;
+				}
+			} else {
+				pwindow_priority = 1;
+				window_disables_blending = ((winout >> 5) & 1) == 0;
+				if ((winout_in >> layer_idx) & 1) == 0 {
+					if pwindow_priority > blending_params.current_window_prio {
+						blending_params.target_drawn = false;
+						blending_params.source_on_top = false;
+						blending_params.target_overwritten = false;
+						blending_params.force_obj_blend = false;
+						blending_params.window_blending_disabled = window_disables_blending;
+						blending_params.current_window_prio = pwindow_priority;
+
+						// we basically act like the backdrop has been drawn again.
+						*dest_pixel = darkened_backdrop;
+						on_pixel_drawn(5, backdrop4, false, blending_params);
+					}
+					return false;
+				}
 			}
 
-			if pixel_window < blending_params.current_window {
+			if pwindow_priority < blending_params.current_window_prio {
 				return false
-			} else if pixel_window > blending_params.current_window {
+			} else if pwindow_priority > blending_params.current_window_prio {
 				blending_params.target_drawn = false;
 				blending_params.source_on_top = false;
 				blending_params.target_overwritten = false;
 				blending_params.force_obj_blend = false;
-				blending_params.current_window = pixel_window;
+				blending_params.window_blending_disabled = window_disables_blending;
+				blending_params.current_window_prio = pwindow_priority;
 
 				// we basically act like the backdrop has been drawn again.
-				on_pixel_drawn(5, backdrop4, false, blending_params);
 				*dest_pixel = darkened_backdrop;
+				on_pixel_drawn(5, backdrop4, false, blending_params);
 			}
 			return true
 		};
@@ -371,7 +378,7 @@ impl GbaLcd {
 			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_params);
 			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_params);
 
-			if (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
+			if !blending_params.window_blending_disabled && (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
 				let out_pix = (
 					min!(255, (((blending_params.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
 					min!(255, (((blending_params.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
@@ -384,7 +391,7 @@ impl GbaLcd {
 			blending_params.source_on_top = false;
 			blending_params.target_overwritten = false;
 			blending_params.force_obj_blend = false;
-			blending_params.current_window = 0; // reset it to winout.
+			blending_params.current_window_prio = 0; // reset it to winout.
 		}
 	}
 
