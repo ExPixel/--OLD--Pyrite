@@ -131,6 +131,9 @@ impl GbaLcd {
 		}
 	}
 
+	// #TODO Consider making a second version of this function that doesn't use windows
+	//       at all. This seems to be how VBA does it but right now I'm not sure if the performance
+	//       gain will be worth the added complexity of maintaining both functions.
 	fn blend_line(&mut self, line: u16, memory: &GbaMemory) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
@@ -191,91 +194,153 @@ impl GbaLcd {
 		let bldy = memory.get_reg(ioreg::BLDY);
 		let blend_evy = bldy & 0x1f;
 
-		// I1st + (31-I1st)*EVY
-		fn brighten_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
-			if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
-				if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-					return (
-						((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
-						((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
-						((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8,
-						color.3
-					)
-				}
-			}
-			return color
-		};
-
-		// I1st - (I1st)*EVY
-		fn darken_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
-			if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
-				if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-					return (
-						((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
-						((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
-						((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8,
-						color.3
-					)
-				}
-			}
-			return color
-		};
-
-		fn let_the_pixel_live_its_life(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel { color };
-
 		let change_pixel_brightness: fn(u16, u16, u16, Pixel) -> Pixel = match blend_mode {
 			2 => brighten_pixel,
 			3 => darken_pixel,
-			_ => let_the_pixel_live_its_life
+			_ => pixel_lum_nop
 		};
 
 		#[derive(Default)]
-		struct BlendingShit {
+		struct BlendingParams {
 			target_drawn: bool,
 			source_on_top: bool,
 			target_overwritten: bool,
 			source_pixel: (u8, u8, u8),
 			target_pixel: (u8, u8, u8),
-			force_obj_blend: bool
+			force_obj_blend: bool,
+			current_window: u8
+		};
+		let mut blending_params: BlendingParams = Default::default();
+
+		// 4000040h - WIN0H - Window 0 Horizontal Dimensions (W)
+		// 4000042h - WIN1H - Window 1 Horizontal Dimensions (W)
+		//   Bit   Expl.
+		//   0-7   X2, Rightmost coordinate of window, plus 1
+		//   8-15  X1, Leftmost coordinate of window
+		// Garbage values of X2>240 or X1>X2 are interpreted as X2=240.
+
+		// 4000044h - WIN0V - Window 0 Vertical Dimensions (W)
+		// 4000046h - WIN1V - Window 1 Vertical Dimensions (W)
+		//   Bit   Expl.
+		//   0-7   Y2, Bottom-most coordinate of window, plus 1
+		//   8-15  Y1, Top-most coordinate of window
+		// Garbage values of Y2>160 or Y1>Y2 are interpreted as Y2=160.
+
+		// 4000048h - WININ - Control of Inside of Window(s) (R/W)
+		//   Bit   Expl.
+		//   0-3   Window 0 BG0-BG3 Enable Bits     (0=No Display, 1=Display)
+		//   4     Window 0 OBJ Enable Bit          (0=No Display, 1=Display)
+		//   5     Window 0 Color Special Effect    (0=Disable, 1=Enable)
+		//   6-7   Not used
+		//   8-11  Window 1 BG0-BG3 Enable Bits     (0=No Display, 1=Display)
+		//   12    Window 1 OBJ Enable Bit          (0=No Display, 1=Display)
+		//   13    Window 1 Color Special Effect    (0=Disable, 1=Enable)
+		//   14-15 Not used
+
+		// 400004Ah - WINOUT - Control of Outside of Windows & Inside of OBJ Window (R/W)
+		//   Bit   Expl.
+		//   0-3   Outside BG0-BG3 Enable Bits      (0=No Display, 1=Display)
+		//   4     Outside OBJ Enable Bit           (0=No Display, 1=Display)
+		//   5     Outside Color Special Effect     (0=Disable, 1=Enable)
+		//   6-7   Not used
+		//   8-11  OBJ Window BG0-BG3 Enable Bits   (0=No Display, 1=Display)
+		//   12    OBJ Window OBJ Enable Bit        (0=No Display, 1=Display)
+		//   13    OBJ Window Color Special Effect  (0=Disable, 1=Enable)
+		//   14-15 Not used
+
+		// The window that the current pixel is in.
+		let win0h = memory.get_reg(ioreg::WIN0H);
+		let win1h = memory.get_reg(ioreg::WIN1H);
+		let win0v = memory.get_reg(ioreg::WIN0V);
+		let win1v = memory.get_reg(ioreg::WIN1V);
+		let winin = memory.get_reg(ioreg::WININ);
+		let winout = memory.get_reg(ioreg::WINOUT);
+
+		let win0_left = (win0h >> 8) & 0xff;
+		let win0_right = win0h & 0xff;
+		let win0_top = (win0v >> 8) & 0xff;
+		let win0_bottom = win0v & 0xff;
+
+		let win1_left = (win1h >> 8) & 0xff;
+		let win1_right = win1h & 0xff;
+		let win1_top = (win1v >> 8) & 0xff;
+		let win1_bottom = win1v & 0xff;
+
+		let win0_in = winin & 0x1f;
+		let win1_in = (winin >> 8) & 0x1f;
+		let winout_in = winout & 0x1f;
+
+		// #TODO handle disabling blending by clearing the blending params.
+		//       Use a variable in blending params that on_pixel_drawn uses to disable blending.
+		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
+			// #TODO add a case for the object window.
+			let mut pixel_window = 0; // The window that this new pixel is in.
+			if window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom)
+				&& ((win0_in >> layer_idx) & 1) == 1 {
+				pixel_window = 2;
+			} else if window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom)
+				&& ((win1_in >> layer_idx) & 1) == 1 {
+				pixel_window = 1;
+			} else {
+				pixel_window = 0;
+			}
+
+			if pixel_window < blending_params.current_window {
+				return false
+			} else if pixel_window > blending_params.current_window {
+				*dest_pixel = backdrop;
+				blending_params.target_drawn = false;
+				blending_params.source_on_top = false;
+				blending_params.target_overwritten = false;
+				blending_params.force_obj_blend = false;
+				blending_params.current_window = pixel_window;
+			}
+			return true
 		};
 
-		let mut blending_shit = Default::default();
-
-		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_shit: &mut BlendingShit| {
+		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_params: &mut BlendingParams| {
 			if color.3 != 0 {
 				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-					blending_shit.source_on_top = true;
-					blending_shit.source_pixel = (color.0, color.1, color.2);
+					blending_params.source_on_top = true;
+					blending_params.source_pixel = (color.0, color.1, color.2);
 				} else if ((blend_targets >> layer_idx) & 1) == 1 { // This is a target layer.
-					if blending_shit.target_drawn {
-						blending_shit.target_overwritten = true;
+					if blending_params.target_drawn {
+						blending_params.target_overwritten = true;
 					} else {
-						blending_shit.target_drawn = true;
-						blending_shit.target_pixel = (color.0, color.1, color.2);
+						blending_params.target_drawn = true;
+						blending_params.target_pixel = (color.0, color.1, color.2);
 					}
-					blending_shit.source_on_top = false;
+					blending_params.source_on_top = false;
 				}
 			}
 		};
 
-		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
-				blending_shit: &mut BlendingShit| {
+		let mut process_pixel = |line: u16, column: u16, priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
+				blending_params: &mut BlendingParams| {
 			let mut dest_pixel = dest[pixel_idx];
 
 			// First we draw the BG's pixel (if there is one)
-			if let Some(line) = maybe_line {
-				let mut src_pixel = line[pixel_idx];
-				on_pixel_drawn(bg, src_pixel, false, blending_shit);
-				dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, bg, src_pixel), dest_pixel);
+			if let Some(bg_line) = maybe_line {
+				let mut src_pixel = bg_line[pixel_idx];
+				if window_clip_pixel(line, column, src_pixel, bg, &mut dest_pixel, blending_params) {
+					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
+					// on pixel drawn and blend_pixels functions in order to remove redundancy.
+					on_pixel_drawn(bg, src_pixel, false, blending_params);
+					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, bg, src_pixel), dest_pixel);
+				}
 			}
 
 			// Then we draw the OBJ's pixel on top if there is one at this priority.
 			let obj_priority = obj_info.get_priority(pixel_idx);
 			if obj_priority > 0 && (obj_priority - 1) == priority {
 				let obj_pixel = obj_line[pixel_idx];
-				on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_shit);
-				dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, 4, obj_pixel), dest_pixel);	
-				blending_shit.force_obj_blend |= obj_info.is_transparent(pixel_idx);
+				if window_clip_pixel(line, column, obj_pixel, 4, &mut dest_pixel, blending_params) {
+					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
+					// on pixel drawn and blend_pixels functions in order to remove redundancy.
+					on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_params);
+					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, 4, obj_pixel), dest_pixel);	
+					blending_params.force_obj_blend |= obj_info.is_transparent(pixel_idx);
+				}
 			}
 
 			dest[pixel_idx] = dest_pixel;
@@ -285,28 +350,29 @@ impl GbaLcd {
 			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
 			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel)
 			let mut backdrop4 = (backdrop.0, backdrop.1, backdrop.2, 255);
-			on_pixel_drawn(5, backdrop4, false, &mut blending_shit);
+			on_pixel_drawn(5, backdrop4, false, &mut blending_params);
 			backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4);
 			output[pix] = (backdrop4.0, backdrop4.1, backdrop4.2);
 
-			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_shit);
-			process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_shit);
-			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_shit);
-			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_shit);
+			process_pixel(line, pix as u16, rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_params);
+			process_pixel(line, pix as u16, rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_params);
+			process_pixel(line, pix as u16, rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_params);
+			process_pixel(line, pix as u16, rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_params);
 
-			if (blend_mode == 1 || (blending_shit.force_obj_blend && blend_mode > 0)) && (blending_shit.target_drawn && !blending_shit.target_overwritten && blending_shit.source_on_top) {
+			if (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
 				let out_pix = (
-					min!(255, (((blending_shit.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
-					min!(255, (((blending_shit.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
-					min!(255, (((blending_shit.target_pixel.2 as u16) * blend_evb) >> 4) + (((blending_shit.source_pixel.2 as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((blending_params.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((blending_params.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((blending_params.target_pixel.2 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.2 as u16) * blend_eva) >> 4)) as u8,
 				);
 				output[pix] = out_pix;
 			}
 
-			blending_shit.target_drawn = false;
-			blending_shit.source_on_top = false;
-			blending_shit.target_overwritten = false;
-			blending_shit.force_obj_blend = false;
+			blending_params.target_drawn = false;
+			blending_params.source_on_top = false;
+			blending_params.target_overwritten = false;
+			blending_params.force_obj_blend = false;
+			blending_params.current_window = 0; // reset it to winout.
 		}
 	}
 
@@ -362,4 +428,49 @@ pub fn convert_rgb5_to_rgba8(rgb5: u16) -> Pixel {
 		((((rgb5 >> 10) & 0x1f) * 527 + 23 ) >> 6) as u8,
 		255
 	)
+}
+
+#[inline(always)]
+fn window_contains(x: u16, y: u16, w_left: u16, w_right: u16, w_top: u16, w_bottom: u16) -> bool {
+	// #TODO make this handle the cross pattern that occurs when w_right is less than w_left
+	(x >= w_left) && (x <= w_right) &&
+	(y >= w_top) && (y <= w_bottom)
+}
+
+
+// PIXEL BRIGHTNESS FUNCTIONS:
+
+/// I1st + (31-I1st)*EVY
+fn brighten_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
+	if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
+		if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+			return (
+				((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
+				((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
+				((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8,
+				color.3
+			)
+		}
+	}
+	return color
+}
+
+/// I1st - (I1st)*EVY
+fn darken_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
+	if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
+		if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
+			return (
+				((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
+				((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
+				((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8,
+				color.3
+			)
+		}
+	}
+	return color
+}
+
+/// Just does nothing to the pixel
+fn pixel_lum_nop(_: u16, _: u16, _: u16, color: Pixel) -> Pixel {
+	color
 }

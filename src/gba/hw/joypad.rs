@@ -45,6 +45,7 @@ impl GbaJoypad {
 		if self.dirty {
 			cpu.memory.set_reg(ioreg::KEYINPUT, self.key_input);
 			self.dirty = false;
+			// #TODO check for interrupt here and return true if there is one.
 		}
 	}
 

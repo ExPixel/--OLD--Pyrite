@@ -231,6 +231,10 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	let mut px = obj.attr1 & 0x1ff;
 	let mut py = obj.attr0 & 0xff;
 
+	pyrite_debugging!({
+		println!("Location: {} [0x{:04x}], {} [0x{:04x}]", px, py, obj.attr1, obj.attr0);
+	});
+
 	if py + height > 256 {
 		py -= 256;
 	}
