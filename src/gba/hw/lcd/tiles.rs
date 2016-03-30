@@ -183,7 +183,6 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 
 				let tile_x = pixel_x >> 3;
 				let tile_y = pixel_y >> 3;
-				// #TODO turn the tile_y * into a shift...
 				let screen_data_offset = (tile_y * (screen_width >> 3)) + tile_x;
 				let tile_number = screen_data[screen_data_offset as usize];
 
