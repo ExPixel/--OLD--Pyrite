@@ -156,14 +156,6 @@ impl DmaHandler {
 		let mut dest = dest_addr;
 		for _ in 0..units {
 			let data = cpu.memory.read16(src);
-
-			// pyrite_debugging!({
-			// 	if units == 1{
-			// 		let old_data = cpu.memory.read16(dest);
-			// 		println!("DMA16 transfer [{} units] *(0x{:08x})=0x{:04x} -> *(0x{:08x})=0x{:04x}", units, src, data, dest, old_data);
-			// 	}
-			// });
-
 			cpu.memory.write16(dest, data);
 
 			src += src_inc;
