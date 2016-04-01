@@ -246,6 +246,8 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 						lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
 						if semi_transparent {
 							lines.obj_info.set_transparent(px as usize);
+						} else {
+							lines.obj_info.clear_transparent(px as usize);
 						}
 					}
 				}
@@ -318,6 +320,8 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 							lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
 							if semi_transparent {
 								lines.obj_info.set_transparent(px as usize);
+							} else {
+								lines.obj_info.clear_transparent(px as usize);
 							}
 						}
 					}

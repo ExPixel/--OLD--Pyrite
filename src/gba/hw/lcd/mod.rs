@@ -43,7 +43,7 @@ impl ObjLineInfo {
 
 	#[inline(always)]
 	pub fn is_window(&self, idx: usize) -> bool {
-		((self.data[idx] >> 3) & 1) == 1
+		(self.data[idx] & 0x8) != 0
 	}
 
 	#[inline(always)]
@@ -53,18 +53,46 @@ impl ObjLineInfo {
 
 	#[inline(always)]
 	pub fn is_transparent(&self, idx: usize) -> bool {
-		((self.data[idx] >> 4) & 1) == 1
+		(self.data[idx] & 0x10) != 0
 	}
 
 	#[inline(always)]
 	pub fn set_transparent(&mut self, idx: usize) {
 		self.data[idx] |= 0x10;
 	}
+
+	#[inline(always)]
+	pub fn clear_transparent(&mut self, idx: usize) {
+		self.data[idx] &= !0x10;
+	}
 }
 
 // No point in having a secondary screen buffer
 // since the GBA renders in scan lines anyway.
 pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
+
+#[derive(Default)]
+struct BlendingParams {
+	target_drawn: bool,
+	source_on_top: bool,
+	target_overwritten: bool,
+	source_pixel: (u8, u8, u8),
+	target_pixel: (u8, u8, u8),
+	force_obj_blend: bool,
+	current_window_prio: u8,
+	window_blending_disabled: bool
+}
+
+impl BlendingParams {
+	fn reset_for_window(&mut self, window_prio: u8, window_blending_disabled: bool) {
+		self.target_drawn = false;
+		self.source_on_top = false;
+		self.target_overwritten = false;
+		self.force_obj_blend = false;
+		self.current_window_prio = window_prio;
+		self.window_blending_disabled = window_blending_disabled;
+	}
+}
 
 // Add a way for modes themselves to turn these off
 // mode 3 for instance only uses bg2, no need for the others.
@@ -194,24 +222,21 @@ impl GbaLcd {
 		let bldy = memory.get_reg(ioreg::BLDY);
 		let blend_evy = bldy & 0x1f;
 
-		let change_pixel_brightness: fn(u16, u16, u16, Pixel) -> Pixel = match blend_mode {
+		let pixel_brightness_fn: fn(u16, u16, u16, Pixel) -> Pixel = match blend_mode {
 			2 => brighten_pixel,
 			3 => darken_pixel,
 			_ => pixel_lum_nop
 		};
 
-		#[derive(Default)]
-		struct BlendingParams {
-			target_drawn: bool,
-			source_on_top: bool,
-			target_overwritten: bool,
-			source_pixel: (u8, u8, u8),
-			target_pixel: (u8, u8, u8),
-			force_obj_blend: bool,
-			current_window_prio: u8,
-			window_blending_disabled: bool
-		};
 		let mut blending_params: BlendingParams = Default::default();
+
+		let change_pixel_brightness = |blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel, blending_params: &mut BlendingParams| -> Pixel {
+			if !blending_params.window_blending_disabled {
+				return pixel_brightness_fn(blend_sources, blend_evy, layer_idx, color);
+			} else {
+				return color
+			}
+		};
 
 		let win0_enabled = ((dispcnt >> 13) & 1) == 1;
 		let win1_enabled = ((dispcnt >> 14) & 1) == 1;
@@ -233,7 +258,7 @@ impl GbaLcd {
 		let win1_right = min!(240, win1h & 0xff); // exclusive
 		let win1_top = (win1v >> 8) & 0xff; // inclusive
 		let win1_bottom = min!(160, win1v & 0xff); // exclusive
-		
+
 		let win0_in = winin & 0x1f;
 		let win1_in = (winin >> 8) & 0x1f;
 		let winout_in = winout & 0x1f;
@@ -259,7 +284,7 @@ impl GbaLcd {
 
 		let mut backdrop4 = (backdrop.0, backdrop.1, backdrop.2, 255);
 		on_pixel_drawn(5, backdrop4, false, &mut blending_params);
-		backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4);
+		backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4, &mut blending_params);
 		let darkened_backdrop = (backdrop4.0, backdrop4.1, backdrop4.2);
 
 		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
@@ -273,13 +298,7 @@ impl GbaLcd {
 				window_disables_blending = ((winin >> 5) & 1) == 0;
 				if ((win0_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.target_drawn = false;
-						blending_params.source_on_top = false;
-						blending_params.target_overwritten = false;
-						blending_params.force_obj_blend = false;
-						blending_params.window_blending_disabled = window_disables_blending;
-						blending_params.current_window_prio = pwindow_priority;
-
+						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
 						on_pixel_drawn(5, backdrop4, false, blending_params);
@@ -291,13 +310,7 @@ impl GbaLcd {
 				window_disables_blending = ((winin >> 13) & 1) == 0;
 				if ((win1_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.target_drawn = false;
-						blending_params.source_on_top = false;
-						blending_params.target_overwritten = false;
-						blending_params.force_obj_blend = false;
-						blending_params.window_blending_disabled = window_disables_blending;
-						blending_params.current_window_prio = pwindow_priority;
-
+						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
 						on_pixel_drawn(5, backdrop4, false, blending_params);
@@ -309,13 +322,7 @@ impl GbaLcd {
 				window_disables_blending = ((winout >> 13) & 1) == 0;
 				if ((win_obj_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.target_drawn = false;
-						blending_params.source_on_top = false;
-						blending_params.target_overwritten = false;
-						blending_params.force_obj_blend = false;
-						blending_params.window_blending_disabled = window_disables_blending;
-						blending_params.current_window_prio = pwindow_priority;
-
+						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
 						on_pixel_drawn(5, backdrop4, false, blending_params);
@@ -327,13 +334,7 @@ impl GbaLcd {
 				window_disables_blending = ((winout >> 5) & 1) == 0;
 				if ((winout_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.target_drawn = false;
-						blending_params.source_on_top = false;
-						blending_params.target_overwritten = false;
-						blending_params.force_obj_blend = false;
-						blending_params.window_blending_disabled = window_disables_blending;
-						blending_params.current_window_prio = pwindow_priority;
-
+						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
 						on_pixel_drawn(5, backdrop4, false, blending_params);
@@ -345,13 +346,7 @@ impl GbaLcd {
 			if pwindow_priority < blending_params.current_window_prio {
 				return false
 			} else if pwindow_priority > blending_params.current_window_prio {
-				blending_params.target_drawn = false;
-				blending_params.source_on_top = false;
-				blending_params.target_overwritten = false;
-				blending_params.force_obj_blend = false;
-				blending_params.window_blending_disabled = window_disables_blending;
-				blending_params.current_window_prio = pwindow_priority;
-
+				blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 				// we basically act like the backdrop has been drawn again.
 				*dest_pixel = darkened_backdrop;
 				on_pixel_drawn(5, backdrop4, false, blending_params);
@@ -373,7 +368,7 @@ impl GbaLcd {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
 					// on pixel drawn and blend_pixels functions in order to remove redundancy.
 					on_pixel_drawn(bg, src_pixel, false, blending_params);
-					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, bg, src_pixel), dest_pixel);
+					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, bg, src_pixel, blending_params), dest_pixel);
 				}
 			}
 
@@ -385,7 +380,7 @@ impl GbaLcd {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
 					// on pixel drawn and blend_pixels functions in order to remove redundancy.
 					on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_params);
-					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, 4, obj_pixel), dest_pixel);	
+					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, 4, obj_pixel, blending_params), dest_pixel);	
 					blending_params.force_obj_blend |= obj_info.is_transparent(pixel_idx);
 				}
 			}
@@ -395,7 +390,7 @@ impl GbaLcd {
 
 		for pix in 0..240 {
 			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel)
+			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel, &mut blending_params)
 			output[pix] = darkened_backdrop;
 
 			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_params);
@@ -416,6 +411,7 @@ impl GbaLcd {
 			blending_params.source_on_top = false;
 			blending_params.target_overwritten = false;
 			blending_params.force_obj_blend = false;
+			blending_params.window_blending_disabled = false;
 			blending_params.current_window_prio = 0; // reset it to winout.
 		}
 	}

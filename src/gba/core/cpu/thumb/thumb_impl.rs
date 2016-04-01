@@ -984,7 +984,6 @@ pub fn thumb_undefined(cpu: &mut ArmCpu, _: u32) {
 fn thumb_stm_single(cpu: &mut ArmCpu, src_reg: u32, address: &mut u32) {
 	let src_data = cpu.rget(src_reg);
 	cpu.mwrite32(*address, src_data);
-	// println!("<{:08X}> stored r{}=0x{:08x} to [0x{:08x}]", cpu.get_exec_address(), src_reg, src_data, *address);
 	*address += 4;
 }
 
@@ -992,7 +991,6 @@ fn thumb_stm_single(cpu: &mut ArmCpu, src_reg: u32, address: &mut u32) {
 fn thumb_ldm_single(cpu: &mut ArmCpu, dst_reg: u32, address: &mut u32) {
 	let src_data = cpu.mread32(*address); // #TODO should I use an aligned read here?
 	cpu.rset(dst_reg, src_data);
-	// println!("<{:08X}> loaded [0x{:08x}]=0x{:08x} to r{}", cpu.get_exec_address(), *address, src_data, dst_reg);
 	*address += 4;
 }
 
@@ -1003,7 +1001,6 @@ fn thumb_ldm_single(cpu: &mut ArmCpu, dst_reg: u32, address: &mut u32) {
 fn thumb_stm_single_wb(cpu: &mut ArmCpu, src_reg: u32, wb_reg: u32, wroteback: &mut bool, address: &mut u32) {
 	let src_data = cpu.rget(src_reg);
 	cpu.mwrite32(*address, src_data);
-	// println!("<{:08X}> stored_wb r{}=0x{:08x} to [0x{:08x}]", cpu.get_exec_address(), src_reg, src_data, *address);
 	if !(*wroteback) { cpu.rset(wb_reg, *address); *wroteback = true;}
 	*address += 4;
 }
