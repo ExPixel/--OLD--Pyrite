@@ -213,6 +213,10 @@ impl GbaLcd {
 		};
 		let mut blending_params: BlendingParams = Default::default();
 
+		let win0_enabled = ((dispcnt >> 13) & 1) == 1;
+		let win1_enabled = ((dispcnt >> 14) & 1) == 1;
+		let win_obj_enabled = ((dispcnt >> 15) & 1) == 1;
+
 		let win0h = memory.get_reg(ioreg::WIN0H);
 		let win1h = memory.get_reg(ioreg::WIN1H);
 		let win0v = memory.get_reg(ioreg::WIN0V);
@@ -220,19 +224,15 @@ impl GbaLcd {
 		let winin = memory.get_reg(ioreg::WININ);
 		let winout = memory.get_reg(ioreg::WINOUT);
 
-		let win0_enabled = ((dispcnt >> 13) & 1) == 1;
-		let win1_enabled = ((dispcnt >> 14) & 1) == 1;
-		let win_obj_enabled = ((dispcnt >> 15) & 1) == 1;
+		let win0_left = (win0h >> 8) & 0xff; // inclusive
+		let win0_right = min!(240, win0h & 0xff); // exclusive
+		let win0_top = (win0v >> 8) & 0xff; // inclusive
+		let win0_bottom = min!(160, win0v & 0xff); // exclusive
 
-		let win0_left = (win0h >> 8) & 0xff;
-		let win0_right = ((win0h & 0xff) - 1) & 0xff;
-		let win0_top = (win0v >> 8) & 0xff;
-		let win0_bottom = ((win0v & 0xff) - 1) & 0xff;
-
-		let win1_left = (win1h >> 8) & 0xff;
-		let win1_right = ((win1h & 0xff) - 1) & 0xff;
-		let win1_top = (win1v >> 8) & 0xff;
-		let win1_bottom = ((win1v & 0xff) - 1) & 0xff;
+		let win1_left = (win1h >> 8) & 0xff; // inclusive
+		let win1_right = min!(240, win1h & 0xff); // exclusive
+		let win1_top = (win1v >> 8) & 0xff; // inclusive
+		let win1_bottom = min!(160, win1v & 0xff); // exclusive
 
 		pyrite_debugging!({
 			if line == 0 {
@@ -509,8 +509,8 @@ pub fn convert_rgb5_to_rgba8(rgb5: u16) -> Pixel {
 #[inline(always)]
 fn window_contains(x: u16, y: u16, w_left: u16, w_right: u16, w_top: u16, w_bottom: u16) -> bool {
 	// #TODO make this handle the cross pattern that occurs when w_right is less than w_left
-	(x >= w_left) && (x <= w_right) &&
-	(y >= w_top) && (y <= w_bottom)
+	(x >= w_left) && (x < w_right) &&
+	(y >= w_top) && (y < w_bottom)
 }
 
 
