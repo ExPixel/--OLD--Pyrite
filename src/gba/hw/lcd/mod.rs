@@ -298,7 +298,7 @@ impl GbaLcd {
 				window_disables_blending = ((winin >> 5) & 1) == 0;
 				if ((win0_in >> layer_idx) & 1) == 0 {
 					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
+						blending_params.reset_for_window(pwindow_priority, window_disables_blending); // #FIXME do I need to be doing this?
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
 						on_pixel_drawn(5, backdrop4, false, blending_params);
