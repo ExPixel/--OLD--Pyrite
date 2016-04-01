@@ -134,6 +134,14 @@ macro_rules! put_hi16 {
 	)
 }
 
+pub struct DMAInternalReg {
+	destination_addr: u32,
+	source_addr: u32,
+	units: u32,
+	cnt_h: u16,
+	cnt_l: u16
+}
+
 // Internal IO registers.
 #[derive(Default)]
 pub struct InternalRegisters {
@@ -217,6 +225,8 @@ impl InternalRegisters {
 
 			0x000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 			0x000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+
+
 
 			0x00000BA | 0x00000C6 | 
 			0x00000D2 | 0x00000DE => { self.dma_dirty = true },

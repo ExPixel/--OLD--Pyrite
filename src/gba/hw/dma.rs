@@ -97,25 +97,42 @@ impl DmaHandler {
 			units &= channel.max_units - 1; // max_units are all powers of two so we can mask them like this.
 		}
 
+		let ending_src;
 		let ending_dest;
 
 		if ((dma_cnt_h >> 10) & 1) != 0 {
 			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
 			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
-			println!("DMA32[{}] {} units from 0x{:08x} to 0x{:08x} | {}, {}", channel.index, units, src_addr, dest_addr,
-				src_inc as i32, dest_inc as i32);
-			ending_dest = self.do_dma_transfer32(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
+			// println!("[0x{:08x}] DMA32[{}] DMA_H=0x{:04x} {} units from 0x{:08x} to 0x{:08x} | s-inc: {}, d-inc: {} | {}",
+			// 	cpu.get_exec_address() - { if cpu.thumb_mode() {2} else {4} },
+			// 	channel.index, dma_cnt_h,
+			// 	units, src_addr, dest_addr,
+			// 	src_inc as i32, dest_inc as i32,
+			// 	{if ((dma_cnt_h >> 5) & 0x3) == 0x3 {"reload"} else {"no-reload"}});
+			let (es, ed) = self.do_dma_transfer32(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
+			ending_src = es;
+			ending_dest = ed;
 		} else {
 			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
 			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
-			println!("DMA16[{}] {} units from 0x{:08x} to 0x{:08x} | {}, {}", channel.index, units, src_addr, dest_addr,
-				src_inc as i32, dest_inc as i32);
-			ending_dest = self.do_dma_transfer16(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
+			// println!("[0x{:08x}] DMA16[{}] DMA_H=0x{:04x} {} units from 0x{:08x} to 0x{:08x} | s-inc: {}, d-inc: {} | {}",
+			// 	cpu.get_exec_address() - { if cpu.thumb_mode() {2} else {4} },
+			// 	channel.index, dma_cnt_h, 
+			// 	units, src_addr, dest_addr,
+			// 	src_inc as i32, dest_inc as i32,
+			// 	{if ((dma_cnt_h >> 5) & 0x3) == 0x3 {"reload"} else {"no-reload"}});
+			let (es, ed) = self.do_dma_transfer16(cpu, src_addr, dest_addr, units, src_inc, dest_inc);
+			ending_src = es;
+			ending_dest = ed;
 		}
 
-		if ((dma_cnt_h >> 5) & 0x3) == 0x3 {
+		if ((dma_cnt_h >> 5) & 0x3) != 0x3 {
+			// The GBA actually writes back to an internal register.
+			// We're gonna cheat and just write back to the actual DMA io registers
+			// because they aren't supposed to be readable on an actual GBA anyway.
 			cpu.memory.set_reg(channel.reg_dad, ending_dest & channel.dest_mask);
 		}
+		cpu.memory.set_reg(channel.reg_sad, ending_src & channel.src_mask);
 
 		if ((dma_cnt_h >> 9) & 1) == 0 { // If this is not repeating.
 			cpu.memory.set_reg(channel.reg_cnt_h, dma_cnt_h & 0x7fff); // clears the enable bit.
@@ -134,12 +151,21 @@ impl DmaHandler {
 		return inc as u32
 	}
 
-	fn do_dma_transfer16(&mut self, cpu: &mut ArmCpu, src_addr: u32, dest_addr: u32, units: u32, src_inc: u32, dest_inc: u32) -> u32 {
+	fn do_dma_transfer16(&mut self, cpu: &mut ArmCpu, src_addr: u32, dest_addr: u32, units: u32, src_inc: u32, dest_inc: u32) -> (u32, u32) {
 		let mut src = src_addr;
 		let mut dest = dest_addr;
 		for _ in 0..units {
 			let data = cpu.memory.read16(src);
+
+			// pyrite_debugging!({
+			// 	if units == 1{
+			// 		let old_data = cpu.memory.read16(dest);
+			// 		println!("DMA16 transfer [{} units] *(0x{:08x})=0x{:04x} -> *(0x{:08x})=0x{:04x}", units, src, data, dest, old_data);
+			// 	}
+			// });
+
 			cpu.memory.write16(dest, data);
+
 			src += src_inc;
 			dest += dest_inc;
 		}
@@ -162,11 +188,11 @@ impl DmaHandler {
 			self.dma_cycles += 2;
 		}
 
-		dest
+		(src, dest)
 	}
 
 
-	fn do_dma_transfer32(&mut self, cpu: &mut ArmCpu, src_addr: u32, dest_addr: u32, units: u32, src_inc: u32, dest_inc: u32) -> u32 {
+	fn do_dma_transfer32(&mut self, cpu: &mut ArmCpu, src_addr: u32, dest_addr: u32, units: u32, src_inc: u32, dest_inc: u32) -> (u32, u32) {
 		let mut src = src_addr;
 		let mut dest = dest_addr;
 		for _ in 0..units {
@@ -194,6 +220,6 @@ impl DmaHandler {
 			self.dma_cycles += 2;
 		}
 
-		dest
+		(src, dest)
 	}
 }

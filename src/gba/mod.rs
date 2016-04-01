@@ -120,7 +120,7 @@ impl Gba {
 				let start_time = time::precise_time_ns();
 				self.tick(frame);
 				let delta = time::precise_time_ns() - start_time;
-				let sleep_time_millis = if delta > FPS_60_DELTA_NS { FPS_60_DELTA_NS } else { FPS_60_DELTA_NS - delta } / 1000000;
+				let sleep_time_millis = if delta > FPS_60_DELTA_NS { 0 } else { FPS_60_DELTA_NS - delta } / 1000000;
 				thread::sleep(Duration::from_millis(sleep_time_millis));
 			} else { // #TODO remove debug code.
 				self.tick(frame);

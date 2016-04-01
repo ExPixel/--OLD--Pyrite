@@ -112,7 +112,7 @@ impl GbaMemory {
 				let _addrmasked = address & 0xFFFF;
 				if _addrmasked >= 0x0800  && _addrmasked <= 0x0803 { (MEM_IOREG.local_addr + _addrmasked, true) }
 				else if address <= 0x04000804 { (address - 0x04000000 + MEM_IOREG.local_addr, true) }
-				else { panic!("Invalid IO register address. Not sure how to handle this! {:08x}", address) }
+				else { (0, false) } // panic!("Invalid IO register address. Not sure how to handle this! {:08x}", address)
 			}
 
 			// Palette RAM:

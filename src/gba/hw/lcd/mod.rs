@@ -234,6 +234,38 @@ impl GbaLcd {
 		let win1_top = (win1v >> 8) & 0xff;
 		let win1_bottom = ((win1v & 0xff) - 1) & 0xff;
 
+		pyrite_debugging!({
+			if line == 0 {
+				debug_println!(
+					line,
+
+					win0_enabled,
+					win1_enabled,
+					win_obj_enabled,
+
+					win0_left,
+					win0_top,
+					win0_right,
+					win0_bottom,
+					win1_left,
+					win1_top,
+					win1_right,
+					win1_bottom,
+
+					win0h,
+					win1h,
+					win0v,
+					win1v,
+					winin,
+					winout
+				);
+				for pix in 0..240 {
+					output[pix] = (255, 0, 255);
+				}
+				return;
+			}
+		});
+
 		let win0_in = winin & 0x1f;
 		let win1_in = (winin >> 8) & 0x1f;
 		let winout_in = winout & 0x1f;
