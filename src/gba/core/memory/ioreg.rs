@@ -122,6 +122,59 @@ pub const SIODATA32: IORegister32 = IORegister32(0x0000120);
 pub const JOY_RECV: IORegister32 = IORegister32(0x0000150);
 pub const JOY_TRANS: IORegister32 = IORegister32(0x0000154);
 
+// #TODO make the mask table.
+// pub const IOREG_MASK_TABLE = [];
+
+/// #FIXME: Not sure about the write status of 4000158h
+/// Read write permissions table for IO registers.
+/// 2 bits in this table represents a R/W pair for a byte in the IO registers.
+/// This is a shortened table that doesn't include 0x4000300, 0x4000301 and, 0x4000800
+/// and instead just returns R/W for any address not in the table.
+pub const IOREG_PERMISSIONS_TABLE: [u32; 33] = [
+	0xffff5fff,0xaaaaaaaa,0xaaaaaaaa,0xaaaaaaaa,0xfaffaaaa,0xfffffaaf,0xffffffff,0xffffffff,
+	0xffffffff,0xffffffff,0xffffaaaa,0xaafaaaaa,0xaaaafaaa,0xfaaaaafa,0xffffffff,0xffffffff,
+	0xffffffff,0xffffffff,0xffffffff,0xfffffff5,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+	0x000fffff
+];
+
+pub fn is_ioreg_addr_readable(addr: u32) -> bool {
+	let ioreg_index = addr - 0x04000000;
+	let permissions_index = (ioreg_index >> 4) as usize; // there are 16 registers stuffed into each index.
+	if permissions_index > 32 { return true } // If it's not in our table it's just readable.
+	let permission_shift = (addr & 15) << 1;
+	((IOREG_PERMISSIONS_TABLE[permissions_index] >> permission_shift) & 1) == 1
+}
+
+pub fn is_ioreg_addr_writeable(addr: u32) -> bool {
+	let ioreg_index = addr - 0x04000000;
+	let permissions_index = (ioreg_index >> 4) as usize; // there are 16 registers stuffed into each index.
+	if permissions_index > 32 { return true } // If it's not in our table it's just writeable.
+	let permission_shift = ((addr & 15) << 1) + 1;
+	((IOREG_PERMISSIONS_TABLE[permissions_index] >> permission_shift) & 1) == 1
+}
+
+// Old version of the table which contains all of the regiters.
+// pub const IOREG_PERMISSIONS_TABLE: [u32; 129] = [
+// 	0xffff5fff,0xaaaaaaaa,0xaaaaaaaa,0xaaaaaaaa,0xfaffaaaa,0xfffffaaf,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffaaaa,0xaafaaaaa,0xaaaafaaa,0xfaaaaafa,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xfffffff5,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xfffffffb,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+// 	0x000000ff
+// ];
+
 macro_rules! put_lo16 {
 	($key:expr, $value:expr) => (
 		($key & (0xFFFF0000)) | ($value as u32)
@@ -201,11 +254,11 @@ impl InternalRegisters {
 				if low_power_bit == 1 {
 					self.stopped = true;
 					self.halted = false;
-					// println!("CPU NOW IN STOPPED MODE."); // #TODO remove testing code.
+					// println!(CPU NOW IN STOPPED MODE.); // #TODO remove testing code.
 				} else {
 					self.halted = true;
 					self.stopped = false;
-					// println!("CPU NOW IN HALT MODE."); // #TODO remove testing code.
+					// println!(CPU NOW IN HALT MODE.); // #TODO remove testing code.
 				}
 			},
 			_ => {}
