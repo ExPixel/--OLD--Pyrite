@@ -183,3 +183,46 @@ macro_rules! rand_color {
     ($n:expr) => ( ::util::rand_color(($n) as usize, 255) );
     ($n:expr, $a:expr) => ( ::util::rand_color(($n) as usize, $a) );
 }
+
+macro_rules! print_memory_table {
+	($memory:expr, $start:expr, $end:expr, $columns:expr) => ({
+		let columns = $columns;
+
+		let mut cc = 0;
+		let mut char_rep: [char; $columns] = ['.'; $columns];
+
+		for addr in $start..($end + 1) {
+			if cc == 0 {
+				println!("");
+				print!("{:08x}", addr);
+			}
+
+			let data = $memory.read8(addr);
+			print!(" {:02x}", data);
+			char_rep[cc] = data as char;
+
+			cc += 1;
+			if cc >= columns {
+				print!(" ");
+				for cidx in 0..$columns {
+					let cr = char_rep[cidx];
+					if (cr as u8) < 32 { print!("."); }
+					else { print!("{}", cr); }
+				}
+				cc = 0;
+			}
+		}
+
+		if cc > 0 {
+			print!(" ");
+			for cidx in 0..min!(cc, $columns) {
+				let cr = char_rep[cidx];
+				if (cr as u8) <= 32 { print!("."); }
+				else { print!("{}", cr); }
+			}
+		}
+
+		println!("");
+	});
+	($memory:expr, $start:expr, $end:expr) => ( print_memory_table!($memory, $start, $end, 16) );
+}
