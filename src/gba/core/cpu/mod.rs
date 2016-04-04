@@ -519,21 +519,11 @@ impl ArmCpu {
 const DEBUG_STOP: bool = false;
 const DEBUG_THUMB: Option<bool> = Some(true);
 const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x080029A0; // 0x080029B6, 0x080083B0 (A), 0x080083F0 (A), 0x08008420, 0x08008428, 0x080029E4, 0x080029EA, 0x080029EE, 0x080029F2, 0x080029F8, 0x080029FE, 0x08002A0A, 0x08002A48, 0x08002A84, 0x0800296c, 0x08002a4a, 0x08002a4e, 0x08001116, 0x0800111E, 0x0800113E, 0x0800114E, 0x08000706, 0x0800070E, 0x080007B0, 0x08000796
+const DEBUG_ADDR: u32 = 0x08005BC8; // 0x08005BC8 0x0000131e
 static mut debug_current_iterations: u32 = 0;
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
-	// if address < 0x40000 {
-	// 	println!("% {}", cpu.disasm_exec());
-	// }0xf7ff1c18
-
-	// if cpu.rget(12) == 0x000000df {
-	// 	cpu.reg_dump_pretty();
-	// 	cpu.branch_dump();
-	// 	panic!("AH");
-	// }
-
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		unsafe { debug_current_iterations += 1; if debug_current_iterations < DEBUG_ITERATIONS { return; }}
 		println!("============BEFORE============");
@@ -552,12 +542,6 @@ fn after_execution(address: u32, cpu: &mut ArmCpu) {
 		cpu.reg_dump_pretty();
 		panic!("picnic");
 	}
-
-	// if cpu.mread32(0x03007848) == 0x03007a6c { // [0x0300789c]=0x03007a6c
-	// 	println!("BAD VALUE SETTERINO");
-	// 	cpu.reg_dump_pretty();
-	// 	panic!("picnicerino");
-	// }
 }
 
 
