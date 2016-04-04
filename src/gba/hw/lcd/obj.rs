@@ -68,7 +68,6 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 			affine_data.dmx = oam_region.direct_read16( 14 + rot_scale_params_off ) as i16;
 			affine_data.dy = oam_region.direct_read16( 22 + rot_scale_params_off ) as i16;
 			affine_data.dmy = oam_region.direct_read16( 30 + rot_scale_params_off ) as i16;
-
 			if ((obj_data.attr0 >> 10) & 0x3) == 2 {
 				draw_rot_scale_obj_window(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 			} else {
@@ -80,7 +79,7 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 }
 
 
-// (width, height, shift-per-line)
+// (width, height, shift-per-line) shift-per-line is basically log2(8x8 tiles per line)
 const OBJ_SIZES: [(u16, u16, u16); 16] = [
 	(8, 8, 0), (16, 16, 1), (32, 32, 2), (64, 64, 3), // square
 	(16, 8, 1), (32, 8, 2), (32, 16, 2), (64, 32, 3), // horizontal
@@ -91,7 +90,7 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
 	let tile = attr2 & 0x3ff;
 	// dividing by 8 to get width and height in 8x8 tiles.
-	let fragment = ((oy >> 3) * (size.1 >> 3)) + (ox >> 3);
+	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
 	let tx = ox & 7;
 	let ty = oy & 7;
 
@@ -215,7 +214,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	let (width, height, line_shift) = {
 		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
 		let size = (obj.attr1 >> 14) & 0x3;
-		OBJ_SIZES[((shape << 1) + size) as usize]
+		OBJ_SIZES[((shape << 2) + size) as usize]
 	};
 
 	let mut px = obj.attr1 & 0x1ff;
@@ -274,7 +273,7 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 	let (t_width, t_height, line_shift) = {
 		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
 		let size = (obj.attr1 >> 14) & 0x3;
-		OBJ_SIZES[((shape << 1) + size) as usize]
+		OBJ_SIZES[((shape << 2) + size) as usize]
 	};
 
 	// actual width & height
@@ -351,7 +350,7 @@ fn draw_simple_obj_window(one_dimensional: bool, tile_region: &[u8], palette_reg
 	let (width, height, line_shift) = {
 		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
 		let size = (obj.attr1 >> 14) & 0x3;
-		OBJ_SIZES[((shape << 1) + size) as usize]
+		OBJ_SIZES[((shape << 2) + size) as usize]
 	};
 
 	let mut px = obj.attr1 & 0x1ff;
@@ -405,7 +404,7 @@ fn draw_rot_scale_obj_window(one_dimensional: bool, tile_region: &[u8], palette_
 	let (t_width, t_height, line_shift) = {
 		let shape = (obj.attr0 >> 14) & 0x3; // (0=Square,1=Horizontal,2=Vertical,3=Prohibited)
 		let size = (obj.attr1 >> 14) & 0x3;
-		OBJ_SIZES[((shape << 1) + size) as usize]
+		OBJ_SIZES[((shape << 2) + size) as usize]
 	};
 
 	// actual width & height
