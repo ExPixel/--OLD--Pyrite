@@ -33,7 +33,7 @@ pub fn render_mode_3(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 	}
 
 	draw_objs(
-		(0x06014000, 0x06017FFF),
+		(0x06010000, 0x06017FFF),
 		((dispcnt >> 6) & 1) == 1,
 		((dispcnt >> 5) & 1) == 1,
 		memory,
