@@ -173,6 +173,8 @@ impl GbaLcd {
 		let bg2_enabled = self.lines.bg2_enable && (((dispcnt >> 10) & 1) != 0);
 		let bg3_enabled = self.lines.bg3_enable && (((dispcnt >> 11) & 1) != 0);
 
+		let obj_enabled = ((dispcnt >> 12) & 1) != 0;
+
 		let bg0_priority = memory.get_reg(ioreg::BG0CNT) & 0x3;
 		let bg1_priority = memory.get_reg(ioreg::BG1CNT) & 0x3;
 		let bg2_priority = memory.get_reg(ioreg::BG2CNT) & 0x3;
@@ -374,7 +376,7 @@ impl GbaLcd {
 
 			// Then we draw the OBJ's pixel on top if there is one at this priority.
 			let obj_priority = obj_info.get_priority(pixel_idx);
-			if obj_priority > 0 && (obj_priority - 1) == priority {
+			if obj_enabled && obj_priority > 0 && (obj_priority - 1) == priority {
 				let obj_pixel = obj_line[pixel_idx];
 				if window_clip_pixel(line, pixel_idx as u16, obj_pixel, 4, &mut dest_pixel, blending_params) {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
