@@ -7,10 +7,6 @@ use std::convert::Into;
 // #CLEANUP there is a lot of code duplication here.
 // I should clean it up in the future.
 
-// Not sure if this should be 7 or 13
-// the documentation actually writes both in the same section
-// I'm not kidding.
-// who wrote this D:?
 const SP: u32 = 13; 
 
 const ADDR_REG: fn(&ArmCpu, u32) -> u32 = thumb_sdt_addr_reg;
