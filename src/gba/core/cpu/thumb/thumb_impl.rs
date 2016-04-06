@@ -985,7 +985,7 @@ fn thumb_stm_single(cpu: &mut ArmCpu, src_reg: u32, address: &mut u32) {
 
 #[inline(always)]
 fn thumb_ldm_single(cpu: &mut ArmCpu, dst_reg: u32, address: &mut u32) {
-	let src_data = cpu.mread32(*address); // #TODO should I use an aligned read here?
+	let src_data = cpu.mread32_al(*address);
 	cpu.rset(dst_reg, src_data);
 	*address += 4;
 }
