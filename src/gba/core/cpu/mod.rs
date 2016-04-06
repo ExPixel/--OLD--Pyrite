@@ -97,6 +97,11 @@ impl ArmCpu {
 	// a rset_lo functions so that they don't have to check PC because
 	// it's impossible for them to change it.
 	pub fn rset(&mut self, register: u32, value: u32) {
+		if register == 15 && value >=  0x080112b8 && value <= 0x08011316 {
+			println!("branching to the bad place D:");
+			self.reg_dump_pretty();
+			panic!("picnico");
+		}
 		if !self.branched && register == 15 { self.branched = true }
 		return self.registers.set(register, value);
 	}
@@ -141,17 +146,17 @@ impl ArmCpu {
 		(data << (32 - offset)) | (data >> offset) // rotate right by offset.
 	}
 
-	pub fn mread8(&self, address: u32) -> u8 {
-		self.memory.read8(address)
-	}
+	// pub fn mread8(&self, address: u32) -> u8 {
+	// 	self.memory.read8(address)
+	// }
 
-	pub fn mread16(&self, address: u32) -> u16 {
-		self.memory.read16(address)
-	}
+	// pub fn mread16(&self, address: u32) -> u16 {
+	// 	self.memory.read16(address)
+	// }
 
-	pub fn mread32(&self, address: u32) -> u32 {
-		self.memory.read32(address)
-	}
+	// pub fn mread32(&self, address: u32) -> u32 {
+	// 	self.memory.read32(address)
+	// }
 
 	pub fn mwrite8(&mut self, address: u32, value: u8) {
 		self.memory.write8(address, value);
@@ -417,16 +422,25 @@ impl ArmCpu {
 	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
 	///    (which you, the programmer, never see)
 	pub fn irq_interrupt(&mut self) {
+		// println!("[0x{:08X}] IRQ INTERRUPT: 0x{:04X}", self.get_exec_address(), self.memory.get_reg(ioreg::IF));
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
 		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.set_spsr(cpsr);
-		self.registers.setf_i();
+		self.registers.setf_i(); // Disables future IRQ interrupts.
 		let next_pc = if self.thumb_mode() {
-			self.get_pc() - 2
+			if self.thumb_pipeline.ready() {
+				self.get_pc() - 2
+			} else {
+				self.get_pc()
+			}
 		} else {
-			self.get_pc() - 4
+			if self.arm_pipeline.ready() {
+				self.get_pc() - 4
+			} else {
+				self.get_pc()
+			}
 		};
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
@@ -435,7 +449,6 @@ impl ArmCpu {
 		self.arm_pipeline.flush();
 		self.align_pc();
 		self.branched = false;
-
 	}
 
 	/// The CPU has hit an undefined instruction.
@@ -518,28 +531,84 @@ impl ArmCpu {
 
 const DEBUG_STOP: bool = false;
 const DEBUG_THUMB: Option<bool> = Some(true);
-const DEBUG_ITERATIONS: u32 = 0;
-const DEBUG_ADDR: u32 = 0x08005BC8; // 0x08005BC8 0x0000131e
+const DEBUG_ITERATIONS: u32 = 1;
+const DEBUG_ADDR: u32 = 0x08005BC8; // 0x08005BCA, 0x08009794, 0x08005BC8 0x0000131e
+const MEMORY_TABLE_START: u32 = 0x06000510;// 0x03007e40
+const MEMORY_TABLE_LENGTH: u32 = 128;
 static mut debug_current_iterations: u32 = 0;
+
+
+static mut branch_test: bool = false;
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
+	// if address == 0x08005BC8 { pyrite_counter_inc!(3); }
+	// if pyrite_counter_get!(3) == 0 { return }
+	// if cpu.rget(6) != 0xff00 { return }
+
+	if address == 0x00001326 {
+		unsafe { branch_test = true; }
+	} else {
+		unsafe { branch_test = false; }
+	}
+
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		unsafe { debug_current_iterations += 1; if debug_current_iterations < DEBUG_ITERATIONS { return; }}
 		println!("============BEFORE============");
 		cpu.reg_dump_pretty();
+		print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
 		println!("==============================");
 	}
 }
 
-
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
+	// pyrite_debugging!({
+	// 	for addr in 0x06000000..0x06000560 {
+	// 		let d = cpu.memory.read8(addr);
+	// 		if d != 0x01 {
+	// 			print_memory_table!(cpu.memory, addr & !0xf, (addr & !0xf) + 128);
+	// 			panic!("FIRST BAD VALUE: [0x{:08x}]=0x{:02x}", addr, d);
+	// 		}
+	// 	}
+	// 	print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+	// });
+	// if address == 0x08005BC8 { pyrite_counter_inc!(3); }
+	// if pyrite_counter_get!(3) == 0 { return }
+	// if cpu.rget(6) != 0xff00 { return }
+
+	// if cpu.memory.read8(0x03007e50) == 0xff {
+	// 	cpu.reg_dump_pretty();
+	// 	print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+	// 	panic!("BAD VALUE (maybe)");
+	// }
+
+	// if cpu.rget(0) == 0x080226FD {
+	// 	cpu.reg_dump_pretty();
+	// 	panic!("DUBIOUS r0 value.");
+	// }
+
+	// if cpu.rget(13) == 0x03007e3c {
+	// 	cpu.reg_dump_pretty();
+	// 	panic!("BAD r13");
+	// }
+
+	// if cpu.memory.read8(0x03007e48) == 0x14 {
+	// 	cpu.reg_dump_pretty();
+	// 	panic!("BAD [0x03007e40]");	
+	// }
+	
+	// if cpu.memory.read8(0x600014d) == 0xff {
+	// 	cpu.reg_dump_pretty();
+	// 	panic!("BAD WRITE TO 0x600014d");
+	// }
+
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		unsafe { if debug_current_iterations < DEBUG_ITERATIONS { return; } }
 		// println!("==============================");
 		println!("=============AFTER============");
 		cpu.reg_dump_pretty();
+		print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
 		panic!("picnic");
 	}
 }
