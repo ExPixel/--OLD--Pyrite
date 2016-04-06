@@ -102,10 +102,14 @@ impl Gba {
 			self.cpu.registers.set_mode(registers::MODE_SVC);
 		} else {
 			self.cpu.set_pc(0x08000000);
+			self.cpu.registers.setf_i(); // Disables IRQ interrupts.
+			self.cpu.registers.setf_f(); // Disables FIQ interrupts. (They are impossible on the GBA, but this is high by default.)
 			self.cpu.registers.set_mode(registers::MODE_SYS);
 			self.cpu.registers.set_with_mode(registers::MODE_USR, registers::REG_SP, 0x03007F00); // Also System
 			self.cpu.registers.set_with_mode(registers::MODE_IRQ, registers::REG_SP, 0x03007FA0);
 			self.cpu.registers.set_with_mode(registers::MODE_SVC, registers::REG_SP, 0x03007FE0);
+
+			self.cpu.reg_dump_pretty();
 			// #TODO some IO registers need to be set here.
 		}
 
