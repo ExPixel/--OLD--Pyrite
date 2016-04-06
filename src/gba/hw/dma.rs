@@ -3,6 +3,9 @@ use super::super::core::memory::ioreg::IORegister32;
 use super::super::core::memory::ioreg::IORegister16;
 use super::super::core::memory::*;
 
+// #TODO interlace DMAs so that they can interrupt each other.
+// They should work more like the CPU with each single transfer being separate.
+
 pub const DMA_TIMING_IMMEDIATE: u16 = 0;
 pub const DMA_TIMING_VBLANK: u16 = 1;
 pub const DMA_TIMING_HBLANK: u16 = 2;
