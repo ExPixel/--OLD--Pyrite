@@ -563,16 +563,16 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	// pyrite_debugging!({
-	// 	for addr in 0x06000000..0x06000560 {
-	// 		let d = cpu.memory.read8(addr);
-	// 		if d != 0x01 {
-	// 			print_memory_table!(cpu.memory, addr & !0xf, (addr & !0xf) + 128);
-	// 			panic!("FIRST BAD VALUE: [0x{:08x}]=0x{:02x}", addr, d);
-	// 		}
-	// 	}
-	// 	print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
-	// });
+	pyrite_debugging!({
+		for addr in 0x06000000..0x06000560 {
+			let d = cpu.memory.read8(addr);
+			if d != 0x01 {
+				print_memory_table!(cpu.memory, addr & !0xf, (addr & !0xf) + 128);
+				panic!("FIRST BAD VALUE: [0x{:08x}]=0x{:02x}", addr, d);
+			}
+		}
+		print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+	});
 	// if address == 0x08005BC8 { pyrite_counter_inc!(3); }
 	// if pyrite_counter_get!(3) == 0 { return }
 	// if cpu.rget(6) != 0xff00 { return }
@@ -597,7 +597,7 @@ fn after_execution(address: u32, cpu: &mut ArmCpu) {
 	// 	cpu.reg_dump_pretty();
 	// 	panic!("BAD [0x03007e40]");	
 	// }
-	
+
 	// if cpu.memory.read8(0x600014d) == 0xff {
 	// 	cpu.reg_dump_pretty();
 	// 	panic!("BAD WRITE TO 0x600014d");

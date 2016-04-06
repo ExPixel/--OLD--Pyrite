@@ -108,8 +108,6 @@ impl Gba {
 			self.cpu.registers.set_with_mode(registers::MODE_USR, registers::REG_SP, 0x03007F00); // Also System
 			self.cpu.registers.set_with_mode(registers::MODE_IRQ, registers::REG_SP, 0x03007FA0);
 			self.cpu.registers.set_with_mode(registers::MODE_SVC, registers::REG_SP, 0x03007FE0);
-
-			self.cpu.reg_dump_pretty();
 			// #TODO some IO registers need to be set here.
 		}
 
