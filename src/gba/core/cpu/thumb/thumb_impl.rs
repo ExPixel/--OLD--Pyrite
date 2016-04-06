@@ -264,180 +264,134 @@ pub fn thumb_cmp_i8r7(cpu: &mut ArmCpu, instr: u32) {
 	thumb_cmp_i8(cpu, instr, 7);
 }
 
+/// Common add i8 function
+pub fn thumb_add_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
+	let lhs = cpu.rget(rd);
+	let rhs = instr & 0xff;
+	let result = arm_fn_add_s(cpu, lhs, rhs);
+	cpu.rset(rd, result);
+}
+
 /// ADD i8r0
 /// Add to register
 /// 8-bit immediate offset, using r0
 pub fn thumb_add_i8r0(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(0);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(0, result);
+	thumb_add_i8(cpu, instr, 0);
 }
 
 /// ADD i8r1
 /// Add to register
 /// 8-bit immediate offset, using r1
 pub fn thumb_add_i8r1(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(1);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(1, result);
+	thumb_add_i8(cpu, instr, 1);
 }
 
 /// ADD i8r2
 /// Add to register
 /// 8-bit immediate offset, using r2
 pub fn thumb_add_i8r2(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(2);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(2, result);
+	thumb_add_i8(cpu, instr, 2);
 }
 
 /// ADD i8r3
 /// Add to register
 /// 8-bit immediate offset, using r3
 pub fn thumb_add_i8r3(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(3);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(3, result);
+	thumb_add_i8(cpu, instr, 3);
 }
 
 /// ADD i8r4
 /// Add to register
 /// 8-bit immediate offset, using r4
 pub fn thumb_add_i8r4(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(4);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(4, result);
+	thumb_add_i8(cpu, instr, 4);
 }
 
 /// ADD i8r5
 /// Add to register
 /// 8-bit immediate offset, using r5
 pub fn thumb_add_i8r5(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(5);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(5, result);
+	thumb_add_i8(cpu, instr, 5);
 }
 
 /// ADD i8r6
 /// Add to register
 /// 8-bit immediate offset, using r6
 pub fn thumb_add_i8r6(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(6);
-	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(6, result);
+	thumb_add_i8(cpu, instr, 6);
 }
 
 /// ADD i8r7
 /// Add to register
 /// 8-bit immediate offset, using r7
 pub fn thumb_add_i8r7(cpu: &mut ArmCpu, instr: u32) {
+	thumb_add_i8(cpu, instr, 7);
+}
+
+/// Common sub i8 funciton.
+pub fn thumb_sub_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(7);
+	let lhs = cpu.rget(rd);
 	let rhs = instr & 0xff;
-	let result = arm_fn_add_s(cpu, lhs, rhs);
-	cpu.rset(7, result);
+	let result = arm_fn_sub_s(cpu, lhs, rhs);
+	cpu.rset(rd, result);
 }
 
 /// SUB i8r0
 /// Subtract from register
 /// 8-bit immediate offset, using r0
 pub fn thumb_sub_i8r0(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(0);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(0, result);
+	thumb_sub_i8(cpu, instr, 0);
 }
 
 /// SUB i8r1
 /// Subtract from register
 /// 8-bit immediate offset, using r1
 pub fn thumb_sub_i8r1(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(1);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(1, result);
+	thumb_sub_i8(cpu, instr, 1);
 }
 
 /// SUB i8r2
 /// Subtract from register
 /// 8-bit immediate offset, using r2
 pub fn thumb_sub_i8r2(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(2);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(2, result);
+	thumb_sub_i8(cpu, instr, 2);
 }
 
 /// SUB i8r3
 /// Subtract from register
 /// 8-bit immediate offset, using r3
 pub fn thumb_sub_i8r3(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(3);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(3, result);
+	thumb_sub_i8(cpu, instr, 3);
 }
 
 /// SUB i8r4
 /// Subtract from register
 /// 8-bit immediate offset, using r4
 pub fn thumb_sub_i8r4(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(4);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(4, result);
+	thumb_sub_i8(cpu, instr, 4);
 }
 
 /// SUB i8r5
 /// Subtract from register
 /// 8-bit immediate offset, using r5
 pub fn thumb_sub_i8r5(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(5);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(5, result);
+	thumb_sub_i8(cpu, instr, 5);
 }
 
 /// SUB i8r6
 /// Subtract from register
 /// 8-bit immediate offset, using r6
 pub fn thumb_sub_i8r6(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(6);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(6, result);
+	thumb_sub_i8(cpu, instr, 6);
 }
 
 /// SUB i8r7
 /// Subtract from register
 /// 8-bit immediate offset, using r7
 pub fn thumb_sub_i8r7(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(7);
-	let rhs = instr & 0xff;
-	let result = arm_fn_sub_s(cpu, lhs, rhs);
-	cpu.rset(7, result);
+	thumb_sub_i8(cpu, instr, 7);
 }
 
 /// DP g1
