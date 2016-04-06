@@ -139,7 +139,7 @@ pub fn thumb_sub_imm3(cpu: &mut ArmCpu, instr: u32) {
 /// Common MOV i8 function
 pub fn thumb_mov_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(0);
+	let lhs = cpu.rget(rd); // #TODO this is useless, arm_fn_mov_s just discards it anyway.
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
 	cpu.rset(rd, result);
@@ -201,84 +201,67 @@ pub fn thumb_mov_i8r7(cpu: &mut ArmCpu, instr: u32) {
 	thumb_mov_i8(cpu, instr, 7);
 }
 
+pub fn thumb_cmp_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
+	cpu.clock_prefetch_thumb();
+	let lhs = cpu.rget(rd);
+	let rhs = instr & 0xff;
+	arm_fn_cmp_s(cpu, lhs, rhs);
+}
+
 /// CMP i8r0
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r0
 pub fn thumb_cmp_i8r0(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(0);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 0);
 }
 
 /// CMP i8r1
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r1
 pub fn thumb_cmp_i8r1(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(1);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 1);
 }
 
 /// CMP i8r2
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r2
 pub fn thumb_cmp_i8r2(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(2);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 2);
 }
 
 /// CMP i8r3
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r3
 pub fn thumb_cmp_i8r3(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(3);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 3);
 }
 
 /// CMP i8r4
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r4
 pub fn thumb_cmp_i8r4(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(4);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 4);
 }
 
 /// CMP i8r5
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r5
 pub fn thumb_cmp_i8r5(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(5);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 5);
 }
 
 /// CMP i8r6
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r6
 pub fn thumb_cmp_i8r6(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(6);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 6);
 }
 
 /// CMP i8r7
 /// Compare register to value (Subtract)
 /// 8-bit immediate offset, using r7
 pub fn thumb_cmp_i8r7(cpu: &mut ArmCpu, instr: u32) {
-	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(7);
-	let rhs = instr & 0xff;
-	arm_fn_cmp_s(cpu, lhs, rhs);
+	thumb_cmp_i8(cpu, instr, 7);
 }
 
 /// ADD i8r0
