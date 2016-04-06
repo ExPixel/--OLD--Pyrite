@@ -97,11 +97,11 @@ impl ArmCpu {
 	// a rset_lo functions so that they don't have to check PC because
 	// it's impossible for them to change it.
 	pub fn rset(&mut self, register: u32, value: u32) {
-		if register == 15 && value >=  0x080112b8 && value <= 0x08011316 {
-			println!("branching to the bad place D:");
-			self.reg_dump_pretty();
-			panic!("picnico");
-		}
+		// if register == 15 && value >=  0x080112b8 && value <= 0x08011316 {
+		// 	println!("branching to the bad place D:");
+		// 	self.reg_dump_pretty();
+		// 	panic!("picnico");
+		// }
 		if !self.branched && register == 15 { self.branched = true }
 		return self.registers.set(register, value);
 	}
