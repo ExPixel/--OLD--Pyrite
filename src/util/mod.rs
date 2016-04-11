@@ -231,7 +231,7 @@ macro_rules! pyrite_counter_inc {
 	($counter:expr) => ( pyrite_counter_inc!($counter, 1) );
 	($counter:expr, $amt:expr) => (
 		unsafe {
-			::util::PYRITE_COUNTERS[$counter] += $amt;
+			::util::PYRITE_COUNTERS[$counter] += $amt as u64;
 		}
 	);
 }
@@ -240,7 +240,7 @@ macro_rules! pyrite_counter_dec {
 	($counter:expr) => ( pyrite_counter_dec!($counter, 1) );
 	($counter:expr, $amt:expr) => (
 		unsafe {
-			::util::PYRITE_COUNTERS[$counter] -= $amt;
+			::util::PYRITE_COUNTERS[$counter] -= $amt as u64;
 		}
 	);
 }
@@ -248,7 +248,7 @@ macro_rules! pyrite_counter_dec {
 macro_rules! pyrite_counter_set {
 	($counter:expr, $value:expr) => (
 		unsafe {
-			::util::PYRITE_COUNTERS[$counter] = $value;
+			::util::PYRITE_COUNTERS[$counter] = $value as u64;
 		}
 	);
 }
