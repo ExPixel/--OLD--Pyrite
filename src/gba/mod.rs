@@ -98,6 +98,8 @@ impl Gba {
 		self.cpu.registers.setf_f(); // The FIQ flag should always be high.
 
 		if STARTUP_BIOS {
+			self.cpu.registers.setf_i(); // Disables IRQ interrupts.
+			self.cpu.registers.setf_f(); // Disables FIQ interrupts. (They are impossible on the GBA, but this is high by default.)
 			self.cpu.set_pc(0x00000000);
 			self.cpu.registers.set_mode(registers::MODE_SVC);
 		} else {
