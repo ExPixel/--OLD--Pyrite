@@ -240,11 +240,6 @@ impl GbaMemory {
 				let (local_addr, writeable) = self.transform(address);
 				if writeable {
 					match address {
-						// Handles the weirdness of writing to the IF register.
-						// When one of the bits is set, it's actually cleared.
-						// #FIXME take a look at this again at some point.
-						//        because I'm not sure if this is exactly what
-						//        is supposed to be happening.
 						0x4000202 | 0x4000203 => self.internal_data[local_addr] &= !value,
 						_ => self.internal_data[local_addr] = value
 					}
