@@ -461,7 +461,10 @@ impl ArmCpu {
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.set_spsr(cpsr);
 		self.registers.setf_i(); // Disables future IRQ interrupts.
-		self.fill_pipeline(); // ensure the pipeline is filled for this.
+
+		// The call below is now uncessary now that I am using get_exec_address()
+		// but I'm keeping the code for now.
+		// self.fill_pipeline(); // ensure the pipeline is filled for this.
 
 		// the value of LR must be set so that
 		// subs PC, LR, #4 can return to the next instruction.
