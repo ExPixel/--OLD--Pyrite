@@ -52,7 +52,6 @@ pub struct ArmCpu {
 	pub registers: ArmRegisters,
 	pub memory: GbaMemory,
 	pub clock: ArmCpuClock,
-	pub software_interrupt: Option<u32>,
 	pub branched: bool,
 }
 
@@ -64,7 +63,6 @@ impl ArmCpu {
 			registers: ArmRegisters::new(),
 			memory: GbaMemory::new(),
 			clock: ArmCpuClock::new(),
-			software_interrupt: None,
 			branched: false
 		}
 	}
@@ -72,16 +70,26 @@ impl ArmCpu {
 	/// Advances the ARM pipeline.
 	/// executes, decodes, and then fetches the next instruction.
 	pub fn tick(&mut self) {
-		if let Some(_) = self.software_interrupt {
-			self.execute_swi()
-		} else {
-			if self.thumb_mode() { self.thumb_tick(); }
-			else { self.arm_tick(); }
-		}
+		if self.thumb_mode() { self.thumb_tick(); }
+		else { self.arm_tick(); }
 	}
 
 	pub fn rget(&self, register: u32) -> u32 {
 		return self.registers.get(register)
+	}
+
+
+	// #TODO could probably make thumb instructions better by giving them
+	// a rset_lo functions so that they don't have to check PC because
+	// it's impossible for them to change it.
+	pub fn rset(&mut self, register: u32, value: u32) {
+		if DEBUG_TRACK_REGISTERS { // #TODO REMOVE DEBUG CODE.
+			let tbit = self.registers.getfi_t();
+			debug_track_register_change(register, self.get_exec_address() | tbit, self.registers.get(register), value);
+		}
+
+		if !self.branched && register == 15 { self.branched = true }
+		return self.registers.set(register, value);
 	}
 
 	pub fn get_pc(&self) -> u32 {
@@ -93,19 +101,6 @@ impl ArmCpu {
 		self.registers.set_pc(value);
 	}
 
-	// #TODO could probably make thumb instructions better by giving them
-	// a rset_lo functions so that they don't have to check PC because
-	// it's impossible for them to change it.
-	pub fn rset(&mut self, register: u32, value: u32) {
-		// if register == 15 && value >=  0x080112b8 && value <= 0x08011316 {
-		// 	println!("branching to the bad place D:");
-		// 	self.reg_dump_pretty();
-		// 	panic!("picnico");
-		// }
-		if !self.branched && register == 15 { self.branched = true }
-		return self.registers.set(register, value);
-	}
-
 	pub fn thumb_mode(&self) -> bool {
 		self.registers.getf_t()
 	}
@@ -113,33 +108,36 @@ impl ArmCpu {
 	/// Reads an unsigned 8 bit value from memory and makes sure that
 	/// all of the correct data ends up on the correct data bus (basically byte)
 	pub fn mread8_al(&self, address: u32) -> u32 {
-		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		// # TODO alignment shouldn't be necessary on these so I should remove it. (maybe)
 		self.memory.read8(address) as u32
 	}
 
 	/// Reads a signed 8 bit value from memory and makes sure that
-	/// all of the correct data ends up on the correct data bus (basically byte
+	/// all of the correct data ends up on the correct data bus (basically byte)
 	pub fn mread8_signed_al(&self, address: u32) -> u32 {
-		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		// # TODO alignment shouldn't be necessary on these so I should remove it.(maybe)
 		((self.memory.read8(address) as i8) as i32) as u32
 	}
 
 	/// Reads an unsigned 16 bit value from memory and makes sure that
-	/// all of the correct data ends up on the correct data bus (basically byte
+	/// all of the correct data ends up on the correct data bus (basically byte)
 	pub fn mread16_al(&self, address: u32) -> u32 {
-		// # TODO alignment shouldn't be necessary on these so I should remove it.
-		self.memory.read16(address) as u32
+		// # TODO alignment shouldn't be necessary on these so I should remove it.(maybe)
+		let data = self.memory.read16(address & 0xFFFFFFFE); // make sure what we retrieve is word aligned.
+		let offset = (address & 0x1) * 8; // offset from the word boundary in bits.
+		((data << (16 - offset)) | (data >> offset)) as u32 // rotate right by offset.
+		// self.memory.read16(address) as u32
 	}
 
 	/// Reads a signed 16 bit value from memory and makes sure that
-	/// all of the correct data ends up on the correct data bus (basically byte
+	/// all of the correct data ends up on the correct data bus (basically byte)
 	pub fn mread16_signed_al(&self, address: u32) -> u32 {
-		// # TODO alignment shouldn't be necessary on these so I should remove it.
+		// # TODO alignment shouldn't be necessary on these so I should remove it.(maybe)
 		((self.memory.read16(address) as i16) as i32) as u32
 	}
 
 	/// Reads an unsigned 32 bit value from memory and makes sure that
-	/// all of the correct data ends up on the correct data bus (basically byte
+	/// all of the correct data ends up on the correct data bus (basically byte)
 	pub fn mread32_al(&self, address: u32) -> u32 {
 		let data = self.memory.read32(address & 0xFFFFFFFC); // make sure what we retrieve is word aligned.
 		let offset = (address & 0x3) * 8; // offset from the word boundary in bits.
@@ -171,11 +169,12 @@ impl ArmCpu {
 	}
 
 	fn arm_tick(&mut self) {
+		let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
+
 		if self.arm_pipeline.ready() {
 			let decoded = self.arm_pipeline.decoded;
 			let condition = (decoded >> 28) & 0xf;
 			if self.check_condition(condition) {
-				let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 				before_execution(exec_addr, self); // #TODO remove this debug code.
 				execute_arm(self, decoded);
 				after_execution(exec_addr, self); // #TODO remove this debug code.
@@ -186,6 +185,13 @@ impl ArmCpu {
 			self.align_pc();
 			self.arm_pipeline.flush();
 			self.branched = false;
+
+			// #TODO remove debug code.
+			if DEBUG_TRACK_BRANCHES {
+				let __self_pc = self.get_pc();
+				let __self_thumb = self.thumb_mode();
+				debug_push_branch(self, exec_addr, false, __self_pc, __self_thumb);
+			}
 		} else {
 			let pc = self.get_pc();
 			let next = self.memory.read32(pc);
@@ -195,9 +201,10 @@ impl ArmCpu {
 	}
 
 	fn thumb_tick(&mut self) {
+		let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
+
 		if self.thumb_pipeline.ready() {
 			let decoded = self.thumb_pipeline.decoded as u32;
-			let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 			before_execution(exec_addr, self); // #TODO remove this debug code.
 			execute_thumb(self, decoded);
 			after_execution(exec_addr, self); // #TODO remove this debug code.
@@ -207,6 +214,13 @@ impl ArmCpu {
 			self.align_pc(); // half-word aligning the program counter for THUMB mode.
 			self.thumb_pipeline.flush();
 			self.branched = false;
+
+			// #TODO remove debug code.
+			if DEBUG_TRACK_BRANCHES {
+				let __self_pc = self.get_pc();
+				let __self_thumb = self.thumb_mode();
+				debug_push_branch(self, exec_addr, true, __self_pc, __self_thumb);
+			}
 		} else {
 			let pc = self.get_pc();
 			let next = self.memory.read16(pc);
@@ -317,20 +331,6 @@ impl ArmCpu {
 		}
 	}
 
-	pub fn execute_swi(&mut self) {
-		let swi_instr = self.software_interrupt.take().unwrap();
-		let interrupt = self.get_gba_swi(swi_instr);
-		// #TODO I'm seeing the point of this less and less.
-		// sure fully emulating the bios is great but what's the point?
-		if self.thumb_mode() {
-			// println!("EXECUTING SWI (T): 0x{:02x}, instruction: 0x{:04x}", interrupt, swi_instr & 0xffff);
-			self.handle_thumb_swi();
-		} else {
-			// println!("EXECUTING SWI (A): 0x{:02x}, instruction: 0x{:08x}", interrupt, swi_instr);
-			self.handle_arm_swi();
-		}
-	}
-
 	/// Returns the number of the software interrupt for the GBA.
 	pub fn get_gba_swi(&mut self, instr: u32) -> u32 {
 		if self.thumb_mode() {
@@ -361,16 +361,12 @@ impl ArmCpu {
 		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_SVC);
 		self.registers.set_spsr(cpsr);
-
-		// because the interrupt is handled on the next call to tick, 
-		// it's actually already at the next instruction.
-		let next_pc = self.get_pc() - 8;
-
+		let next_pc = self.get_pc() - 4;
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
-		self.align_pc();
-		self.arm_pipeline.flush();
-		self.branched = false;
+		// self.align_pc();
+		// self.arm_pipeline.flush();
+		// self.branched = false;
 	}
 
 	/// Perform Software Interrupt:
@@ -382,31 +378,67 @@ impl ArmCpu {
 		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
 		self.registers.set_mode(MODE_SVC);
 		self.registers.set_spsr(cpsr);
-
-		// because the interrupt is handled on the next call to tick, 
-		// it's actually already at the next instruction.
-		let next_pc = self.get_pc() - 4; // 0x08000e6f
-
+		let next_pc = self.get_pc() - 2;
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		self.registers.clearf_t(); // Enters ARM mode.
-		self.align_pc();
-		self.thumb_pipeline.flush();
-		self.branched = false;
+		// self.align_pc();
+		// self.thumb_pipeline.flush();
+		// self.branched = false;
 	}
 
 	pub fn thumb_swi(&mut self, instr: u32) {
 		self.clock_prefetch_thumb();
-		self.software_interrupt = Some(instr);
+		self.handle_thumb_swi();
 	}
 
 	pub fn arm_swi(&mut self, instr: u32) {
 		self.clock_prefetch_arm();
-		self.software_interrupt = Some(instr);
+		self.handle_arm_swi();
 	}
 
 	pub fn allow_irq_interrupt(&mut self) -> bool {
 		!self.registers.getf_i()
+	}
+
+	pub fn fill_pipeline(&mut self) {
+		if self.thumb_mode() {
+			self.fill_thumb_pipeline();
+		} else {
+			self.fill_arm_pipeline();
+		}
+	}
+
+	pub fn fill_arm_pipeline(&mut self) {
+		if self.arm_pipeline.count == 0 {
+			let pc = self.get_pc();
+			let mut next = self.memory.read32(pc);
+			self.arm_pipeline.next(next);
+			next = self.memory.read32(pc + 4);
+			self.arm_pipeline.next(next);
+			self.registers.set(REG_PC, pc + 8);
+		} else if self.arm_pipeline.count == 1 {
+			let pc = self.get_pc();
+			let next = self.memory.read32(pc);
+			self.registers.set(REG_PC, pc + 4);
+			self.arm_pipeline.next(next);
+		}
+	}
+
+	pub fn fill_thumb_pipeline(&mut self) {
+		if self.thumb_pipeline.count == 0 {
+			let pc = self.get_pc();
+			let mut next = self.memory.read16(pc);
+			self.thumb_pipeline.next(next);
+			next = self.memory.read16(pc + 2);
+			self.thumb_pipeline.next(next);
+			self.registers.set(REG_PC, pc + 4);
+		} else if self.thumb_pipeline.count == 1 {
+			let pc = self.get_pc();
+			let next = self.memory.read16(pc);
+			self.thumb_pipeline.next(next);
+			self.registers.set(REG_PC, pc + 2);
+		}
 	}
 
 	/// The branch part of the hardware interrupt with the state
@@ -425,23 +457,19 @@ impl ArmCpu {
 		// println!("[0x{:08X}] IRQ INTERRUPT: 0x{:04X}", self.get_exec_address(), self.memory.get_reg(ioreg::IF));
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
-		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in there.
+		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in the spsr.
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.set_spsr(cpsr);
 		self.registers.setf_i(); // Disables future IRQ interrupts.
-		let next_pc = if self.thumb_mode() {
-			if self.thumb_pipeline.ready() {
-				self.get_pc() - 2
-			} else {
-				self.get_pc()
-			}
-		} else {
-			if self.arm_pipeline.ready() {
-				self.get_pc() - 4
-			} else {
-				self.get_pc()
-			}
-		};
+		self.fill_pipeline(); // ensure the pipeline is filled for this.
+
+		// the value of LR must be set so that
+		// subs PC, LR, #4 can return to the next instruction.
+		// this usually happens at 0x13c in the BIOS.
+		// the exec_addr is the address of the next instruction to be executed.
+		// ^ unless we're in the middle of executing the instruction already. The it's the current instruction.
+		let next_pc = self.get_exec_address() + 4;
+
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
 		self.registers.clearf_t(); // Enters ARM mode.
@@ -454,6 +482,7 @@ impl ArmCpu {
 	/// The CPU has hit an undefined instruction.
 	pub fn on_undefined(&mut self) {
 		self.reg_dump_pretty();
+		debug_unwind_branches();
 		panic!("picnic -- undefined instruction");
 	}
 
@@ -462,10 +491,10 @@ impl ArmCpu {
 	pub fn get_exec_address(&self) -> u32 {
 		if self.thumb_mode() {
 			let c = self.thumb_pipeline.count as u32;
-			self.registers.get(15) - (c * 2)
+			(self.registers.get(15) - (c * 2))
 		} else {
 			let c = self.arm_pipeline.count as u32;
-			self.registers.get(15) - (c * 4)
+			(self.registers.get(15) - (c * 4))
 		}
 	}
 
@@ -529,86 +558,141 @@ impl ArmCpu {
 	}
 }
 
-const DEBUG_STOP: bool = false;
-const DEBUG_THUMB: Option<bool> = Some(true);
+// BREAKPOINT OPTIONS:
+const DEBUG_STOP: bool = false; // This is actually a breakpoint.
+const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 1;
-const DEBUG_ADDR: u32 = 0x08005BC8; // 0x08005BCA, 0x08009794, 0x08005BC8 0x0000131e
+const DEBUG_ADDR: u32 = 0x13c; // 0x00000AB2, 0x000012e8, 0x08005BCA, 0x08009794, 0x08005BC8 0x0000131e
+
+// BRANCH TRACKING OPTIONS:
+const DEBUG_TRACK_BRANCHES: bool = false;
+const DEBUG_TRACKED_BRANCHES_COUNT: usize = 128;
+const DEBUG_BRANCH_TRACK_REGISTERS: bool = false;
+
+// REGISTER TRACKING OPTIONS:
+const DEBUG_TRACK_REGISTERS: bool = false;
+
+// MEMORY TABLE OPTIONS:
+const DEBUG_PRINT_MEMORY_TABLE: bool = false;
 const MEMORY_TABLE_START: u32 = 0x06000510;// 0x03007e40
 const MEMORY_TABLE_LENGTH: u32 = 128;
+
+// Holds current debug information:
 static mut debug_current_iterations: u32 = 0;
-
-
+static mut debug_branch_count: usize = 0;
+static mut debug_branch_next_idx: usize = 0;
+static mut debug_tracked_registers: [(u32, u32, u32); 16] = [(0, 0, 0); 16];
+static mut track_branch_registers: [[(u32, u32, u32); 16]; DEBUG_TRACKED_BRANCHES_COUNT] = [[(0, 0, 0); 16]; DEBUG_TRACKED_BRANCHES_COUNT];
+static mut debug_tracked_branches: [(u32, bool, u32, bool, u32); DEBUG_TRACKED_BRANCHES_COUNT] = [(0, false, 0, false, 0); DEBUG_TRACKED_BRANCHES_COUNT];
 static mut branch_test: bool = false;
+
+// Debug functions:
+fn debug_track_register_change(register: u32, location: u32, current_value: u32, new_value: u32) {
+	unsafe {
+		debug_tracked_registers[register as usize] = (location, new_value, current_value);
+	}
+}
+
+fn debug_print_register_changes() {
+	println!("========== REGISTER CHANGES ==========");
+	unsafe {
+		for r in 0..16 {
+			let rchange = debug_tracked_registers[r];
+			let mut rchange_addr = rchange.0;
+			let rchange_addr_mode = if (rchange_addr & 1) == 1 { "T" } else { "A" };
+			rchange_addr &= !1;
+			println!("[0x{:08X} ({})] r{} = 0x{:08X} (~ previous 0x{:08x})", rchange_addr, rchange_addr_mode, r, rchange.1, rchange.2);
+		}
+	}
+	println!("======== REGISTER CHANGES END ========");
+}
+
+fn debug_push_branch(cpu: &mut ArmCpu, branch_from: u32, branch_from_thumb: bool, branch_to: u32, branch_to_thumb: bool) {
+	unsafe {
+		if debug_branch_next_idx >= DEBUG_TRACKED_BRANCHES_COUNT {
+			debug_branch_next_idx = 0;
+		}
+		debug_tracked_branches[debug_branch_next_idx] = (branch_from, branch_from_thumb, branch_to, branch_to_thumb, 1);
+		if DEBUG_BRANCH_TRACK_REGISTERS {
+			track_branch_registers[debug_branch_next_idx] = debug_tracked_registers.clone();
+		}
+		debug_branch_next_idx += 1;
+		if debug_branch_count < DEBUG_TRACKED_BRANCHES_COUNT {
+			debug_branch_count += 1;
+		}
+	}
+}
+
+fn debug_get_mode_char(thumb_mode: bool) -> &'static str {
+	if thumb_mode { "T" }
+	else { "A" }
+}
+
+fn debug_unwind_branches() {
+	unsafe {
+		let mut bcount = debug_branch_count;
+		let mut bidx = if debug_branch_next_idx == 0 {
+			 DEBUG_TRACKED_BRANCHES_COUNT - 1
+		} else {
+			debug_branch_next_idx - 1
+		};
+
+		println!("========== BRANCHES ==========");
+
+		while bcount > 0 {
+			let branch = debug_tracked_branches[bidx];
+
+			println!("0x{:08X} ({}) -> 0x{:08X} ({}) ; {} times", branch.0, debug_get_mode_char(branch.1), branch.2, debug_get_mode_char(branch.3), branch.4);
+			if DEBUG_BRANCH_TRACK_REGISTERS {
+				for r in 0..16 {
+					let rchange = track_branch_registers[bidx][r];
+					let mut rchange_addr = rchange.0;
+					let rchange_addr_mode = if (rchange_addr & 1) == 1 { "T" } else { "A" };
+					rchange_addr &= !1;
+					println!("\t[0x{:08X} ({})] r{} = 0x{:08X} (~ previous 0x{:08x})", rchange_addr, rchange_addr_mode, r, rchange.1, rchange.2);
+				}
+			}
+
+			bcount -= 1;
+			if bidx == 0 { bidx = DEBUG_TRACKED_BRANCHES_COUNT - 1; }
+			else { bidx -= 1; }
+		}
+		println!("======== BRANCHES END ========");
+	}
+}
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
-	// if address == 0x08005BC8 { pyrite_counter_inc!(3); }
-	// if pyrite_counter_get!(3) == 0 { return }
-	// if cpu.rget(6) != 0xff00 { return }
-
-	if address == 0x00001326 {
-		unsafe { branch_test = true; }
-	} else {
-		unsafe { branch_test = false; }
-	}
-
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		unsafe { debug_current_iterations += 1; if debug_current_iterations < DEBUG_ITERATIONS { return; }}
 		println!("============BEFORE============");
 		cpu.reg_dump_pretty();
-		print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+		if DEBUG_PRINT_MEMORY_TABLE {
+			print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+		}
+		if DEBUG_TRACK_REGISTERS {
+			debug_print_register_changes();
+		}
 		println!("==============================");
 	}
 }
 
 #[allow(warnings)]
 fn after_execution(address: u32, cpu: &mut ArmCpu) {
-	pyrite_debugging!({
-		for addr in 0x06000000..0x06000560 {
-			let d = cpu.memory.read8(addr);
-			if d != 0x01 {
-				print_memory_table!(cpu.memory, addr & !0xf, (addr & !0xf) + 128);
-				panic!("FIRST BAD VALUE: [0x{:08x}]=0x{:02x}", addr, d);
-			}
-		}
-		print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
-	});
-	// if address == 0x08005BC8 { pyrite_counter_inc!(3); }
-	// if pyrite_counter_get!(3) == 0 { return }
-	// if cpu.rget(6) != 0xff00 { return }
-
-	// if cpu.memory.read8(0x03007e50) == 0xff {
-	// 	cpu.reg_dump_pretty();
-	// 	print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
-	// 	panic!("BAD VALUE (maybe)");
-	// }
-
-	// if cpu.rget(0) == 0x080226FD {
-	// 	cpu.reg_dump_pretty();
-	// 	panic!("DUBIOUS r0 value.");
-	// }
-
-	// if cpu.rget(13) == 0x03007e3c {
-	// 	cpu.reg_dump_pretty();
-	// 	panic!("BAD r13");
-	// }
-
-	// if cpu.memory.read8(0x03007e48) == 0x14 {
-	// 	cpu.reg_dump_pretty();
-	// 	panic!("BAD [0x03007e40]");	
-	// }
-
-	// if cpu.memory.read8(0x600014d) == 0xff {
-	// 	cpu.reg_dump_pretty();
-	// 	panic!("BAD WRITE TO 0x600014d");
-	// }
-
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		unsafe { if debug_current_iterations < DEBUG_ITERATIONS { return; } }
 		// println!("==============================");
 		println!("=============AFTER============");
 		cpu.reg_dump_pretty();
-		print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+		if DEBUG_PRINT_MEMORY_TABLE {
+			print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+		}
+		if DEBUG_TRACK_BRANCHES {
+			debug_unwind_branches();
+		}
+		if DEBUG_TRACK_REGISTERS {
+			debug_print_register_changes();
+		}
 		panic!("picnic");
 	}
 }
