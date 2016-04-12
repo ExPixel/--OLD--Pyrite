@@ -185,6 +185,7 @@ impl ArmCpu {
 			self.align_pc();
 			self.arm_pipeline.flush();
 			self.branched = false;
+			self.fill_pipeline();
 
 			// #TODO remove debug code.
 			if DEBUG_TRACK_BRANCHES {
@@ -214,6 +215,7 @@ impl ArmCpu {
 			self.align_pc(); // half-word aligning the program counter for THUMB mode.
 			self.thumb_pipeline.flush();
 			self.branched = false;
+			self.fill_pipeline();
 
 			// #TODO remove debug code.
 			if DEBUG_TRACK_BRANCHES {
