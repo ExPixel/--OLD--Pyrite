@@ -429,7 +429,10 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				_ => {}
 			}
 		}
-		self.joypad.tick(&mut self.cpu);
+
+		if self.joypad.tick(&mut self.cpu) {
+			self.hardware_interrupt(INT_KEYPAD);
+		}
 	}
 }
 

@@ -21,6 +21,25 @@ pub struct GbaJoypad {
 //   9     Button L        (etc.)
 //   10-15 Not used
 
+// 4000132h - KEYCNT - Key Interrupt Control (R/W)
+// The keypad IRQ function is intended to terminate the very-low-power Stop mode, it is not suitable for processing normal user input, to do this, most programs are invoking their keypad handlers from within VBlank IRQ.
+//   Bit   Expl.
+//   0     Button A        (0=Ignore, 1=Select)
+//   1     Button B        (etc.)
+//   2     Select          (etc.)
+//   3     Start           (etc.)
+//   4     Right           (etc.)
+//   5     Left            (etc.)
+//   6     Up              (etc.)
+//   7     Down            (etc.)
+//   8     Button R        (etc.)
+//   9     Button L        (etc.)
+//   10-13 Not used
+//   14    IRQ Enable Flag (0=Disable, 1=Enable)
+//   15    IRQ Condition   (0=Logical OR, 1=Logical AND)
+// In logical OR mode, an interrupt is requested when at least one of the selected buttons is pressed.
+// In logical AND mode, an interrupt is requested when ALL of the selected buttons are pressed.
+
 const GBA_BTN_A: u16 = 0x1;
 const GBA_BTN_B: u16 = 0x2;
 const GBA_BTN_SELECT: u16 = 0x4;
@@ -32,21 +51,35 @@ const GBA_BTN_DOWN: u16 = 0x80;
 const GBA_BTN_R: u16 = 0x100;
 const GBA_BTN_L: u16 = 0x200;
 
+const KEY_MASK: u16 = 0x3ff; // Mask that takes only the keys.
 
 impl GbaJoypad {
 	pub fn new() -> GbaJoypad {
 		GbaJoypad {
-			key_input: 0xffff,
+			key_input: KEY_MASK,
 			dirty: true
 		}
 	}
 
-	pub fn tick(&mut self, cpu: &mut ArmCpu) {
+	pub fn tick(&mut self, cpu: &mut ArmCpu) -> bool {
 		if self.dirty {
 			cpu.memory.set_reg(ioreg::KEYINPUT, self.key_input);
 			self.dirty = false;
-			// #TODO check for interrupt here and return true if there is one.
+			let keycnt = cpu.memory.get_reg(ioreg::KEYCNT);
+			if (keycnt & 0x4000) != 0 { // IRQ is enabled
+				let key_cnt_masked = keycnt & KEY_MASK;
+				if (keycnt & 0x8000) != 0 { // Logical AND Mode
+					if (key_cnt_masked & (self.key_input & KEY_MASK)) == key_cnt_masked {
+						return true
+					}
+				} else { // Logical OR Mode
+					if (key_cnt_masked & (self.key_input & KEY_MASK)) != 0 {
+						return true
+					}
+				}
+			}
 		}
+		return false
 	}
 
 	pub fn key_pressed(&mut self, keycode: VirtualKeyCode) {
