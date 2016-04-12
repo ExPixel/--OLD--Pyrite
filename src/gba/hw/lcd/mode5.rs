@@ -25,11 +25,11 @@ pub fn render_mode_5(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		}
 
 		for col in 160..240 {
-			lines.bg2[col] = (0, 0, 0, 0);
+			lines.bg2[col] = 0;
 		}
 	} else {
 		for col in 0..240 {
-			lines.bg2[col] = (0, 0, 0, 0);
+			lines.bg2[col] = 0;
 		}
 	}
 

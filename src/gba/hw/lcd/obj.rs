@@ -101,10 +101,10 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	//     4 bytes per tile line
 	//     1/2 byte per tile column
 	let offset = (((tile as usize) + (fragment as usize)) << 5) + ((ty as usize) << 2) + ((tx as usize) >> 1);
-	if offset >= tiles.len() { return (0, 0, 0, 0) }
+	if offset >= tiles.len() { return 0 }
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
-		(0, 0, 0, 0)
+		0
 	} else { 
 		// 32 bytes per palette
 		// 2 bytes per color entry
@@ -133,10 +133,10 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	//     4 bytes per tile line
 	//     1/2 byte per tile column
 	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 2) + ((tx as usize) >> 1);
-	if offset >= tiles.len() { return (0, 0, 0, 0) }
+	if offset >= tiles.len() { return 0 }
 	let dot = ((tiles[offset] >> ((tx & 1) << 2)) & 0xf) as usize;
 	return if dot == 0 { 
-		(0, 0, 0, 0)
+		0
 	} else { 
 		// 32 bytes per palette
 		// 2 bytes per color entry
@@ -161,10 +161,10 @@ pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 
 	// tile index only references 32 bytes at a time.
 	let offset = ((tile as usize) << 5) + ((fragment as usize) << 6) + ((ty as usize) << 3) + (tx as usize);
-	if offset >= tiles.len() { return (0, 0, 0, 0) }
+	if offset >= tiles.len() { return 0 }
 	let dot = tiles[offset] as usize;
 	return if dot == 0 { 
-		(0, 0, 0, 0)
+		0
 	} else {
 		// 2 bytes per color entry
 		convert_rgb5_to_rgba8(palette.direct_read16(dot << 1))
@@ -186,10 +186,10 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	let xoffset = ((ox as usize) >> 3) << 6;
 
 	let offset = ((tile as usize) << 5) + yoffset + xoffset + ((ty as usize) << 3) + (tx as usize);
-	if offset >= tiles.len() { return (0, 0, 0, 0) }
+	if offset >= tiles.len() { return 0 }
 	let dot = tiles[offset] as usize;
 	return if dot == 0 { 
-		(0, 0, 0, 0)
+		0
 	} else {
 		// 2 bytes per color entry
 		convert_rgb5_to_rgba8(palette.direct_read16(dot << 1))
@@ -240,7 +240,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 				if px < 240 && lines.obj_info.get_priority(px as usize) == 0 { // on screen and nothing has been drawn there
 					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
 					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
-					if dot.3 != 0 {
+					if dot != 0 { // #TODO might want to check for transparency here (bit 15) instead of just zero.
 						lines.obj[px as usize] = dot;
 						lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
 						if semi_transparent {
@@ -314,7 +314,7 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 
 					if i_ax >= 0 && i_ax < (t_width as i16) && i_ay >= 0 && i_ay < (t_height as i16) && px < 240 {
 						let dot = get_dot(tile_region, palette_region, obj.attr2, i_ax as u16, i_ay as u16, (t_width, t_height, line_shift));
-						if dot.3 != 0 {
+						if dot != 0 { // #TODO might want to check for transparency here (bit 15) instead of just zero.
 							lines.obj[px as usize] = dot;
 							lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
 							if semi_transparent {
@@ -377,7 +377,7 @@ fn draw_simple_obj_window(one_dimensional: bool, tile_region: &[u8], palette_reg
 				if px < 240 /* && lines.obj_info.get_priority(px as usize) == 0 */ { // on screen and nothing has been drawn there
 					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
 					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
-					if dot.3 != 0 {
+					if dot != 0 { // #TODO might want to check for transparency here (bit 15) instead of just zero.
 						lines.obj[px as usize] = dot;
 						lines.obj_info.set_window(px as usize);
 					}
@@ -446,7 +446,7 @@ fn draw_rot_scale_obj_window(one_dimensional: bool, tile_region: &[u8], palette_
 
 					if i_ax >= 0 && i_ax < (t_width as i16) && i_ay >= 0 && i_ay < (t_height as i16) && px < 240 {
 						let dot = get_dot(tile_region, palette_region, obj.attr2, i_ax as u16, i_ay as u16, (t_width, t_height, line_shift));
-						if dot.3 != 0 {
+						if dot != 0 { // #TODO might want to check for transparency here (bit 15) instead of just zero.
 							lines.obj[px as usize] = dot;
 							// lines.obj_info.set_priority(px as usize, (((obj.attr2 >> 10) & 0x3) + 1) as u8);
 							lines.obj_info.set_window(px as usize);

@@ -16,7 +16,7 @@ pub mod mode3;
 pub mod mode4;
 pub mod mode5;
 
-pub type Pixel = (u8, u8, u8, u8);
+pub type Pixel = u16;
 pub type GbaPixel = (u8, u8, u8);
 pub type GbaLcdLine = Vec<GbaPixel>;
 pub type GbaBGLine = [Pixel; 240];
@@ -76,8 +76,8 @@ struct BlendingParams {
 	target_drawn: bool,
 	source_on_top: bool,
 	target_overwritten: bool,
-	source_pixel: (u8, u8, u8),
-	target_pixel: (u8, u8, u8),
+	source_pixel: Pixel,
+	target_pixel: Pixel,
 	force_obj_blend: bool,
 	current_window_prio: u8,
 	window_blending_disabled: bool
@@ -121,11 +121,11 @@ impl GbaLcd {
 		GbaLcd {
 			screen_buffer: vec![vec![(0u8, 0u8, 0u8); 240]; 160],
 			lines: GbaDisplayLines {
-				bg0: [(0, 0, 0, 0); 240],
-				bg1: [(0, 0, 0, 0); 240],
-				bg2: [(0, 0, 0, 0); 240],
-				bg3: [(0, 0, 0, 0); 240],
-				obj: [(0, 0, 0, 0); 240],
+				bg0: [0; 240],
+				bg1: [0; 240],
+				bg2: [0; 240],
+				bg3: [0; 240],
+				obj: [0; 240],
 				bg0_enable: false,
 				bg1_enable: false,
 				bg2_enable: false,
@@ -154,7 +154,7 @@ impl GbaLcd {
 
 	fn clear_obj_line(&mut self) {
 		for i in 0..240 {
-			self.lines.obj[i] = (0, 0, 0, 0);
+			self.lines.obj[i] = 0;
 			self.lines.obj_info.data[i] = 0;
 		}
 	}
@@ -224,7 +224,7 @@ impl GbaLcd {
 		let bldy = memory.get_reg(ioreg::BLDY);
 		let blend_evy = bldy & 0x1f;
 
-		let pixel_brightness_fn: fn(u16, u16, u16, Pixel) -> Pixel = match blend_mode {
+		let pixel_brightness_fn: fn(u16, GbaPixel) -> GbaPixel = match blend_mode {
 			2 => brighten_pixel,
 			3 => darken_pixel,
 			_ => pixel_lum_nop
@@ -232,9 +232,9 @@ impl GbaLcd {
 
 		let mut blending_params: BlendingParams = Default::default();
 
-		let change_pixel_brightness = |blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel, blending_params: &mut BlendingParams| -> Pixel {
+		let change_pixel_brightness = |blend_evy: u16, color: GbaPixel, blending_params: &mut BlendingParams| -> GbaPixel {
 			if !blending_params.window_blending_disabled {
-				return pixel_brightness_fn(blend_sources, blend_evy, layer_idx, color);
+				return pixel_brightness_fn(blend_evy, color);
 			} else {
 				return color
 			}
@@ -267,29 +267,26 @@ impl GbaLcd {
 		let win_obj_in = (winout >> 8) & 0x1f;
 
 		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_params: &mut BlendingParams| {
-			if color.3 != 0 && !blending_params.window_blending_disabled {
+			if !is_transparent(color) && !blending_params.window_blending_disabled {
 				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
 					blending_params.source_on_top = true;
-					blending_params.source_pixel = (color.0, color.1, color.2);
+					blending_params.source_pixel = color;
 				} else if ((blend_targets >> layer_idx) & 1) == 1 { // This is a target layer.
 					if blending_params.target_drawn {
 						blending_params.target_overwritten = true;
 					} else {
 						blending_params.target_drawn = true;
-						blending_params.target_pixel = (color.0, color.1, color.2);
+						blending_params.target_pixel = color;
 					}
 					blending_params.source_on_top = false;
 				}
 			}
 		};
 
+		on_pixel_drawn(5, backdrop, false, &mut blending_params);
+		let darkened_backdrop = backdrop;
 
-		let mut backdrop4 = (backdrop.0, backdrop.1, backdrop.2, 255);
-		on_pixel_drawn(5, backdrop4, false, &mut blending_params);
-		backdrop4 = change_pixel_brightness(blend_sources, blend_evy, 5, backdrop4, &mut blending_params);
-		let darkened_backdrop = (backdrop4.0, backdrop4.1, backdrop4.2);
-
-		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
+		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut Pixel, blending_params: &mut BlendingParams| -> bool {
 			if !win0_enabled && !win1_enabled && !win_obj_enabled { // Windowing is turned off.
 				return true;
 			}
@@ -303,7 +300,7 @@ impl GbaLcd {
 						blending_params.reset_for_window(pwindow_priority, window_disables_blending); // #FIXME do I need to be doing this?
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop4, false, blending_params);
+						on_pixel_drawn(5, backdrop, false, blending_params);
 					}
 					return false;
 				}
@@ -315,7 +312,7 @@ impl GbaLcd {
 						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop4, false, blending_params);
+						on_pixel_drawn(5, backdrop, false, blending_params);
 					}
 					return false;
 				}
@@ -327,7 +324,7 @@ impl GbaLcd {
 						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop4, false, blending_params);
+						on_pixel_drawn(5, backdrop, false, blending_params);
 					}
 					return false;
 				}
@@ -339,7 +336,7 @@ impl GbaLcd {
 						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 						// we basically act like the backdrop has been drawn again.
 						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop4, false, blending_params);
+						on_pixel_drawn(5, backdrop, false, blending_params);
 					}
 					return false;
 				}
@@ -351,26 +348,22 @@ impl GbaLcd {
 				blending_params.reset_for_window(pwindow_priority, window_disables_blending);
 				// we basically act like the backdrop has been drawn again.
 				*dest_pixel = darkened_backdrop;
-				on_pixel_drawn(5, backdrop4, false, blending_params);
+				on_pixel_drawn(5, backdrop, false, blending_params);
 			}
 			return true
 		};
 
-		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest: &mut [GbaPixel], maybe_line: Option<&GbaBGLine>,
+		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest_pixel: &mut Pixel, maybe_line: Option<&GbaBGLine>,
 				blending_params: &mut BlendingParams| {
-			// #TODO instead of doing this little lookup all of the time,
-			//       maybe I could just pass in a "working pixel" instead
-			//       and have the eventually put into the output array.
-			let mut dest_pixel = dest[pixel_idx];
 
 			// First we draw the BG's pixel (if there is one)
 			if let Some(bg_line) = maybe_line {
 				let mut src_pixel = bg_line[pixel_idx];
-				if window_clip_pixel(line, pixel_idx as u16, src_pixel, bg, &mut dest_pixel, blending_params) {
+				if window_clip_pixel(line, pixel_idx as u16, src_pixel, bg, dest_pixel, blending_params) {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
 					// on pixel drawn and blend_pixels functions in order to remove redundancy.
 					on_pixel_drawn(bg, src_pixel, false, blending_params);
-					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, bg, src_pixel, blending_params), dest_pixel);
+					*dest_pixel = Self::blend_pixels(src_pixel, *dest_pixel);
 				}
 			}
 
@@ -378,35 +371,43 @@ impl GbaLcd {
 			let obj_priority = obj_info.get_priority(pixel_idx);
 			if obj_enabled && obj_priority > 0 && (obj_priority - 1) == priority {
 				let obj_pixel = obj_line[pixel_idx];
-				if window_clip_pixel(line, pixel_idx as u16, obj_pixel, 4, &mut dest_pixel, blending_params) {
+				if window_clip_pixel(line, pixel_idx as u16, obj_pixel, 4, dest_pixel, blending_params) {
 					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
 					// on pixel drawn and blend_pixels functions in order to remove redundancy.
 					on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_params);
-					dest_pixel = Self::blend_pixels(change_pixel_brightness(blend_sources, blend_evy, 4, obj_pixel, blending_params), dest_pixel);	
+					*dest_pixel = Self::blend_pixels(obj_pixel, *dest_pixel);	
 					blending_params.force_obj_blend |= obj_info.is_transparent(pixel_idx);
 				}
 			}
-
-			dest[pixel_idx] = dest_pixel;
 		};
 
 		for pix in 0..240 {
 			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
 			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel, &mut blending_params)
-			output[pix] = darkened_backdrop;
 
-			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, output, rendering_order[0].2, &mut blending_params);
-			process_pixel(rendering_order[1].0, rendering_order[1].1, pix, output, rendering_order[1].2, &mut blending_params);
-			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, output, rendering_order[2].2, &mut blending_params);
-			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, output, rendering_order[3].2, &mut blending_params);
+			let mut output_pixel = darkened_backdrop;
+
+			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, &mut output_pixel, rendering_order[0].2, &mut blending_params);
+			process_pixel(rendering_order[1].0, rendering_order[1].1, pix, &mut output_pixel, rendering_order[1].2, &mut blending_params);
+			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, &mut output_pixel, rendering_order[2].2, &mut blending_params);
+			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, &mut output_pixel, rendering_order[3].2, &mut blending_params);
 
 			if !blending_params.window_blending_disabled && (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
-				let out_pix = (
-					min!(255, (((blending_params.target_pixel.0 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.0 as u16) * blend_eva) >> 4)) as u8,
-					min!(255, (((blending_params.target_pixel.1 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.1 as u16) * blend_eva) >> 4)) as u8,
-					min!(255, (((blending_params.target_pixel.2 as u16) * blend_evb) >> 4) + (((blending_params.source_pixel.2 as u16) * blend_eva) >> 4)) as u8,
+				let (t_r, t_g, t_b) = expand_color(blending_params.target_pixel);
+				let (s_r, s_g, s_b) = expand_color(blending_params.source_pixel);
+
+				output[pix] = (
+					min!(255, (((t_r as u16) * blend_evb) >> 4) + (((s_r as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((t_g as u16) * blend_evb) >> 4) + (((s_g as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((t_b as u16) * blend_evb) >> 4) + (((s_b as u16) * blend_eva) >> 4)) as u8,
 				);
-				output[pix] = out_pix;
+			} else {
+				let expanded = expand_color(output_pixel); 
+				if blending_params.source_on_top {
+					output[pix] = change_pixel_brightness(blend_evy, expanded, &mut blending_params);
+				} else {
+					output[pix] = expanded;
+				}
 			}
 
 			blending_params.target_drawn = false;
@@ -419,37 +420,13 @@ impl GbaLcd {
 	}
 
 	#[inline(always)]
-	#[cfg(feature = "true-alpha-blend")]
-	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
-		if a.3 == 0 {
-			b
-		} else {
-			let aa = a.3 as u32; // alpha component of a
-			let aa_inv = 255 - aa;
-			let _blend = |ca, cb| -> u8 {
-				let ca = ca as u32; // color component of a
-				let cb = cb as u32; // color component of b
-				((aa * ca + aa_inv * cb) >> 8) as u8
-			};
-			(_blend(a.0, b.0), _blend(a.1, b.1), _blend(a.2, b.2))
-		}
-	}
-
-	#[inline(always)]
-	#[cfg(not(feature = "true-alpha-blend"))]
-	fn blend_pixels(a: Pixel, b: GbaPixel) -> GbaPixel {
-		if a.3 == 0 { b }
-		else { (a.0, a.1, a.2) }
+	fn blend_pixels(a: Pixel, b: Pixel) -> Pixel {
+		if is_transparent(a) { b }
+		else { a }
 	}
 }
 
-/// Bit   Expl.
-/// 0-4   Red Intensity   (0-31)
-/// 5-9   Green Intensity (0-31)
-/// 10-14 Blue Intensity  (0-31)
-/// 15    Not used in GBA Mode (in NDS Mode: Alpha=0=Transparent, Alpha=1=Normal)
-#[inline(always)]
-pub fn convert_rgb5_to_rgb8(rgb5: u16) -> GbaPixel {
+pub fn expand_color(rgb5: u16) -> (u8, u8, u8) {
 	(
 		(((rgb5 & 0x1f) * 527 + 23 ) >> 6) as u8,
 		((((rgb5 >> 5) & 0x1f) * 527 + 23 ) >> 6) as u8,
@@ -463,13 +440,25 @@ pub fn convert_rgb5_to_rgb8(rgb5: u16) -> GbaPixel {
 /// 10-14 Blue Intensity  (0-31)
 /// 15    Not used in GBA Mode (in NDS Mode: Alpha=0=Transparent, Alpha=1=Normal)
 #[inline(always)]
-pub fn convert_rgb5_to_rgba8(rgb5: u16) -> Pixel {
-	(
-		(((rgb5 & 0x1f) * 527 + 23 ) >> 6) as u8,
-		((((rgb5 >> 5) & 0x1f) * 527 + 23 ) >> 6) as u8,
-		((((rgb5 >> 10) & 0x1f) * 527 + 23 ) >> 6) as u8,
-		255
-	)
+pub fn convert_rgb5_to_rgb8(rgb5: u16) -> Pixel {
+	// We use the NDS's system because it uses less memory than passing RGB8 everywhere.
+	rgb5 | 0x8000 // Setting the alpha bit to 1
+}
+
+#[inline(always)]
+pub fn is_transparent(pixel: Pixel) -> bool {
+	(pixel & 0x8000) == 0
+}
+
+/// Bit   Expl.
+/// 0-4   Red Intensity   (0-31)
+/// 5-9   Green Intensity (0-31)
+/// 10-14 Blue Intensity  (0-31)
+/// 15    Not used in GBA Mode (in NDS Mode: Alpha=0=Transparent, Alpha=1=Normal)
+#[inline(always)]
+pub fn convert_rgb5_to_rgba8(rgb5: u16) -> u16 {
+	// We use the NDS's system because it uses less memory than passing RGB8 everywhere.
+	rgb5 | 0x8000 // Setting the alpha bit to 1
 }
 
 #[inline(always)]
@@ -483,36 +472,24 @@ fn window_contains(x: u16, y: u16, w_left: u16, w_right: u16, w_top: u16, w_bott
 // PIXEL BRIGHTNESS FUNCTIONS:
 
 /// I1st + (31-I1st)*EVY
-fn brighten_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
-	if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
-		if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-			return (
-				((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
-				((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
-				((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8,
-				color.3
-			)
-		}
-	}
-	return color
+fn brighten_pixel(blend_evy: u16, color: GbaPixel) -> GbaPixel {
+	(
+		((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
+		((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
+		((color.2 as u16) + (((255 - (color.2 as u16)) * blend_evy) >> 4)) as u8
+	)
 }
 
 /// I1st - (I1st)*EVY
-fn darken_pixel(blend_sources: u16, blend_evy: u16, layer_idx: u16, color: Pixel) -> Pixel {
-	if color.3 != 0 { // #TODO find a way to remove redundant check that blend_pixels already does.
-		if ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-			return (
-				((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
-				((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
-				((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8,
-				color.3
-			)
-		}
-	}
-	return color
+fn darken_pixel(blend_evy: u16, color: GbaPixel) -> GbaPixel {
+	(
+		((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
+		((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
+		((color.2 as u16) - (((color.2 as u16) * blend_evy) >> 4)) as u8
+	)
 }
 
 /// Just does nothing to the pixel
-fn pixel_lum_nop(_: u16, _: u16, _: u16, color: Pixel) -> Pixel {
+fn pixel_lum_nop(_: u16, color: GbaPixel) -> GbaPixel {
 	color
 }

@@ -192,7 +192,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 				let dot_offset = (((tile_number as i32) << 6) + (ty << 3) + tx) as usize;
 				let dot = character_data[dot_offset];
 				if dot == 0 {
-					bg_line[column as usize] = (0, 0, 0, 0);
+					bg_line[column as usize] = 0;
 				} else {
 					bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
 				}
@@ -206,7 +206,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 				let pixel_y = y >> 8;
 
 				if pixel_x < 0 || pixel_y < 0 || pixel_x >= screen_width || pixel_y >= screen_height {
-					bg_line[column as usize] = (0, 0, 0, 0);
+					bg_line[column as usize] = 0;
 				} else {
 					let tile_x = pixel_x >> 3;
 					let tile_y = pixel_y >> 3;
@@ -219,7 +219,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 					let dot_offset = (((tile_number as i32) << 6) + (ty << 3) + tx) as usize;
 					let dot = character_data[dot_offset];
 					if dot == 0 {
-						bg_line[column as usize] = (0, 0, 0, 0);
+						bg_line[column as usize] = 0;
 					} else {
 						bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
 					}
@@ -284,7 +284,7 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 			if left_dot == 0 {
 				// If the color number is 0, 
 				// that means that it is color 0 of its palette, making it transparent.
-				output[pindex] = (0, 0, 0, 0);
+				output[pindex] = 0;
 			} else {
 				// 32 bytes per palette
 				// 2 bytes per color entry
@@ -300,7 +300,7 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 		if right_dot == 0 {
 			// If the color number is 0, 
 			// that means that it is color 0 of its palette, making it transparent.
-			output[pindex] = (0, 0, 0, 0);
+			output[pindex] = 0;
 		} else {
 			// 32 bytes per palette
 			// 2 bytes per color entry
@@ -354,7 +354,7 @@ fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 
 		// 0 is transparent.
 		if dot == 0 {
-			output[pindex] = (0, 0, 0, 0);
+			output[pindex] = 0;
 		} else {
 			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
 		}
