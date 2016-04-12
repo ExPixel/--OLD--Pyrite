@@ -87,7 +87,7 @@ const OBJ_SIZES: [(u16, u16, u16); 16] = [
 	(8, 8, 0), (16, 16, 1), (32, 32, 2), (64, 64, 3)  // Prohibited (we mirror square, though) #TODO might remove this.
 ];
 
-pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> GbaPixel {
 	let tile = attr2 & 0x3ff;
 	// dividing by 8 to get width and height in 8x8 tiles.
 	let fragment = ((oy >> 3) << size.2) + (ox >> 3);
@@ -109,11 +109,11 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 		// 32 bytes per palette
 		// 2 bytes per color entry
 		let palette_number = ((attr2 >> 12) & 0x3) as usize;
-		convert_rgb5_to_rgba8(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
+		opaque_rgb5(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
 	}
 }
 
-pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> Pixel {
+pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> GbaPixel {
 	let tile = attr2 & 0x3ff;
 	let tx = ox & 7;
 	let ty = oy & 7;
@@ -141,7 +141,7 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 		// 32 bytes per palette
 		// 2 bytes per color entry
 		let palette_number = ((attr2 >> 12) & 0x3) as usize;
-		convert_rgb5_to_rgba8(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
+		opaque_rgb5(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
 	}
 }
 
@@ -151,7 +151,7 @@ Each tile occupies 64 bytes of memory, the first 8 bytes for the topmost row of 
 Each byte selects the palette entry for each dot.
 */
 
-pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> Pixel {
+pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, size: (u16, u16, u16)) -> GbaPixel {
 	let tile = (attr2 & 0x3ff) & !1; // ignores bit 1
 
 	// dividing by 8 to get width and height in 8x8 tiles.
@@ -167,11 +167,11 @@ pub fn get_simple_obj_dot_8bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 		0
 	} else {
 		// 2 bytes per color entry
-		convert_rgb5_to_rgba8(palette.direct_read16(dot << 1))
+		opaque_rgb5(palette.direct_read16(dot << 1))
 	}
 }
 
-pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> Pixel {
+pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> GbaPixel {
 	let tile = (attr2 & 0x3ff) & !1;
 	let tx = ox & 7;
 	let ty = oy & 7;
@@ -192,7 +192,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 		0
 	} else {
 		// 2 bytes per color entry
-		convert_rgb5_to_rgba8(palette.direct_read16(dot << 1))
+		opaque_rgb5(palette.direct_read16(dot << 1))
 	}
 }
 
@@ -203,7 +203,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
 
-	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> GbaPixel = if one_dimensional {
 		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
 		else { get_simple_obj_dot_4bpp_1d }
 	} else {
@@ -261,7 +261,7 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
 
-	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> GbaPixel = if one_dimensional {
 		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
 		else { get_simple_obj_dot_4bpp_1d }
 	} else {
@@ -339,7 +339,7 @@ fn draw_simple_obj_window(one_dimensional: bool, tile_region: &[u8], palette_reg
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
 	let vertical_flip = ((obj.attr1 >> 13) & 1) == 1;
 
-	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> GbaPixel = if one_dimensional {
 		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
 		else { get_simple_obj_dot_4bpp_1d }
 	} else {
@@ -392,7 +392,7 @@ fn draw_rot_scale_obj_window(one_dimensional: bool, tile_region: &[u8], palette_
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
 
-	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> Pixel = if one_dimensional {
+	let get_dot: fn(&[u8], &[u8], u16, u16, u16, (u16, u16, u16)) -> GbaPixel = if one_dimensional {
 		if ((obj.attr0 >> 13) & 1) == 1 { get_simple_obj_dot_8bpp_1d }
 		else { get_simple_obj_dot_4bpp_1d }
 	} else {

@@ -20,7 +20,7 @@ pub fn render_mode_5(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		let frame_line_offset = 160 * (line as usize) * 2;
 		for col in 0..160 {
 			let col_offset = frame_line_offset + col * 2;
-			let pixel = convert_rgb5_to_rgba8(frame_buffer.direct_read16(col_offset));
+			let pixel = opaque_rgb5(frame_buffer.direct_read16(col_offset));
 			lines.bg2[col] = pixel;
 		}
 

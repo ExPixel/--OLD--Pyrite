@@ -16,10 +16,10 @@ pub mod mode3;
 pub mod mode4;
 pub mod mode5;
 
-pub type Pixel = u16;
-pub type GbaPixel = (u8, u8, u8);
-pub type GbaLcdLine = Vec<GbaPixel>;
-pub type GbaBGLine = [Pixel; 240];
+pub type GbaPixel = u16;
+pub type OutputPixel = (u8, u8, u8);
+pub type GbaLcdLine = Vec<OutputPixel>;
+pub type GbaBGLine = [GbaPixel; 240];
 
 pub struct ObjLineInfo {
 	/// I stuff all of the object's metadata in here.
@@ -76,8 +76,8 @@ struct BlendingParams {
 	target_drawn: bool,
 	source_on_top: bool,
 	target_overwritten: bool,
-	source_pixel: Pixel,
-	target_pixel: Pixel,
+	source_pixel: GbaPixel,
+	target_pixel: GbaPixel,
 	force_obj_blend: bool,
 	current_window_prio: u8,
 	window_blending_disabled: bool
@@ -165,7 +165,7 @@ impl GbaLcd {
 	fn blend_line(&mut self, line: u16, memory: &GbaMemory) {
 		let dispcnt = memory.get_reg(ioreg::DISPCNT);
 
-		let backdrop = convert_rgb5_to_rgb8(memory.read16(0x05000000));
+		let backdrop = opaque_rgb5(memory.read16(0x05000000));
 		let output = &mut self.screen_buffer[line as usize][0..240];
 
 		let bg0_enabled = self.lines.bg0_enable && (((dispcnt >> 8) & 1) != 0);
@@ -224,7 +224,7 @@ impl GbaLcd {
 		let bldy = memory.get_reg(ioreg::BLDY);
 		let blend_evy = bldy & 0x1f;
 
-		let pixel_brightness_fn: fn(u16, GbaPixel) -> GbaPixel = match blend_mode {
+		let pixel_brightness_fn: fn(u16, OutputPixel) -> OutputPixel = match blend_mode {
 			2 => brighten_pixel,
 			3 => darken_pixel,
 			_ => pixel_lum_nop
@@ -232,7 +232,7 @@ impl GbaLcd {
 
 		let mut blending_params: BlendingParams = Default::default();
 
-		let change_pixel_brightness = |blend_evy: u16, color: GbaPixel, blending_params: &mut BlendingParams| -> GbaPixel {
+		let change_pixel_brightness = |blend_evy: u16, color: OutputPixel, blending_params: &mut BlendingParams| -> OutputPixel {
 			if !blending_params.window_blending_disabled {
 				return pixel_brightness_fn(blend_evy, color);
 			} else {
@@ -266,7 +266,7 @@ impl GbaLcd {
 		let winout_in = winout & 0x1f;
 		let win_obj_in = (winout >> 8) & 0x1f;
 
-		let mut on_pixel_drawn = |layer_idx: u16, color: Pixel, force_source: bool, blending_params: &mut BlendingParams| {
+		let mut on_pixel_drawn = |layer_idx: u16, color: GbaPixel, force_source: bool, blending_params: &mut BlendingParams| {
 			if !is_transparent(color) && !blending_params.window_blending_disabled {
 				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
 					blending_params.source_on_top = true;
@@ -286,7 +286,7 @@ impl GbaLcd {
 		on_pixel_drawn(5, backdrop, false, &mut blending_params);
 		let darkened_backdrop = backdrop;
 
-		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: Pixel, layer_idx: u16, dest_pixel: &mut Pixel, blending_params: &mut BlendingParams| -> bool {
+		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: GbaPixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
 			if !win0_enabled && !win1_enabled && !win_obj_enabled { // Windowing is turned off.
 				return true;
 			}
@@ -353,7 +353,7 @@ impl GbaLcd {
 			return true
 		};
 
-		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest_pixel: &mut Pixel, maybe_line: Option<&GbaBGLine>,
+		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest_pixel: &mut GbaPixel, maybe_line: Option<&GbaBGLine>,
 				blending_params: &mut BlendingParams| {
 
 			// First we draw the BG's pixel (if there is one)
@@ -420,7 +420,7 @@ impl GbaLcd {
 	}
 
 	#[inline(always)]
-	fn blend_pixels(a: Pixel, b: Pixel) -> Pixel {
+	fn blend_pixels(a: GbaPixel, b: GbaPixel) -> GbaPixel {
 		if is_transparent(a) { b }
 		else { a }
 	}
@@ -434,19 +434,9 @@ pub fn expand_color(rgb5: u16) -> (u8, u8, u8) {
 	)
 }
 
-/// Bit   Expl.
-/// 0-4   Red Intensity   (0-31)
-/// 5-9   Green Intensity (0-31)
-/// 10-14 Blue Intensity  (0-31)
-/// 15    Not used in GBA Mode (in NDS Mode: Alpha=0=Transparent, Alpha=1=Normal)
-#[inline(always)]
-pub fn convert_rgb5_to_rgb8(rgb5: u16) -> Pixel {
-	// We use the NDS's system because it uses less memory than passing RGB8 everywhere.
-	rgb5 | 0x8000 // Setting the alpha bit to 1
-}
 
 #[inline(always)]
-pub fn is_transparent(pixel: Pixel) -> bool {
+pub fn is_transparent(pixel: GbaPixel) -> bool {
 	(pixel & 0x8000) == 0
 }
 
@@ -456,7 +446,7 @@ pub fn is_transparent(pixel: Pixel) -> bool {
 /// 10-14 Blue Intensity  (0-31)
 /// 15    Not used in GBA Mode (in NDS Mode: Alpha=0=Transparent, Alpha=1=Normal)
 #[inline(always)]
-pub fn convert_rgb5_to_rgba8(rgb5: u16) -> u16 {
+pub fn opaque_rgb5(rgb5: u16) -> u16 {
 	// We use the NDS's system because it uses less memory than passing RGB8 everywhere.
 	rgb5 | 0x8000 // Setting the alpha bit to 1
 }
@@ -472,7 +462,7 @@ fn window_contains(x: u16, y: u16, w_left: u16, w_right: u16, w_top: u16, w_bott
 // PIXEL BRIGHTNESS FUNCTIONS:
 
 /// I1st + (31-I1st)*EVY
-fn brighten_pixel(blend_evy: u16, color: GbaPixel) -> GbaPixel {
+fn brighten_pixel(blend_evy: u16, color: OutputPixel) -> OutputPixel {
 	(
 		((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
 		((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
@@ -481,7 +471,7 @@ fn brighten_pixel(blend_evy: u16, color: GbaPixel) -> GbaPixel {
 }
 
 /// I1st - (I1st)*EVY
-fn darken_pixel(blend_evy: u16, color: GbaPixel) -> GbaPixel {
+fn darken_pixel(blend_evy: u16, color: OutputPixel) -> OutputPixel {
 	(
 		((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
 		((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
@@ -490,6 +480,6 @@ fn darken_pixel(blend_evy: u16, color: GbaPixel) -> GbaPixel {
 }
 
 /// Just does nothing to the pixel
-fn pixel_lum_nop(_: u16, color: GbaPixel) -> GbaPixel {
+fn pixel_lum_nop(_: u16, color: OutputPixel) -> OutputPixel {
 	color
 }

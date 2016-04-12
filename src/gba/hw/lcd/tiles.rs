@@ -59,7 +59,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	// let mosaic = ((bgcnt >> 6) & 0x1) == 1;
 
 	let palette_type = ((bgcnt >> 7) & 0x1) == 1; // 0=16/16 (4bit), 1=256/1 (8bit)
-	let tile_copy: fn(&[u8], &[u8], &mut [Pixel], u16, u32, u32) = if palette_type {
+	let tile_copy: fn(&[u8], &[u8], &mut [GbaPixel], u16, u32, u32) = if palette_type {
 		copy_tile_line8bpp
 	} else {
 		copy_tile_line4bpp
@@ -194,7 +194,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 				if dot == 0 {
 					bg_line[column as usize] = 0;
 				} else {
-					bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+					bg_line[column as usize] = opaque_rgb5(palette.direct_read16((dot as usize) << 1));
 				}
 
 				x += dx;
@@ -221,7 +221,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 					if dot == 0 {
 						bg_line[column as usize] = 0;
 					} else {
-						bg_line[column as usize] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+						bg_line[column as usize] = opaque_rgb5(palette.direct_read16((dot as usize) << 1));
 					}
 				}
 
@@ -235,7 +235,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 	memory.internal_regs.bg2y += dmy as u32;
 }
 
-fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel], tile_info: u16, tx: u32, ty: u32) {
 	let mut tx = tx;
 	let mut ty = ty;
 
@@ -288,7 +288,7 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 			} else {
 				// 32 bytes per palette
 				// 2 bytes per color entry
-				output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
+				output[pindex] = opaque_rgb5(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
 			}
 			pindex += 1;
 		}
@@ -304,7 +304,7 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 		} else {
 			// 32 bytes per palette
 			// 2 bytes per color entry
-			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16(((palette_number << 5) + ((right_dot << 1) as u16)) as usize));
+			output[pindex] = opaque_rgb5(palette.direct_read16(((palette_number << 5) + ((right_dot << 1) as u16)) as usize));
 		}
 		pindex += 1;
 
@@ -312,7 +312,7 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 	}
 }
 
-fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], tile_info: u16, tx: u32, ty: u32) {
+fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel], tile_info: u16, tx: u32, ty: u32) {
 	let mut tx = tx;
 	let mut ty = ty;
 
@@ -356,7 +356,7 @@ fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [Pixel], ti
 		if dot == 0 {
 			output[pindex] = 0;
 		} else {
-			output[pindex] = convert_rgb5_to_rgba8(palette.direct_read16((dot as usize) << 1));
+			output[pindex] = opaque_rgb5(palette.direct_read16((dot as usize) << 1));
 		}
 
 		offset += offset_inc;

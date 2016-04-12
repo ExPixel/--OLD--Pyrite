@@ -28,7 +28,7 @@ pub fn render_mode_3(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 	let frame_line_offset = 480 * line as usize;
 	for col in 0..240 {
 		let col_offset = frame_line_offset + col * 2;
-		let pixel = convert_rgb5_to_rgba8(vram.direct_read16(col_offset));
+		let pixel = opaque_rgb5(vram.direct_read16(col_offset));
 		lines.bg2[col] = pixel;
 	}
 

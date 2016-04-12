@@ -32,7 +32,7 @@ pub fn render_mode_4(dispcnt: u16, memory: &GbaMemory, line: u16, lines: &mut Gb
 		let col_offset = frame_line_offset + col;
 		// #TODO handle transparency
 		let pal_ref = frame_buffer.direct_read8(col_offset);
-		let pixel = convert_rgb5_to_rgba8(palette.direct_read16((pal_ref as usize) * 2));
+		let pixel = opaque_rgb5(palette.direct_read16((pal_ref as usize) * 2));
 		lines.bg2[col] = pixel;
 	}
 
