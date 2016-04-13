@@ -282,7 +282,7 @@ impl Gba {
 		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
 		let reg_ie = self.cpu.memory.get_reg(ioreg::IE);
 		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
-		self.wake_up_cpu(mask); // At this point the CPU can wake up.
+		self.wake_up_cpu(); // At this point the CPU can wake up.
 		let mut reg_if = self.cpu.memory.get_reg(ioreg::IF);
 		reg_if |= mask; // set the corresponding bit in IF.
 		self.cpu.memory.set_reg(ioreg::IF, reg_if);
@@ -291,7 +291,7 @@ impl Gba {
 	}
 
 	/// Wakes up the CPU if it was halted.
-	fn wake_up_cpu(&mut self, mask: u16) {
+	fn wake_up_cpu(&mut self) {
 		// // #TODO remove testing code:
 		// if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped {
 		// 	println!("WAKING UP CPU: 0x{:0x}", mask);
@@ -386,18 +386,23 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					}
 				} else {
 					self.cpu.tick();
-					// Now sure about this one either.
+					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
-
-					// #TODO I should check if the DMA is registers are dirty or something.
-					// This loses me about 40-50 FPS. I could probably check by using something in the memory
-					// to check if any of the ioregisters are dirty.
 					self.check_dmas(DMA_TIMING_IMMEDIATE);
 				}
 			} else {
 				self.cpu.reg_dump_pretty();
 				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
+		}
+	}
+
+	fn increment_timers(&mut self) {
+		let timer_inc = self.cpu.clock.timer_cycles;
+		self.cpu.clock.timer_cycles = 0;
+		let overflow_int_mask = self.cpu.memory.internal_regs.increment_timers(timer_inc);
+		if overflow_int_mask != 0 {
+			self.hardware_interrupt(overflow_int_mask);
 		}
 	}
 

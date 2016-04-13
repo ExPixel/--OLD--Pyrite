@@ -248,11 +248,32 @@ impl GbaMemory {
 		}
 	}
 
+	/*
+pub const TM0CNT_L: IORegister16 = IORegister16(0x0000100);
+pub const TM0CNT_H: IORegister16 = IORegister16(0x0000102);
+pub const TM1CNT_L: IORegister16 = IORegister16(0x0000104);
+pub const TM1CNT_H: IORegister16 = IORegister16(0x0000106);
+pub const TM2CNT_L: IORegister16 = IORegister16(0x0000108);
+pub const TM2CNT_H: IORegister16 = IORegister16(0x000010a);
+pub const TM3CNT_L: IORegister16 = IORegister16(0x000010c);
+pub const TM3CNT_H: IORegister16 = IORegister16(0x000010e);
+	*/
+
 	#[inline]
 	fn __read8__(&self, address: u32) -> u8 {
 		match address {
 			0x08000000 ... 0x0Dffffff => self.rom_read8(address),
 			0x0E000000 ... 0x0E00FFFF => 0, // #TODO SRAM and shit.
+
+			0x04000100 => (self.internal_regs.timers[0].counter) as u8, // Timer 0 Counter Low Byte
+			0x04000101 => (self.internal_regs.timers[0].counter >> 8) as u8, // Timer 0 Counter High Byte
+			0x04000104 => (self.internal_regs.timers[1].counter) as u8, // Timer 1 Counter Low Byte
+			0x04000105 => (self.internal_regs.timers[1].counter >> 8) as u8, // Timer 1 Counter High Byte
+			0x04000108 => (self.internal_regs.timers[2].counter) as u8, // Timer 2 Counter Low Byte
+			0x04000109 => (self.internal_regs.timers[2].counter >> 8) as u8, // Timer 2 Counter High Byte
+			0x0400010C => (self.internal_regs.timers[3].counter) as u8, // Timer 3 Counter Low Byte
+			0x0400010D => (self.internal_regs.timers[3].counter >> 8) as u8, // Timer 3 Counter High Byte
+
 			_ => {
 				let (local_addr, _) = self.transform(address);
 				self.internal_data[local_addr]

@@ -195,6 +195,24 @@ pub struct DMAInternalReg {
 	cnt_l: u16
 }
 
+#[derive(Default)]
+pub struct TimerInternalReg {
+	pub prescaler: u32,
+
+	/// When Count-up Timing is enabled, the prescaler value is ignored, 
+	/// instead the time is incremented each time when the previous counter overflows. 
+	/// This function cannot be used for Timer 0 (as it is the first timer).
+	pub count_up: bool,
+
+	pub irq_enabled: bool,
+	pub operate: bool,
+
+	// The couter before scaling.
+	pub unscaled_counter: u32,
+	pub counter: u32,
+	pub reload: u32
+}
+
 // Internal IO registers.
 #[derive(Default)]
 pub struct InternalRegisters {
@@ -206,7 +224,8 @@ pub struct InternalRegisters {
 	pub halted: bool,
 	pub stopped: bool,
 
-	pub dma_dirty: bool
+	pub dma_dirty: bool,
+	pub timers: [TimerInternalReg; 4]
 }
 
 impl InternalRegisters {
@@ -279,7 +298,14 @@ impl InternalRegisters {
 			0x000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 			0x000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
-
+			0x0000100 => { self.update_timer_lo(0, value) },
+			0x0000102 => { self.update_timer_hi(0, value) },
+			0x0000104 => { self.update_timer_lo(1, value) },
+			0x0000105 => { self.update_timer_hi(1, value) },
+			0x0000108 => { self.update_timer_lo(2, value) },
+			0x000010A => { self.update_timer_hi(2, value) },
+			0x000010C => { self.update_timer_lo(3, value) },
+			0x000010E => { self.update_timer_hi(3, value) },
 
 			0x00000BA | 0x00000C6 | 
 			0x00000D2 | 0x00000DE => { self.dma_dirty = true },
@@ -287,22 +313,64 @@ impl InternalRegisters {
 			_ => {}
 		}
 	}
+
+	fn update_timer_lo(&mut self, t_idx: usize, lo_data: u16) {
+		let timer = &mut self.timers[t_idx];
+		timer.reload = lo_data as u32;
+	}
+
+	fn update_timer_hi(&mut self, t_idx: usize, hi_data: u16) {
+		let timer = &mut self.timers[t_idx];
+		timer.prescaler = match hi_data & 0x3 {
+			0 => 0,  // 1
+			1 => 6,  // 64
+			2 => 8,  // 256
+			3 => 10, // 1024
+			_ => unreachable!()
+		};
+
+		timer.count_up = ((hi_data >> 2) & 1) == 1;
+		timer.irq_enabled = ((hi_data >> 6) & 1) == 1;
+		timer.operate = ((hi_data >> 7) & 1) == 1;
+
+		// #FIXME not sure if this is suppose to happen if we enable
+		//        an already enabled timer.
+		timer.counter = timer.reload;
+		timer.unscaled_counter = 0;
+	}
+
+	pub fn increment_timers(&mut self, amt: u32) -> u16 {
+		let mut overflow_int_mask = 0;
+		let mut last_timer_overflowed = false;
+		for t_idx in 0..4 {
+			let timer = &mut self.timers[t_idx];
+			last_timer_overflowed = Self::increment_single_timer(timer, amt, last_timer_overflowed);
+			if last_timer_overflowed && timer.irq_enabled {
+				overflow_int_mask |= 0x08 << t_idx;
+			}
+		}
+		return overflow_int_mask;
+	}
+
+	fn increment_single_timer(timer: &mut TimerInternalReg, amt: u32, previous_overflowed: bool) -> bool {
+		if timer.operate {
+			if timer.count_up {
+				if previous_overflowed {
+					timer.counter += 1;
+				}
+			} else {
+				timer.unscaled_counter += amt;
+				let scaled = timer.unscaled_counter >> timer.prescaler;
+				timer.counter += scaled;
+				timer.unscaled_counter -= scaled << timer.prescaler;
+			}
+
+			if timer.counter > 0xffff { // Ther timer has overflowed
+				timer.counter = timer.reload;
+				timer.unscaled_counter = 0;
+				return true
+			}
+		}
+		return false
+	}
 }
-
-/*
-pub const DMA0SAD: IORegister32 = IORegister32(0x00000b0);
-pub const DMA0DAD: IORegister32 = IORegister32(0x00000b4);
-pub const DMA1SAD: IORegister32 = IORegister32(0x00000bc);
-pub const DMA1DAD: IORegister32 = IORegister32(0x00000c0);
-pub const DMA2SAD: IORegister32 = IORegister32(0x00000c8);
-pub const DMA2DAD: IORegister32 = IORegister32(0x00000cc);
-pub const DMA3SAD: IORegister32 = IORegister32(0x00000d4);
-pub const DMA3DAD: IORegister32 = IORegister32(0x00000d8);
-*/
-
-/*
-pub const BG2X: IORegister32 = IORegister32(0x0000028);
-pub const BG2Y: IORegister32 = IORegister32(0x000002c);
-pub const BG3X: IORegister32 = IORegister32(0x0000038);
-pub const BG3Y: IORegister32 = IORegister32(0x000003c);
-*/

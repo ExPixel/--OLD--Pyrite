@@ -3,6 +3,7 @@
 pub struct ArmCpuClock {
 	/// The number of cycles that have gone by.
 	pub cycles: u64,
+	pub timer_cycles: u32,
 	pub memory_timings: [((u8, u8, u8), (u8, u8, u8)); 15]
 }
 
@@ -11,6 +12,8 @@ impl ArmCpuClock {
 	pub fn new() -> ArmCpuClock {
 		let mut clock = ArmCpuClock {
 			cycles: 0,
+
+			timer_cycles: 0,
 
 			// Format (S, N)
 			// S/N = (8bits, 16bits, 32bits)
@@ -58,6 +61,7 @@ impl ArmCpuClock {
 	/// Internal cycle
 	pub fn internal(&mut self, cycles: u64) {
 		self.cycles += cycles;
+		self.timer_cycles += cycles as u32;
 	}
 
 	/// Sequential 8bit data access
