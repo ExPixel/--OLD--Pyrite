@@ -93,9 +93,11 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		// 		64 bytes per row
 		// 		2 bytes per column
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
-		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
-			map_tile_info, pixel_x & 7, pixel_y & 7);
+		if map_tile_data_addr < 0xFFFF { // #FIXME This is happening in pokemon fire red. screen_base_block = 61440 (30)
+			let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
+			tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((8 - (pixel_x & 7)) as usize))],
+				map_tile_info, pixel_x & 7, pixel_y & 7);
+		}
 		column += 8 - (pixel_x & 7);
 	}
 
@@ -107,9 +109,11 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
-		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
-			map_tile_info, 0, pixel_y & 7);
+		if map_tile_data_addr < 0xFFFF { // #FIXME This is happening in pokemon fire red. screen_base_block = 61440 (30)
+			let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
+			tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + 8)],
+				map_tile_info, 0, pixel_y & 7);
+		}
 		column += 8;
 	}
 
@@ -119,9 +123,11 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
-		let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
-		tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
-			map_tile_info, 0, pixel_y & 7);
+		if map_tile_data_addr < 0xFFFF { // #FIXME This is happening in pokemon fire red. screen_base_block = 61440 (30)
+			let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
+			tile_copy(palette, character_data, &mut bg_line[(column as usize)..((column as usize) + ((240 - column) as usize))],
+				map_tile_info, 0, pixel_y & 7);
+		}
 	}
 }
 
@@ -272,7 +278,7 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel],
 
 	let mut pindex = 0;
 	
-	while pindex < output.len() {
+	while pindex < output.len() && offset < char_data.len() {
 		let two_dots = char_data[offset];
 
 		// #TODO optimize by turning the dot rendering into a function
