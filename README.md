@@ -9,6 +9,7 @@ Some Screenshots:
 
 ![Pokemon Fire Red](https://raw.githubusercontent.com/ExPixel/Pyrite2/master/misc/screenshots/games/Pokemon-Fire-Red.png)
 
+**Don't mind the 12FPS, I ran this in debug mode.**  
 **I'm too afraid to press start, so I'm not even sure how far through Fire Red the emulator can go right now.**
 
 More regarding the ARM Wrestler test in [here](https://github.com/ExPixel/Pyrite2/tree/master/misc/screenshots/arm-wrestler).  
