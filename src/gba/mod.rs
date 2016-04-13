@@ -3,6 +3,8 @@ pub mod hw;
 pub mod device;
 
 use glium;
+use glium::glutin;
+use glium::glutin::{Event, ElementState, VirtualKeyCode};
 use time;
 
 use std::thread;
@@ -412,23 +414,36 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	fn poll_device_events(&mut self) {
 		for event in self.device.display.poll_events() {
 			match event {
-				glium::glutin::Event::Closed => self.request_exit = true,
-				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::Escape)) => {
+				Event::Closed => self.request_exit = true,
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Escape)) => {
 					self.request_exit = true
 				},
-				glium::glutin::Event::KeyboardInput(state, _, Some(glium::glutin::VirtualKeyCode::D)) => {
+
+			// GENERAL DEBUGGING STUFF:
+				Event::KeyboardInput(state, _, Some(VirtualKeyCode::D)) => {
 					match state {
-						glium::glutin::ElementState::Pressed => set_pyrite_dyn_debug!(true),
+						ElementState::Pressed => set_pyrite_dyn_debug!(true),
 						_ => set_pyrite_dyn_debug!(false)
 					}
 				},
-				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(glium::glutin::VirtualKeyCode::R)) => {
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::R)) => {
 					self.cpu.reg_dump_pretty();
 				},
-				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Pressed, _, Some(keycode)) => {
+
+			// DEBUGGING LAYERS IN GRAPHICS:
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key1)) => {debug_toggle_layer!(0);},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key2)) => {debug_toggle_layer!(1);},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key3)) => {debug_toggle_layer!(2);},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key4)) => {debug_toggle_layer!(3);},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key5)) => {debug_toggle_layer!(4);},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::L)) => {debug_turn_off_all_layers!();},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::K)) => {debug_turn_on_all_layers!();},
+
+			// ACTUAL GBA SHIT:
+				Event::KeyboardInput(ElementState::Pressed, _, Some(keycode)) => {
 					self.joypad.key_pressed(keycode);
 				},
-				glium::glutin::Event::KeyboardInput(glium::glutin::ElementState::Released, _, Some(keycode)) => {
+				Event::KeyboardInput(ElementState::Released, _, Some(keycode)) => {
 					self.joypad.key_released(keycode);
 				},
 				_ => {}
