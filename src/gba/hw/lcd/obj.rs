@@ -38,6 +38,8 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 	let palette_region = memory.get_slice(0x05000200, 0x050003FF); // OBJ palettes are in a different location from tiles.
 	let oam_region = memory.get_region(MEM_OAM);
 
+	let mut cycles_remaining: i32 = if hblank_free { 954 } else { 1210 };
+
 	let mut obj_data: ObjData = Default::default();
 	let mut affine_data: ObjAffineData = Default::default();
 
@@ -56,7 +58,7 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 				if ((obj_data.attr0 >> 10) & 0x3) == 2 {
 					draw_simple_obj_window(one_dim, tile_region, palette_region, obj_data, line, lines);
 				} else {
-					draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines);
+					draw_simple_obj(one_dim, tile_region, palette_region, obj_data, line, lines, &mut cycles_remaining);
 				}
 			}
 		} else {
@@ -71,9 +73,10 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 			if ((obj_data.attr0 >> 10) & 0x3) == 2 {
 				draw_rot_scale_obj_window(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
 			} else {
-				draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines);
+				draw_rot_scale_obj(one_dim, tile_region, palette_region, obj_data, affine_data, line, lines, &mut cycles_remaining);
 			}
 		}
+		if cycles_remaining <= 0 { break }
 		attr_addr += 8; // there's an empty slot for rot/scale
 	} 
 }
@@ -197,7 +200,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 }
 
 /// Draw an object with no rotation/scaling.
-fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines) {
+fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, line: u16, lines: &mut GbaDisplayLines, cycles_remaining: &mut i32) {
 	let semi_transparent = ((obj.attr0 >> 10) & 0x3) == 1;
 	// #TODO implement mosaics
 	let horizontal_flip = ((obj.attr1 >> 12) & 1) == 1;
@@ -249,6 +252,7 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 							lines.obj_info.clear_transparent(px as usize);
 						}
 					}
+					*cycles_remaining -= 2; // #FIXME might need to exit early if this is below 1.
 				}
 				px = (px + 1) & 0x1ff;
 			}
@@ -256,7 +260,8 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 	}
 }
 
-fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines) {
+fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[u8], obj: ObjData, affine: ObjAffineData, line: u16, lines: &mut GbaDisplayLines, cycles_remaining: &mut i32) {
+	*cycles_remaining -= 10;
 	let semi_transparent = ((obj.attr0 >> 10) & 0x3) == 1;
 	// #TODO implement mosaics
 	// let mosaic = ((attr0 >> 12) & 1) == 1;
@@ -323,6 +328,7 @@ fn draw_rot_scale_obj(one_dimensional: bool, tile_region: &[u8], palette_region:
 								lines.obj_info.clear_transparent(px as usize);
 							}
 						}
+						*cycles_remaining -= 2; // #FIXME might need to exit early if this is below 1.
 					}
 				}
 				px = (px + 1) & 0x1ff;
