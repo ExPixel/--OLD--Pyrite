@@ -1340,8 +1340,8 @@ pub fn thumb_ble(cpu: &mut ArmCpu, instr: u32) {
 
 /// SWI 
 /// Software interrupt (enter supervisor mode)
-pub fn thumb_swi(cpu: &mut ArmCpu, instr: u32) {
-	cpu.thumb_swi(instr);
+pub fn thumb_swi(cpu: &mut ArmCpu, _: u32) {
+	cpu.thumb_swi();
 }
 
 /// B 

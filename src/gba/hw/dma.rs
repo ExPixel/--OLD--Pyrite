@@ -12,6 +12,7 @@ pub const DMA_TIMING_HBLANK: u16 = 2;
 pub const DMA_TIMING_SPECIAL: u16 = 3; // #TODO where the fuck?
 
 struct DmaChannel {
+	#[allow(dead_code)]
 	index: u8,
 	reg_sad: IORegister32,
 	reg_dad: IORegister32,

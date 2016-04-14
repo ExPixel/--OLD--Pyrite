@@ -2,8 +2,7 @@ pub mod core;
 pub mod hw;
 pub mod device;
 
-use glium;
-use glium::glutin;
+
 use glium::glutin::{Event, ElementState, VirtualKeyCode};
 use time;
 
@@ -147,7 +146,7 @@ impl Gba {
 		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
 	}
 
-	fn update_window_title(&mut self, frame: u64, frame_start_time: f64, render_start_time: f64, end_time: f64) {
+	fn update_window_title(&mut self, _: u64, frame_start_time: f64, render_start_time: f64, end_time: f64) {
 		let frame_build_time = (render_start_time - frame_start_time) / 1000000.0;
 		let render_to_screen_time = (end_time - render_start_time) / 1000000.0;
 		let frame_build_and_render_time = (end_time - frame_start_time) / 1000000.0;

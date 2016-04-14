@@ -737,8 +737,8 @@ pub fn arm_swpb(cpu: &mut ArmCpu, instr: u32) {
 
 /// SWI 
 /// Software interrupt (enter supervisor mode)
-pub fn arm_swi(cpu: &mut ArmCpu, instr: u32) {
-	cpu.arm_swi(instr);
+pub fn arm_swi(cpu: &mut ArmCpu, _: u32) {
+	cpu.arm_swi();
 }
 
 /// UNDEFINED

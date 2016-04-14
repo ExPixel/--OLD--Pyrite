@@ -389,12 +389,12 @@ impl ArmCpu {
 		// self.branched = false;
 	}
 
-	pub fn thumb_swi(&mut self, instr: u32) {
+	pub fn thumb_swi(&mut self) {
 		self.clock_prefetch_thumb();
 		self.handle_thumb_swi();
 	}
 
-	pub fn arm_swi(&mut self, instr: u32) {
+	pub fn arm_swi(&mut self) {
 		self.clock_prefetch_arm();
 		self.handle_arm_swi();
 	}
@@ -589,7 +589,7 @@ static mut debug_branch_next_idx: usize = 0;
 static mut debug_tracked_registers: [(u32, u32, u32); 16] = [(0, 0, 0); 16];
 static mut track_branch_registers: [[(u32, u32, u32); 16]; DEBUG_TRACKED_BRANCHES_COUNT] = [[(0, 0, 0); 16]; DEBUG_TRACKED_BRANCHES_COUNT];
 static mut debug_tracked_branches: [(u32, bool, u32, bool, u32); DEBUG_TRACKED_BRANCHES_COUNT] = [(0, false, 0, false, 0); DEBUG_TRACKED_BRANCHES_COUNT];
-static mut branch_test: bool = false;
+// static mut branch_test: bool = false;
 
 // Debug functions:
 fn debug_track_register_change(register: u32, location: u32, current_value: u32, new_value: u32) {
@@ -612,7 +612,7 @@ fn debug_print_register_changes() {
 	println!("======== REGISTER CHANGES END ========");
 }
 
-fn debug_push_branch(cpu: &mut ArmCpu, branch_from: u32, branch_from_thumb: bool, branch_to: u32, branch_to_thumb: bool) {
+fn debug_push_branch(_: &mut ArmCpu, branch_from: u32, branch_from_thumb: bool, branch_to: u32, branch_to_thumb: bool) {
 	unsafe {
 		if debug_branch_next_idx >= DEBUG_TRACKED_BRANCHES_COUNT {
 			debug_branch_next_idx = 0;
