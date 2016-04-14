@@ -183,37 +183,6 @@ impl GbaLcd {
 		let bldcnt = memory.get_reg(ioreg::BLDCNT);
 		let blend_mode = (bldcnt >> 6) & 0x3;
 
-		// (priority, bg, line)
-		let mut rendering_order: [(u8, u16, Option<&GbaBGLine>); 4] = [(0, 0, None), (0, 0, None), (0, 0, None), (0, 0, None)];
-		let mut rendering_order_idx = 0;
-		for priority in (0..4).rev() {
-			let mut temp_priority = rendering_order_idx;
-
-			if bg3_enabled && bg3_priority == priority {
-				rendering_order[rendering_order_idx] = (priority as u8, 3, Some(&self.lines.bg3));
-				rendering_order_idx += 1;
-			}
-
-			if bg2_enabled && bg2_priority == priority {
-				rendering_order[rendering_order_idx] = (priority as u8, 2, Some(&self.lines.bg2));
-				rendering_order_idx += 1;
-			}
-
-			if bg1_enabled && bg1_priority == priority {
-				rendering_order[rendering_order_idx] = (priority as u8, 1, Some(&self.lines.bg1));
-				rendering_order_idx += 1;
-			}
-
-			if bg0_enabled && bg0_priority == priority {
-				rendering_order[rendering_order_idx] = (priority as u8, 0, Some(&self.lines.bg0));
-				rendering_order_idx += 1;
-			}
-		}
-
-		// I'll have borrowing issues if I don't define this here like so:
-		let obj_info = &self.lines.obj_info;
-		let obj_line = &self.lines.obj;
-
 		let blend_sources = bldcnt & 0x3f;
 		let blend_targets = (bldcnt >> 8) & 0x3f;
 
@@ -266,7 +235,7 @@ impl GbaLcd {
 		let winout_in = winout & 0x1f;
 		let win_obj_in = (winout >> 8) & 0x1f;
 
-		let mut on_pixel_drawn = |layer_idx: u16, color: GbaPixel, force_source: bool, blending_params: &mut BlendingParams| {
+		let on_pixel_drawn = |layer_idx: u16, color: GbaPixel, force_source: bool, blending_params: &mut BlendingParams| {
 			if !is_transparent(color) && !blending_params.window_blending_disabled {
 				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
 					blending_params.source_on_top = true;
@@ -286,11 +255,14 @@ impl GbaLcd {
 		on_pixel_drawn(5, backdrop, false, &mut blending_params);
 		let darkened_backdrop = backdrop;
 
-		let mut window_clip_pixel = |line: u16, column: u16, src_pixel: GbaPixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
+		// I'll have borrowing issues if I don't define this here like so:
+		let obj_info = &self.lines.obj_info;
+
+		let window_clip_pixel = |line: u16, column: u16, _: GbaPixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
 			if !win0_enabled && !win1_enabled && !win_obj_enabled { // Windowing is turned off.
 				return true;
 			}
-			let mut pwindow_priority = 0;
+			let pwindow_priority;
 			let window_disables_blending;
 			if win0_enabled && window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom) {
 				pwindow_priority = 4;
@@ -353,44 +325,52 @@ impl GbaLcd {
 			return true
 		};
 
-		let mut process_pixel = |priority: u8, bg: u16, pixel_idx: usize, dest_pixel: &mut GbaPixel, maybe_line: Option<&GbaBGLine>,
-				blending_params: &mut BlendingParams| {
-
-			// First we draw the BG's pixel (if there is one)
-			if let Some(bg_line) = maybe_line {
-				let mut src_pixel = bg_line[pixel_idx];
-				if window_clip_pixel(line, pixel_idx as u16, src_pixel, bg, dest_pixel, blending_params) {
-					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
-					// on pixel drawn and blend_pixels functions in order to remove redundancy.
-					on_pixel_drawn(bg, src_pixel, false, blending_params);
-					*dest_pixel = Self::blend_pixels(src_pixel, *dest_pixel);
-				}
-			}
-
-			// Then we draw the OBJ's pixel on top if there is one at this priority.
-			let obj_priority = obj_info.get_priority(pixel_idx);
-			if obj_enabled && obj_priority > 0 && (obj_priority - 1) == priority {
-				let obj_pixel = obj_line[pixel_idx];
-				if window_clip_pixel(line, pixel_idx as u16, obj_pixel, 4, dest_pixel, blending_params) {
-					// #TODO might want to do the alpha = 0 check on the pixels here and remove it from the
-					// on pixel drawn and blend_pixels functions in order to remove redundancy.
-					on_pixel_drawn(4, obj_pixel, obj_info.is_transparent(pixel_idx), blending_params);
-					*dest_pixel = Self::blend_pixels(obj_pixel, *dest_pixel);	
-					blending_params.force_obj_blend |= obj_info.is_transparent(pixel_idx);
-				}
-			}
-		};
-
 		for pix in 0..240 {
-			// #TODO I'm drawing the OBJ's pixel multiple times. Is there any way to not do this?
-			//change_pixel_brightness(blend_evy, blend_evy, bg, src_pixel, &mut blending_params)
-
 			let mut output_pixel = darkened_backdrop;
 
-			process_pixel(rendering_order[0].0, rendering_order[0].1, pix, &mut output_pixel, rendering_order[0].2, &mut blending_params);
-			process_pixel(rendering_order[1].0, rendering_order[1].1, pix, &mut output_pixel, rendering_order[1].2, &mut blending_params);
-			process_pixel(rendering_order[2].0, rendering_order[2].1, pix, &mut output_pixel, rendering_order[2].2, &mut blending_params);
-			process_pixel(rendering_order[3].0, rendering_order[3].1, pix, &mut output_pixel, rendering_order[3].2, &mut blending_params);
+			for priority in (0..4).rev() {
+				if bg3_enabled && bg3_priority == priority {
+					let src_pixel = self.lines.bg3[pix];
+					if window_clip_pixel(line, pix as u16, src_pixel, 3, &mut output_pixel, &mut blending_params) {
+						on_pixel_drawn(3, src_pixel, false, &mut blending_params);
+						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
+					}
+				}
+
+				if bg2_enabled && bg2_priority == priority {
+					let src_pixel = self.lines.bg2[pix];
+					if window_clip_pixel(line, pix as u16, src_pixel, 2, &mut output_pixel, &mut blending_params) {
+						on_pixel_drawn(2, src_pixel, false, &mut blending_params);
+						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
+					}
+				}
+
+				if bg1_enabled && bg1_priority == priority {
+					let src_pixel = self.lines.bg1[pix];
+					if window_clip_pixel(line, pix as u16, src_pixel, 1, &mut output_pixel, &mut blending_params) {
+						on_pixel_drawn(1, src_pixel, false, &mut blending_params);
+						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
+					}
+				}
+
+				if bg0_enabled && bg0_priority == priority {
+					let src_pixel = self.lines.bg0[pix];
+					if window_clip_pixel(line, pix as u16, src_pixel, 0, &mut output_pixel, &mut blending_params) {
+						on_pixel_drawn(0, src_pixel, false, &mut blending_params);
+						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
+					}
+				}
+
+				let obj_priority = self.lines.obj_info.get_priority(pix);
+				if obj_enabled && obj_priority > 0 && (obj_priority - 1) == (priority as u8) {
+					let obj_pixel = self.lines.obj[pix];
+					if window_clip_pixel(line, pix as u16, obj_pixel, 4, &mut output_pixel, &mut blending_params) {
+						on_pixel_drawn(4, obj_pixel, self.lines.obj_info.is_transparent(pix), &mut blending_params);
+						output_pixel = Self::blend_pixels(obj_pixel, output_pixel);
+						blending_params.force_obj_blend |= self.lines.obj_info.is_transparent(pix);
+					}
+				}
+			}
 
 			if !blending_params.window_blending_disabled && (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
 				let (t_r, t_g, t_b) = expand_color(blending_params.target_pixel);
