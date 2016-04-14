@@ -123,22 +123,26 @@ macro_rules! print_memory_table {
 		let mut cc = 0;
 		let mut char_rep: [char; $columns] = ['.'; $columns];
 
+		let is_dot_char = |c: u8| -> bool {
+			return c < 32 || c > 126
+		};
+
 		for addr in $start..($end + 1) {
 			if cc == 0 {
 				println!("");
-				print!("{:08x}", addr);
+				print!("{:08X}", addr);
 			}
 
 			let data = $memory.read8(addr);
-			print!(" {:02x}", data);
+			print!(" {:02X}", data);
 			char_rep[cc] = data as char;
 
 			cc += 1;
 			if cc >= columns {
-				print!(" ");
+				print!("  ");
 				for cidx in 0..$columns {
 					let cr = char_rep[cidx];
-					if (cr as u8) < 32 { print!("."); }
+					if is_dot_char(cr as u8) { print!("."); }
 					else { print!("{}", cr); }
 				}
 				cc = 0;
@@ -146,10 +150,10 @@ macro_rules! print_memory_table {
 		}
 
 		if cc > 0 {
-			print!(" ");
+			print!("  ");
 			for cidx in 0..min!(cc, $columns) {
 				let cr = char_rep[cidx];
-				if (cr as u8) <= 32 { print!("."); }
+				if is_dot_char(cr as u8) { print!("."); }
 				else { print!("{}", cr); }
 			}
 		}
