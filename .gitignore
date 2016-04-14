@@ -1,3 +1,9 @@
+# rust stuff.
 target
-roms/legal/
 Cargo.lock
+
+# I put a lot of super legal stuff in here.
+roms/legal/
+
+# I store a lot of debug information in here.
+debug/

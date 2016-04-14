@@ -18,12 +18,14 @@ true-alpha-blend = []
 [profile.dev]
 # Ideally I would just like to turn overflow checking off
 # because overflows happen so frequently, but this is fine I guess.
+opt-level=3
 debug-assertions = false
 codegen-units = 2
 
 [profile.release]
 opt-level=3
 lto = true
+codegen-units = 2
 
 [dependencies]
 glium = "*"
