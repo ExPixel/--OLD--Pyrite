@@ -187,6 +187,8 @@ macro_rules! put_hi16 {
 	)
 }
 
+// #TODO use this somewhere in here to allow DMAs to interrupt each other.
+#[allow(dead_code)]
 pub struct DMAInternalReg {
 	destination_addr: u32,
 	source_addr: u32,
