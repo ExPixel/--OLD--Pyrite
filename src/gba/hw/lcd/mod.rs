@@ -168,10 +168,10 @@ impl GbaLcd {
 		let backdrop = opaque_rgb5(memory.read16(0x05000000));
 		let output = &mut self.screen_buffer[line as usize][0..240];
 
-		let bg0_enabled = self.lines.bg0_enable && (((dispcnt >> 8) & 1) != 0) && debug_layer_on!(1); // #TODO remove debug layer code.
+		let bg0_enabled = self.lines.bg0_enable && (((dispcnt >> 8) & 1) != 0) && debug_layer_on!(0); // #TODO remove debug layer code.
 		let bg1_enabled = self.lines.bg1_enable && (((dispcnt >> 9) & 1) != 0) && debug_layer_on!(1); // #TODO remove debug layer code.
-		let bg2_enabled = self.lines.bg2_enable && (((dispcnt >> 10) & 1) != 0) && debug_layer_on!(1); // #TODO remove debug layer code.
-		let bg3_enabled = self.lines.bg3_enable && (((dispcnt >> 11) & 1) != 0) && debug_layer_on!(1); // #TODO remove debug layer code.
+		let bg2_enabled = self.lines.bg2_enable && (((dispcnt >> 10) & 1) != 0) && debug_layer_on!(2); // #TODO remove debug layer code.
+		let bg3_enabled = self.lines.bg3_enable && (((dispcnt >> 11) & 1) != 0) && debug_layer_on!(3); // #TODO remove debug layer code.
 
 		let obj_enabled = ((dispcnt >> 12) & 1) != 0 && debug_layer_on!(4); // #TODO remove debug layer code.
 
