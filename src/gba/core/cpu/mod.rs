@@ -565,9 +565,9 @@ impl ArmCpu {
 
 // BREAKPOINT OPTIONS:
 const DEBUG_STOP: bool = false; // This is actually a breakpoint.
-const DEBUG_THUMB: Option<bool> = Some(false);
+const DEBUG_THUMB: Option<bool> = Some(true);
 const DEBUG_ITERATIONS: u32 = 1;
-const DEBUG_ADDR: u32 = 0x13c; // 0x00000AB2, 0x000012e8, 0x08005BCA, 0x08009794, 0x08005BC8 0x0000131e
+const DEBUG_ADDR: u32 = 0x0800C38C;
 
 // BRANCH TRACKING OPTIONS:
 const DEBUG_TRACK_BRANCHES: bool = false;
@@ -579,8 +579,8 @@ const DEBUG_TRACK_REGISTERS: bool = false;
 
 // MEMORY TABLE OPTIONS:
 const DEBUG_PRINT_MEMORY_TABLE: bool = false;
-const MEMORY_TABLE_START: u32 = 0x06000510;// 0x03007e40
-const MEMORY_TABLE_LENGTH: u32 = 128;
+const MEMORY_TABLE_START: u32 =  0x03007E00;
+const MEMORY_TABLE_END: u32 = 0x03007E4F;
 
 // Holds current debug information:
 static mut debug_current_iterations: u32 = 0;
@@ -673,7 +673,7 @@ fn before_execution(address: u32, cpu: &mut ArmCpu) {
 		println!("============BEFORE============");
 		cpu.reg_dump_pretty();
 		if DEBUG_PRINT_MEMORY_TABLE {
-			print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+			print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_END);
 		}
 		if DEBUG_TRACK_REGISTERS {
 			debug_print_register_changes();
@@ -690,7 +690,7 @@ fn after_execution(address: u32, cpu: &mut ArmCpu) {
 		println!("=============AFTER============");
 		cpu.reg_dump_pretty();
 		if DEBUG_PRINT_MEMORY_TABLE {
-			print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_START + MEMORY_TABLE_LENGTH - 1);
+			print_memory_table!(cpu.memory, MEMORY_TABLE_START, MEMORY_TABLE_END);
 		}
 		if DEBUG_TRACK_BRANCHES {
 			debug_unwind_branches();
