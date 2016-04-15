@@ -105,8 +105,8 @@ impl DmaHandler {
 		let ending_dest;
 
 		if ((dma_cnt_h >> 10) & 1) != 0 {
-			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
-			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
+			let src_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 4);
+			let dest_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 4);
 			// println!("[0x{:08x}] DMA32[{}] DMA_H=0x{:04x} {} units from 0x{:08x} to 0x{:08x} | s-inc: {}, d-inc: {} | {}",
 			// 	cpu.get_exec_address() - { if cpu.thumb_mode() {2} else {4} },
 			// 	channel.index, dma_cnt_h,
@@ -117,8 +117,8 @@ impl DmaHandler {
 			ending_src = es;
 			ending_dest = ed;
 		} else {
-			let src_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
-			let dest_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
+			let src_inc = Self::get_increment((dma_cnt_h >> 7) & 0x3, 2);
+			let dest_inc = Self::get_increment((dma_cnt_h >> 5) & 0x3, 2);
 			// println!("[0x{:08x}] DMA16[{}] DMA_H=0x{:04x} {} units from 0x{:08x} to 0x{:08x} | s-inc: {}, d-inc: {} | {}",
 			// 	cpu.get_exec_address() - { if cpu.thumb_mode() {2} else {4} },
 			// 	channel.index, dma_cnt_h, 
@@ -159,6 +159,7 @@ impl DmaHandler {
 		let mut src = src_addr;
 		let mut dest = dest_addr;
 		for _ in 0..units {
+			
 			let data = cpu.memory.read16(src);
 			cpu.memory.write16(dest, data);
 
