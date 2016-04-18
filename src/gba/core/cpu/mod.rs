@@ -464,11 +464,6 @@ impl ArmCpu {
 		self.registers.set_spsr(cpsr);
 		self.registers.setf_i(); // Disables future IRQ interrupts.
 
-		println!("[IRQ-ENTER] 0x{:08X} (handler = 0x{:08X}) (spsr = 0x{:08X})", 
-			self.get_exec_address(), 
-			self.memory.read32(0x03007FFC),
-			self.registers.get_spsr());
-
 		// The call below is now uncessary now that I am using get_exec_address()
 		// but I'm keeping the code for now.
 		// self.fill_pipeline(); // ensure the pipeline is filled for this.
