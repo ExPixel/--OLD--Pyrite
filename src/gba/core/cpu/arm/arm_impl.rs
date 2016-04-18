@@ -630,7 +630,6 @@ pub fn arm_bx(cpu: &mut ArmCpu, instr: u32) {
 		// branch into arm mode.
 		let destination = address & 0xFFFFFFFC;
 		cpu.set_pc(destination);
-
 		cpu.clock_branched_arm();
 	}
 }
