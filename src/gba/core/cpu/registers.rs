@@ -82,7 +82,7 @@ pub struct ArmRegisters {
 	spsr: [u32; 5]
 }
 
-fn is_priveleged_mode(mode: u32) -> bool {
+fn is_privileged_mode(mode: u32) -> bool {
 	mode != MODE_USR
 }
 
@@ -253,7 +253,7 @@ impl ArmRegisters {
 
 	/// Only writes to flag bits in unpriveldged modes.
 	pub fn set_spsr_safe(&mut self, value: u32) {
-		if is_priveleged_mode(self.get_mode()) {
+		if is_privileged_mode(self.get_mode()) {
 			self.set_spsr(value);
 		} else {
 			self.set_spsr_flags(value);
@@ -262,7 +262,7 @@ impl ArmRegisters {
 
 	/// Only writes to flag bits in unpriveldged modes.
 	pub fn set_cpsr_safe(&mut self, value: u32) {
-		if is_priveleged_mode(self.get_mode()) {
+		if is_privileged_mode(self.get_mode()) {
 			self.set_cpsr(value);
 		} else {
 			self.set_cpsr_flags(value);
