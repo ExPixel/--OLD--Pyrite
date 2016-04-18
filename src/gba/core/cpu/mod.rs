@@ -189,7 +189,7 @@ impl ArmCpu {
 
 			// #TODO remove debug code.
 			if DEBUG_TRACK_BRANCHES {
-				let __self_pc = self.get_pc();
+				let __self_pc = self.get_exec_address();
 				let __self_thumb = self.thumb_mode();
 				debug_push_branch(self, exec_addr, false, __self_pc, __self_thumb);
 			}
@@ -219,7 +219,7 @@ impl ArmCpu {
 
 			// #TODO remove debug code.
 			if DEBUG_TRACK_BRANCHES {
-				let __self_pc = self.get_pc();
+				let __self_pc = self.get_exec_address();
 				let __self_thumb = self.thumb_mode();
 				debug_push_branch(self, exec_addr, true, __self_pc, __self_thumb);
 			}
@@ -456,13 +456,18 @@ impl ArmCpu {
 	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
 	///    (which you, the programmer, never see)
 	pub fn irq_interrupt(&mut self) {
-		// println!("[0x{:08X}] IRQ INTERRUPT: 0x{:04X}", self.get_exec_address(), self.memory.get_reg(ioreg::IF));
+		// println!("[0x{:08X} ({})] IRQ INTERRUPT: 0x{:04X}", self.get_exec_address(), debug_get_mode_char(self.thumb_mode()), self.memory.get_reg(ioreg::IF));
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
 		let cpsr = self.registers.get_cpsr(); // We don't want the new mode in the spsr.
 		self.registers.set_mode(MODE_IRQ);
 		self.registers.set_spsr(cpsr);
 		self.registers.setf_i(); // Disables future IRQ interrupts.
+
+		println!("[IRQ-ENTER] 0x{:08X} (handler = 0x{:08X}) (spsr = 0x{:08X})", 
+			self.get_exec_address(), 
+			self.memory.read32(0x03007FFC),
+			self.registers.get_spsr());
 
 		// The call below is now uncessary now that I am using get_exec_address()
 		// but I'm keeping the code for now.
@@ -474,6 +479,12 @@ impl ArmCpu {
 		// the exec_addr is the address of the next instruction to be executed.
 		// ^ unless we're in the middle of executing the instruction already. The it's the current instruction.
 		let next_pc = self.get_exec_address() + 4;
+
+		{
+			let __e_addr = self.get_exec_address();
+			let __t_mode = self.thumb_mode();
+			debug_push_branch(self, __e_addr, __t_mode, HWI_VECTOR, false);
+		}
 
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
@@ -488,6 +499,7 @@ impl ArmCpu {
 	pub fn on_undefined(&mut self) {
 		self.reg_dump_pretty();
 		debug_unwind_branches();
+		debug_print_register_changes();
 		panic!("picnic -- undefined instruction");
 	}
 
@@ -521,20 +533,32 @@ impl ArmCpu {
 
 	pub fn reg_dump(&self) {
 		for r in 0..13 {
-			print!("r{} = 0x{:08x}; ", r, self.rget(r));
+			print!("r{} = 0x{:08x}; ", r, self.registers.get_with_mode(MODE_USR, r));
 		}
-		print!("sp = 0x{:08x}; ", self.rget(13));
-		print!("lr = 0x{:08x}; ", self.rget(14));
+		print!("sp = 0x{:08x}; ", self.registers.get_with_mode(MODE_USR, 13));
+		print!("lr = 0x{:08x}; ", self.registers.get_with_mode(MODE_USR, 14));
 		println!("pc = 0x{:08x}", self.get_pc());
 	}
 
 	pub fn reg_dump_pretty(&self) {
 		println!("executing: {}", self.disasm_exec());
 		for r in 0..13 {
-			println!("r{} = 0x{:08x}; ", r, self.rget(r));
+			println!("r{} = 0x{:08x}; ", r, self.registers.get_with_mode(MODE_USR, r));
 		}
-		println!("sp = 0x{:08x}; ", self.rget(13));
-		println!("lr = 0x{:08x}; ", self.rget(14));
+		println!("sp = 0x{:08x}; ", self.registers.get_with_mode(MODE_USR, 13));
+		println!("\tsp_irq = 0x{:08x}; ", self.registers.get_with_mode(MODE_IRQ, 13));
+		println!("\tsp_svc = 0x{:08x}; ", self.registers.get_with_mode(MODE_SVC, 13));
+		println!("\tsp_fiq = 0x{:08x}; ", self.registers.get_with_mode(MODE_FIQ, 13));
+		println!("\tsp_abt = 0x{:08x}; ", self.registers.get_with_mode(MODE_ABT, 13));
+		println!("\tsp_und = 0x{:08x}; ", self.registers.get_with_mode(MODE_UND, 13));
+
+		println!("lr = 0x{:08x}; ", self.registers.get_with_mode(MODE_USR, 14));
+		println!("\tlr_irq = 0x{:08x}; ", self.registers.get_with_mode(MODE_IRQ, 14));
+		println!("\tlr_svc = 0x{:08x}; ", self.registers.get_with_mode(MODE_SVC, 14));
+		println!("\tlr_fiq = 0x{:08x}; ", self.registers.get_with_mode(MODE_FIQ, 14));
+		println!("\tlr_abt = 0x{:08x}; ", self.registers.get_with_mode(MODE_ABT, 14));
+		println!("\tlr_und = 0x{:08x}; ", self.registers.get_with_mode(MODE_UND, 14));
+
 		println!("pc = 0x{:08x}", self.get_pc());
 
 		print!("cpsr = 0x{:08x} [ ", self.registers.get_cpsr());
@@ -559,15 +583,19 @@ impl ArmCpu {
 		}
 
 
-		println!("spsr = 0x{:08x}", self.registers.get_spsr_safe());
+		println!("spsr_irq = 0x{:08x}", self.registers.get_spsr_for_mode(MODE_IRQ));
+		println!("spsr_svc = 0x{:08x}", self.registers.get_spsr_for_mode(MODE_SVC));
+		println!("spsr_fiq = 0x{:08x}", self.registers.get_spsr_for_mode(MODE_FIQ));
+		println!("spsr_abt = 0x{:08x}", self.registers.get_spsr_for_mode(MODE_ABT));
+		println!("spsr_und = 0x{:08x}", self.registers.get_spsr_for_mode(MODE_UND));
 	}
 }
 
 // BREAKPOINT OPTIONS:
 const DEBUG_STOP: bool = false; // This is actually a breakpoint.
-const DEBUG_THUMB: Option<bool> = Some(true);
+const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 1;
-const DEBUG_ADDR: u32 = 0x0800C38C;
+const DEBUG_ADDR: u32 = 0x03003A6C;
 
 // BRANCH TRACKING OPTIONS:
 const DEBUG_TRACK_BRANCHES: bool = false;
@@ -701,5 +729,3 @@ fn after_execution(address: u32, cpu: &mut ArmCpu) {
 		panic!("picnic");
 	}
 }
-
-

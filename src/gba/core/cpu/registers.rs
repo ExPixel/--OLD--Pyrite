@@ -141,13 +141,13 @@ impl ArmRegisters {
 	/// Changes register numbers to their location
 	/// in the internal_registers array.
 	/// 
-	/// USR: (Same)  
-	/// SYS: (Same)  
-	/// FIQ: starting at 16 for r8-r14  
-	/// SVC: starting at 23 for r13-r14  
-	/// ABT: starting at 25 for r13-r14  
-	/// IRQ: starting at 27 for r13-r14  
-	/// UND: starting at 29 for r13-r14  
+	/// USR: (Same)
+	/// SYS: (Same)
+	/// FIQ: starting at 16 for r8-r14
+	/// SVC: starting at 23 for r13-r14
+	/// ABT: starting at 25 for r13-r14
+	/// IRQ: starting at 27 for r13-r14
+	/// UND: starting at 29 for r13-r14
 	fn get_register_index(&self, register32: u32) -> usize {
 		let register = register32 as usize;
 		match self.get_mode() {
@@ -185,6 +185,22 @@ impl ArmRegisters {
 	/// Writes a value to the cpsr
 	pub fn set_cpsr(&mut self, value: u32) {
 		self.cpsr = value;
+	}
+
+	pub fn get_spsr_for_mode(&self, mode: u32) -> u32 {
+		let spsr_index = Self::get_spsr_index_for_mode(mode);
+		self.spsr[spsr_index]	
+	}
+
+	fn get_spsr_index_for_mode(mode: u32) -> usize {
+		match mode {
+			MODE_FIQ => 0,
+			MODE_SVC => 1,
+			MODE_ABT => 2,
+			MODE_IRQ => 3,
+			MODE_UND => 4,
+			_ => panic!("BAD SPSR INDEX! FOR MODE = 0b{:05b}", mode)
+		}
 	}
 
 	/// Returns the index of the spsr for the current mode.
