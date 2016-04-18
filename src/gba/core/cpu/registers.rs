@@ -254,9 +254,9 @@ impl ArmRegisters {
 	/// Only writes to flag bits in unpriveldged modes.
 	pub fn set_spsr_safe(&mut self, value: u32) {
 		if is_priveleged_mode(self.get_mode()) {
-			self.set_spsr_flags(value);
-		} else {
 			self.set_spsr(value);
+		} else {
+			self.set_spsr_flags(value);
 		}
 	}
 
