@@ -111,7 +111,7 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	} else { 
 		// 32 bytes per palette
 		// 2 bytes per color entry
-		let palette_number = ((attr2 >> 12) & 0x3) as usize;
+		let palette_number = ((attr2 >> 12) & 0xf) as usize;
 		opaque_rgb5(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
 	}
 }
@@ -143,7 +143,7 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	} else { 
 		// 32 bytes per palette
 		// 2 bytes per color entry
-		let palette_number = ((attr2 >> 12) & 0x3) as usize;
+		let palette_number = ((attr2 >> 12) & 0xf) as usize;
 		opaque_rgb5(palette.direct_read16( (palette_number << 5) + (dot << 1) ))
 	}
 }
