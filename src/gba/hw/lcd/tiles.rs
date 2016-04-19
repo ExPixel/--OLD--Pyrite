@@ -108,6 +108,10 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
+
+		// 2K per map (SC)
+		// 64 bytes per tile line (32 entries per line)
+		// 2 bytes per tile entry
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
 		if map_tile_data_addr < 0xFFFF { // #FIXME This is happening in pokemon fire red. screen_base_block = 61440 (30)
 			let map_tile_info = vram_tile_data.direct_read16(map_tile_data_addr as usize);
@@ -242,6 +246,7 @@ pub fn draw_tiles_rs_mode(bgcnt: u16, params: BGRotScaleParams, memory: &mut Gba
 }
 
 fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel], tile_info: u16, tx: u32, ty: u32) {
+	let aligned = (tx & 1) == 0;
 	let mut tx = tx;
 	let mut ty = ty;
 
@@ -277,27 +282,36 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel],
 	let mut offset = (((tile_number as u32) << 5) + (ty << 2) + (tx >> 1)) as usize;
 
 	let mut pindex = 0;
+
+	if !aligned {
+		let two_dots = char_data[offset];
+		let right_dot = (two_dots >> right_dot_shift) & 0xf;
+		if right_dot == 0 {
+			output[pindex] = 0
+		} else {
+			// 32 bytes per palette
+			// 2 bytes per color entry
+			output[pindex] = opaque_rgb5(palette.direct_read16(((palette_number << 5) + ((right_dot << 1) as u16)) as usize));
+		}
+		pindex += 1;
+		offset += offset_inc;
+	}
 	
 	while pindex < output.len() && offset < char_data.len() {
 		let two_dots = char_data[offset];
 
-		// #TODO optimize by turning the dot rendering into a function
-		// and moving this if condition out of the loop and just drawing the first
-		// dot solo if it's not aligned.
-		if pindex != 0 || ((tx & 1) == 0) {
-			// left pixel
-			let left_dot = (two_dots >> left_dot_shift) & 0xf;
-			if left_dot == 0 {
-				// If the color number is 0, 
-				// that means that it is color 0 of its palette, making it transparent.
-				output[pindex] = 0;
-			} else {
-				// 32 bytes per palette
-				// 2 bytes per color entry
-				output[pindex] = opaque_rgb5(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
-			}
-			pindex += 1;
+		// left pixel
+		let left_dot = (two_dots >> left_dot_shift) & 0xf;
+		if left_dot == 0 {
+			// If the color number is 0, 
+			// that means that it is color 0 of its palette, making it transparent.
+			output[pindex] = 0;
+		} else {
+			// 32 bytes per palette
+			// 2 bytes per color entry
+			output[pindex] = opaque_rgb5(palette.direct_read16(((palette_number << 5) + ((left_dot << 1) as u16)) as usize));
 		}
+		pindex += 1;
 
 		if pindex >= output.len() { break; }
 
