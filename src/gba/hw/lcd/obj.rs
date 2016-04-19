@@ -236,12 +236,12 @@ fn draw_simple_obj(one_dimensional: bool, tile_region: &[u8], palette_region: &[
 
 		// #TODO I have no idea wtf mosaic X does exactly.
 
-		let f_ty = if vertical_flip { height - ty } else { ty }; // possibly flipped ty
+		let f_ty = if vertical_flip { (height - 1) - ty } else { ty }; // possibly flipped ty
 		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
 		if (px < 240) || tx_offset != 0 {
 			for tx in 0..width {
 				if px < 240 && lines.obj_info.get_priority(px as usize) == 0 { // on screen and nothing has been drawn there
-					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
+					let f_tx = if horizontal_flip { (width - 1) - tx } else { tx }; // possibly flipped tx.
 					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
 					if dot != 0 { // #TODO might want to check for transparency here (bit 15) instead of just zero.
 						lines.obj[px as usize] = dot;
@@ -375,13 +375,13 @@ fn draw_simple_obj_window(one_dimensional: bool, tile_region: &[u8], palette_reg
 
 		// #TODO I have no idea wtf mosaic X does exactly.
 
-		let f_ty = if vertical_flip { height - ty } else { ty }; // possibly flipped ty
+		let f_ty = if vertical_flip { (height - 1) - ty } else { ty }; // possibly flipped ty
 		let tx_offset = if (px + width) > 512 { 512 - px } else { 0 };
 		if (px < 240) || tx_offset != 0 {
 			for tx in 0..width {
 				// #TODO not sure if OBJ windows care about priority.
 				if px < 240 /* && lines.obj_info.get_priority(px as usize) == 0 */ { // on screen and nothing has been drawn there
-					let f_tx = if horizontal_flip { width - tx } else { tx }; // possibly flipped tx.
+					let f_tx = if horizontal_flip { (width - 1) - tx } else { tx }; // possibly flipped tx.
 					let dot = get_dot(tile_region, palette_region, obj.attr2, f_tx, f_ty, (width, height, line_shift));
 					if dot != 0 { // #TODO might want to check for transparency here (bit 15) instead of just zero.
 						lines.obj[px as usize] = dot;
