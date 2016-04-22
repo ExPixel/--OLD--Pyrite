@@ -70,13 +70,30 @@ pub const INT_KEYPAD: u16 = 0x1000;
 /// Game Pak (external IRQ source) Interrupt
 pub const INT_GAMEPAK: u16 = 0x2000;
 
+/// State passed to the GUI.
+#[derive(Default)]
+pub struct GbaExtras {
+	paused: bool,
+	request_pause: bool
+}
+
+impl GbaExtras {
+	pub fn new() -> GbaExtras {
+		GbaExtras {
+			paused: false,
+			request_pause: false
+		}
+	}
+}
+
 pub struct Gba {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
 	pub dma_handler: DmaHandler,
-	pub request_exit: bool
+	pub request_exit: bool,
+	pub extras: GbaExtras
 }
 
 impl Gba {
@@ -87,7 +104,8 @@ impl Gba {
 			device: GbaDevice::new(),
 			joypad: GbaJoypad::new(),
 			dma_handler: DmaHandler::new(),
-			request_exit: false
+			request_exit: false,
+			extras: GbaExtras::new()
 		}
 	}
 
@@ -197,6 +215,15 @@ impl Gba {
 		self.cpu.memory.internal_regs.on_frame_end(
 			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
 		);
+		if self.extras.paused != self.extras.request_pause {
+			self.extras.paused = self.extras.request_pause;
+			if self.extras.paused { println!("Paused."); }
+			else { println!("Unpaused"); }
+		}
+
+		pyrite_debugging!({
+			print_memory_table!(self.cpu.memory, 0x0600FB60, 0x0600FB60 + 63);
+		});
 	}
 
 	/// Attempts to fire an vblank interrupt
@@ -369,9 +396,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	}
 
 	fn run_cpu_cycles(&mut self, cycles: u64) {
-		// #TODO have another look at this one.
-		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
+		if self.extras.paused { return }
 
+		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 		let mut cycles = cycles;
 		let mut target = self.cpu.clock.cycles + cycles;
 		'cpu_loop: while self.cpu.clock.cycles < target {
@@ -427,6 +454,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				},
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::R)) => {
 					self.cpu.reg_dump_pretty();
+				},
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::P)) => {
+					self.extras.request_pause = !self.extras.paused;
 				},
 
 			// DEBUGGING LAYERS IN GRAPHICS:
