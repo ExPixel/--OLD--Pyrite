@@ -248,6 +248,9 @@ impl GbaLcd {
 						blending_params.target_pixel = color;
 					}
 					blending_params.source_on_top = false;
+				} else {
+					blending_params.source_on_top = false;
+					blending_params.target_overwritten = true;
 				}
 			}
 		};
@@ -376,10 +379,11 @@ impl GbaLcd {
 				let (t_r, t_g, t_b) = expand_color(blending_params.target_pixel);
 				let (s_r, s_g, s_b) = expand_color(blending_params.source_pixel);
 
+				// I = MIN ( 31, I1st*EVA + I2nd*EVB )
 				output[pix] = (
-					min!(255, (((t_r as u16) * blend_evb) >> 4) + (((s_r as u16) * blend_eva) >> 4)) as u8,
-					min!(255, (((t_g as u16) * blend_evb) >> 4) + (((s_g as u16) * blend_eva) >> 4)) as u8,
-					min!(255, (((t_b as u16) * blend_evb) >> 4) + (((s_b as u16) * blend_eva) >> 4)) as u8,
+					min!(255, (((s_r as u16) * blend_eva) >> 4) + (((t_r as u16) * blend_evb) >> 4)) as u8,
+					min!(255, (((s_g as u16) * blend_eva) >> 4) + (((t_g as u16) * blend_evb) >> 4)) as u8,
+					min!(255, (((s_b as u16) * blend_eva) >> 4) + (((t_b as u16) * blend_evb) >> 4)) as u8,
 				);
 			} else {
 				let expanded = expand_color(output_pixel); 
