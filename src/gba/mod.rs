@@ -52,18 +52,6 @@ pub const INT_TIMER3: u16 = 0x40;
 /// Serial Communication Interrupt
 pub const INT_SERIAL: u16 = 0x80;
 
-/// DMA 0 Interrupt
-pub const INT_DMA0: u16 = 0x100;
-
-/// DMA 1 Interrupt
-pub const INT_DMA1: u16 = 0x200;
-
-/// DMA 2 Interrupt
-pub const INT_DMA2: u16 = 0x400;
-
-/// DMA 3 Interrupt
-pub const INT_DMA3: u16 = 0x800;
-
 /// Keypad Interrupt
 pub const INT_KEYPAD: u16 = 0x1000;
 
@@ -91,7 +79,6 @@ pub struct Gba {
 	pub lcd: GbaLcd,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
-	pub dma_handler: DmaHandler,
 	pub request_exit: bool,
 	pub extras: GbaExtras
 }
@@ -103,7 +90,6 @@ impl Gba {
 			lcd: GbaLcd::new(),
 			device: GbaDevice::new(),
 			joypad: GbaJoypad::new(),
-			dma_handler: DmaHandler::new(),
 			request_exit: false,
 			extras: GbaExtras::new()
 		}
@@ -250,52 +236,12 @@ impl Gba {
 		// We only check if the DMA registers are dirty if the timing is immediate
 		// otherwise we try to start the DMA anyway.
 		if timing != DMA_TIMING_IMMEDIATE || self.cpu.memory.internal_regs.dma_dirty {
-			let mut interrupt = None;
-			let mut dirty = false;
-
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 0) {
-				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA0CNT_H);
-				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
-					interrupt = Some(INT_DMA0);
-				}
-				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
-					dirty |= true;
-				}
-			}
-
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 1) {
-				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA1CNT_H);
-				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
-					interrupt = Some(INT_DMA1);
-				}
-				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
-					dirty |= true;
-				}
-			}
-
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 2) {
-				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA2CNT_H);
-				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
-					interrupt = Some(INT_DMA2);
-				}
-				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
-					dirty |= true;
-				}
-			}
-
-			if self.dma_handler.try_start_dma(&mut self.cpu, timing, 3) {
-				let dma_cnt_h = self.cpu.memory.get_reg(ioreg::DMA3CNT_H);
-				if ((dma_cnt_h >> 14) & 1) != 0 { // If DMA IRQ enabled.
-					interrupt = Some(INT_DMA3);
-				}
-				if ((dma_cnt_h >> 9) & 1) != 0 { // If DMA repeat was enabled.
-					dirty |= true;
-				}
-			}
-
-			self.cpu.memory.internal_regs.dma_dirty = dirty;
-
-			if let Some(mask) = interrupt { self.hardware_interrupt(mask) }
+			self.cpu.dma_check_started(timing, 0);
+			self.cpu.dma_check_started(timing, 1);
+			self.cpu.dma_check_started(timing, 2);
+			self.cpu.dma_check_started(timing, 3);
+			
+			self.cpu.memory.internal_regs.dma_dirty = false;	
 		}
 	}
 
@@ -399,28 +345,26 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		if self.extras.paused { return }
 
 		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
-		let mut cycles = cycles;
-		let mut target = self.cpu.clock.cycles + cycles;
+		let target = self.cpu.clock.cycles + cycles;
+
+		//dma_ongoing(&mut self.cpu)
+
 		'cpu_loop: while self.cpu.clock.cycles < target {
-			if self.cpu.executable() {
-				if self.dma_handler.dma_cycles > 0 {
-					if cycles < self.dma_handler.dma_cycles {
-						self.dma_handler.dma_cycles -= cycles;
-						break 'cpu_loop;
-					} else {
-						cycles -= self.dma_handler.dma_cycles;
-						target = self.cpu.clock.cycles + cycles; // recalculate the target
-						self.dma_handler.dma_cycles = 0;
-					}
-				} else {
+			if self.cpu.dma_ongoing() {
+				let dma_int_mask = self.cpu.dma_tick();
+				if dma_int_mask != 0 {
+					self.hardware_interrupt(dma_int_mask);
+				}
+			} else {
+				if self.cpu.executable() {
 					self.cpu.tick();
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 					self.check_dmas(DMA_TIMING_IMMEDIATE);
+				} else {
+					self.cpu.reg_dump_pretty();
+					panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 				}
-			} else {
-				self.cpu.reg_dump_pretty();
-				panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
 			}
 		}
 	}

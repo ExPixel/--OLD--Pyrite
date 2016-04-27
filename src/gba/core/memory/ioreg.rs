@@ -187,14 +187,27 @@ macro_rules! put_hi16 {
 	)
 }
 
-// #TODO use this somewhere in here to allow DMAs to interrupt each other.
-#[allow(dead_code)]
+#[derive(Default)]
 pub struct DMAInternalReg {
-	destination_addr: u32,
-	source_addr: u32,
-	units: u32,
-	cnt_h: u16,
-	cnt_l: u16
+	pub reload: bool,
+	pub repeat: bool,
+	pub transfer_word: bool, // transfers halfwords if false
+	pub gamepak_drq: bool,  // #TODO I'm not even sure what this is.
+	pub start_timing: u16, // (0=Immediately, 1=VBlank, 2=HBlank, 3=Special)
+	pub irq: bool,
+	pub enabled: bool,
+
+	pub dest_addr_inc: u32,
+	pub source_addr_inc: u32,
+
+	// Everything below here is set and controlled by dma.rs:
+	pub is_repeat: bool,
+	pub units: u32,
+	pub original_destination_addr: u32,
+	pub destination_addr: u32,
+	pub source_addr: u32,
+	pub units_remaining: u32,
+	pub first_transfer: bool
 }
 
 #[derive(Default)]
@@ -227,6 +240,7 @@ pub struct InternalRegisters {
 	pub stopped: bool,
 
 	pub dma_dirty: bool,
+	pub dma_registers: [DMAInternalReg; 4],
 	pub timers: [TimerInternalReg; 4]
 }
 
@@ -309,11 +323,49 @@ impl InternalRegisters {
 			0x000010C => { self.update_timer_lo(3, value) },
 			0x000010E => { self.update_timer_hi(3, value) },
 
-			0x00000BA | 0x00000C6 | 
-			0x00000D2 | 0x00000DE => { self.dma_dirty = true },
+			0x00000BA => { self.update_dma_hi(0, value); },
+			0x00000C6 => { self.update_dma_hi(1, value); },
+			0x00000D2 => { self.update_dma_hi(2, value); },
+			0x00000DE => { self.update_dma_hi(3, value); },
 
 			_ => {}
 		}
+	}
+
+	fn update_dma_hi(&mut self, dma_index: usize, dma_hi_data: u16) {
+		let internal_reg = &mut self.dma_registers[dma_index];
+		internal_reg.repeat = ((dma_hi_data >> 9) & 1) == 1;
+		internal_reg.transfer_word = ((dma_hi_data >> 10) & 1) == 1;
+		internal_reg.gamepak_drq = ((dma_hi_data >> 11) & 1) == 1;
+		internal_reg.start_timing = (dma_hi_data >> 12) & 0x3;
+		internal_reg.irq = ((dma_hi_data >> 14) & 1) == 1;
+		internal_reg.enabled = ((dma_hi_data >> 15) & 1) == 1;
+		internal_reg.reload = ((dma_hi_data >> 5) & 0x3) == 3;
+		
+		internal_reg.is_repeat = false;
+
+		if !internal_reg.enabled {
+			// if a DMA is suddenly stopped, we don't want there to be any units waiting to be transferred.
+			internal_reg.units_remaining = 0;
+		}
+
+		let size: i32 = if internal_reg.transfer_word {4} else {2};
+
+		internal_reg.dest_addr_inc = match (dma_hi_data >> 5) & 0x3 {
+			0 | 3  => size as u32,
+			1 => (size * -1) as u32,
+			2 => 0u32,
+			_ => unreachable!()
+		};
+
+		internal_reg.source_addr_inc = match (dma_hi_data >> 7) & 0x3 {
+			0 | 3 => size as u32, // #FIXME 3 is actually not supported for the source_addr_inc. Maybe it should disable the DMA?
+			1 => (size * -1) as u32,
+			2 => 0u32,
+			_ => unreachable!()
+		};
+
+		self.dma_dirty = true;
 	}
 
 	fn update_timer_lo(&mut self, t_idx: usize, lo_data: u16) {
