@@ -4,11 +4,10 @@ General:
      This may no longer be possible.
   ☐ Correct the Gamma and colors through the shaders.
   ☐ Masking for IO Registers certain bits should not be written or read
-     This is probably why I'm getting weird values for the sbb_aff tonc demo.
 Core:
   ☐ Complete CPU exceptions. (titled 'ARM CPU Exceptions' in GBAtek.)
   ✔ Complete DMAs @done (16-03-02 18:43)
-  ☐ Complete Timers
+  ✔ Complete Timers @done (16-05-03 01:18)
   ☐ Complete Comm. Ports
   ☐ Complete System Control (Dynamic Memory Timings, ect...)
   LCD:
@@ -20,7 +19,7 @@ Core:
       ✔ Complete Mode 4 Rendering @critical @done (16-04-10 23:55)
       ✔ Complete Window Rendering @critical @done (16-04-10 23:55)
       ✔ Complete Alpha Blending @critical @done (16-04-10 23:55)
-    ☐ Speed up rendering by changing from (u8, u8, u8, u8)s to just u16s 
+    ✔ Speed up rendering by changing from (u8, u8, u8, u8)s to just u16s  @done (16-05-03 01:19)
        and storing transparency in the highest bit because the GBA doesn't use it anyway.
     ☐ Complete Mosaics @low 
   GBA:
@@ -87,5 +86,5 @@ Core:
       not an address that can be reached without a jump, so it should be easy to find where the
       problem starts.
    ☐ When running the GBA test suite's memory tests, the test hangs.
-   ☐ When running the GBA test suite's video tests, the 'actual' and 'expected' labels are cut off.
+   ✔ When running the GBA test suite's video tests, the 'actual' and 'expected' labels are cut off. @done (16-05-03 01:19)
       Only the top left corner is drawn.
