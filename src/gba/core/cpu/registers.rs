@@ -115,6 +115,18 @@ impl ArmRegisters {
 		self.internal_registers[reg_index] = value;
 	}
 
+	/// Only gets the lower 8 registers r0-8
+	pub fn get_lo(&mut self, register: u32) -> u32 {
+		let reg_index = (register & 0x7) as usize;
+		self.internal_registers[reg_index]
+	}
+
+	/// Only sets the lower 8 registers r0-8
+	pub fn set_lo(&mut self, register: u32, value: u32) {
+		let reg_index = (register & 0x7) as usize;
+		self.internal_registers[reg_index] = value;
+	}
+
 	pub fn get_with_mode(&self, mode: u32, register: u32) -> u32 {
 		let reg_index = Self::get_register_index_with_mode(mode, register);
 		self.internal_registers[reg_index]

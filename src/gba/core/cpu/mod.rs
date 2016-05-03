@@ -56,18 +56,27 @@ impl ArmCpu {
 		return self.registers.get(register)
 	}
 
-
-	// #TODO could probably make thumb instructions better by giving them
-	// a rset_lo functions so that they don't have to check PC because
-	// it's impossible for them to change it.
 	pub fn rset(&mut self, register: u32, value: u32) {
 		if DEBUG_TRACK_REGISTERS { // #TODO REMOVE DEBUG CODE.
 			let tbit = self.registers.getfi_t();
 			debug_track_register_change(register, self.get_exec_address() | tbit, self.registers.get(register), value);
 		}
 
-		if !self.branched && register == 15 { self.branched = true }
-		return self.registers.set(register, value);
+		if register == 15 {
+			self.set_pc(value)
+		} else {
+			self.registers.set(register, value)
+		}
+	}
+
+	/// Only sets the lower 8 registers r0-7
+	pub fn rset_lo(&mut self, register: u32, value: u32) {
+		self.registers.set_lo(register, value);
+	}
+
+	/// Only gets the lower 8 registers r0-7
+	pub fn rget_lo(&mut self, register: u32) -> u32 {
+		self.registers.get_lo(register)
 	}
 
 	pub fn get_pc(&self) -> u32 {

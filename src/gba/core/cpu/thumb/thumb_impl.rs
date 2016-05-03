@@ -2,7 +2,6 @@ use super::super::ArmCpu;
 // use super::super::super::memory::GbaMemory;
 use super::functions::*;
 use super::super::arm::functions::*;
-use std::convert::Into;
 
 // #CLEANUP there is a lot of code duplication here.
 // I should clean it up in the future.
@@ -51,9 +50,9 @@ pub fn thumb_lsl_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
-	let _rs = cpu.rget(rs);
+	let _rs = cpu.rget_lo(rs);
 	let result = thumb_fn_lli(cpu, _rs, offset5);
-	cpu.rset(rd.into(), result);
+	cpu.rset_lo(rd, result);
 }
 
 /// LSR imm
@@ -64,7 +63,7 @@ pub fn thumb_lsr_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
-	let _rs = cpu.rget(rs);
+	let _rs = cpu.rget_lo(rs);
 	let result = thumb_fn_lri(cpu, _rs, offset5);
 	cpu.rset(rd, result);
 }
@@ -77,9 +76,9 @@ pub fn thumb_asr_imm(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset5 = (instr >> 6) & 0x1f;
-	let _rs = cpu.rget(rs);
+	let _rs = cpu.rget_lo(rs);
 	let result = thumb_fn_ari(cpu, _rs, offset5);
-	cpu.rset(rd, result);
+	cpu.rset_lo(rd, result);
 }
 
 /// ADD reg
@@ -90,10 +89,10 @@ pub fn thumb_add_reg(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let rn = (instr >> 6) & 0x7;
-	let _rs = cpu.rget(rs);
-	let _rn = cpu.rget(rn);
+	let _rs = cpu.rget_lo(rs);
+	let _rn = cpu.rget_lo(rn);
 	let result = arm_fn_add_s(cpu, _rs, _rn);
-	cpu.rset(rd, result);
+	cpu.rset_lo(rd, result);
 }
 
 /// SUB reg
@@ -104,10 +103,10 @@ pub fn thumb_sub_reg(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let rn = (instr >> 6) & 0x7;
-	let _rs = cpu.rget(rs);
-	let _rn = cpu.rget(rn);
+	let _rs = cpu.rget_lo(rs);
+	let _rn = cpu.rget_lo(rn);
 	let result = arm_fn_sub_s(cpu, _rs, _rn);
-	cpu.rset(rd, result);
+	cpu.rset_lo(rd, result);
 }
 
 /// ADD imm3
@@ -118,9 +117,9 @@ pub fn thumb_add_imm3(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset3 = (instr >> 6) & 0x7;
-	let _rs = cpu.rget(rs);
+	let _rs = cpu.rget_lo(rs);
 	let result = arm_fn_add_s(cpu, _rs, offset3);
-	cpu.rset(rd, result);
+	cpu.rset_lo(rd, result);
 }
 
 /// SUB imm3
@@ -131,18 +130,18 @@ pub fn thumb_sub_imm3(cpu: &mut ArmCpu, instr: u32) {
 	let rd = instr & 0x7;
 	let rs = (instr >> 3) & 0x7;
 	let offset3 = (instr >> 6) & 0x7;
-	let _rs = cpu.rget(rs);
+	let _rs = cpu.rget_lo(rs);
 	let result = arm_fn_sub_s(cpu, _rs, offset3);
-	cpu.rset(rd, result);
+	cpu.rset_lo(rd, result);
 }
 
 /// Common MOV i8 function
 pub fn thumb_mov_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(rd); // #TODO this is useless, arm_fn_mov_s just discards it anyway.
+	let lhs = cpu.rget_lo(rd); // #TODO this is useless, arm_fn_mov_s just discards it anyway.
 	let rhs = instr & 0xff;
 	let result = arm_fn_mov_s(cpu, lhs, rhs);
-	cpu.rset(rd, result);
+	cpu.rset_lo(rd, result);
 }
 
 /// MOV i8r0
@@ -203,7 +202,7 @@ pub fn thumb_mov_i8r7(cpu: &mut ArmCpu, instr: u32) {
 
 pub fn thumb_cmp_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(rd);
+	let lhs = cpu.rget_lo(rd);
 	let rhs = instr & 0xff;
 	arm_fn_cmp_s(cpu, lhs, rhs);
 }
@@ -267,7 +266,7 @@ pub fn thumb_cmp_i8r7(cpu: &mut ArmCpu, instr: u32) {
 /// Common add i8 function
 pub fn thumb_add_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(rd);
+	let lhs = cpu.rget_lo(rd);
 	let rhs = instr & 0xff;
 	let result = arm_fn_add_s(cpu, lhs, rhs);
 	cpu.rset(rd, result);
@@ -332,7 +331,7 @@ pub fn thumb_add_i8r7(cpu: &mut ArmCpu, instr: u32) {
 /// Common sub i8 funciton.
 pub fn thumb_sub_i8(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
-	let lhs = cpu.rget(rd);
+	let lhs = cpu.rget_lo(rd);
 	let rhs = instr & 0xff;
 	let result = arm_fn_sub_s(cpu, lhs, rhs);
 	cpu.rset(rd, result);
@@ -494,7 +493,7 @@ fn thumb_ldrpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let offset = (instr & 0xff) << 2;
 	let address = pc + offset;
 	let data = cpu.mread32_al(address);
-	cpu.rset(rd, data);
+	cpu.rset_lo(rd, data);
 	cpu.clock.internal(1);
 	cpu.clock.data_access32_nonseq(address);
 }
@@ -631,7 +630,7 @@ fn thumb_strsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let offset = (instr & 0xff) << 2;
 	let base = cpu.rget(SP);
 	let address = base + offset;
-	let data = cpu.rget(rd);
+	let data = cpu.rget_lo(rd);
 	cpu.mwrite32(address, data);
 	cpu.clock.data_access32_nonseq(address);
 }
@@ -699,7 +698,7 @@ fn thumb_ldrsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	let base = cpu.rget(SP);
 	let address = base + offset;
 	let data = cpu.mread32_al(address);
-	cpu.rset(rd, data);
+	cpu.rset_lo(rd, data);
 	cpu.clock.internal(1);
 	cpu.clock.data_access32_nonseq(address);
 }
@@ -765,7 +764,7 @@ fn thumb_addpc(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
 	let offset = (instr & 0xff) << 2;
 	let pc = cpu.get_pc() & 0xFFFFFFFC; // Has to be word aligned.
-	cpu.rset(rd, pc + offset);
+	cpu.rset_lo(rd, pc + offset);
 }
 
 /// ADDPC r0
@@ -821,7 +820,7 @@ fn thumb_addsp(cpu: &mut ArmCpu, instr: u32, rd: u32) {
 	cpu.clock_prefetch_thumb();
 	let offset = (instr & 0xff) << 2;
 	let sp = cpu.rget(SP);
-	cpu.rset(rd, sp + offset);
+	cpu.rset_lo(rd, sp + offset);
 }
 
 /// ADDSP r0
@@ -1141,7 +1140,7 @@ fn thumb_ldmia(cpu: &mut ArmCpu, instr: u32, rb: u32) {
 			thumb_ldm_single(cpu, r, &mut address);
 		}
 	}
-	cpu.rset(rb, address);
+	cpu.rset_lo(rb, address);
 }
 
 /// LDMIA r0
