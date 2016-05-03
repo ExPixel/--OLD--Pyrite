@@ -16,41 +16,6 @@ const GBA_SCREEN_HEIGHT: u32 = 160;
 struct Vertex { position: [f32; 2], tex_coords: [f32; 2] }
 implement_vertex!(Vertex, position, tex_coords);
 
-static VERTEX_SHADER_SRC: &'static str = r#"
-#version 140
-
-in vec2 position;
-in vec2 tex_coords;
-out vec2 v_tex_coords;
-
-void main() {
-    v_tex_coords = tex_coords;
-    gl_Position = vec4(position, 0.0, 1.0);
-}
-"#;
-
-static FRAGMENT_SHADER_SRC: &'static str = r#"
-#version 140
-
-// The Gamma of the GBA screen.
-// Got these values from:
-// http://codewitchgamedev.blogspot.com/2015/08/emulating-gbas-display-with-gamma.html
-#define GAMMA_R 4.0
-#define GAMMA_G 3.0
-#define GAMMA_B 1.4
-
-in vec2 v_tex_coords;
-out vec4 color;
-
-uniform sampler2D tex;
-
-void main() {
-	vec4 tcolor = texture(tex, v_tex_coords);
-	tcolor.rgb = vec3(pow(tcolor.r, GAMMA_R), pow(tcolor.g, GAMMA_G), pow(tcolor.b, GAMMA_B));
-    color = tcolor;
-}
-"#;
-
 const DEFAULT_SCALE: u32 = 1;
 
 pub struct GbaDevice {
@@ -69,6 +34,10 @@ impl GbaDevice {
 		if ENABLE_VSYNC { display_builder = display_builder.with_vsync(); }
 		let display = display_builder.build_glium().unwrap();
 
+		// #TODO fixy fixy
+		let vertex_shader_src = ::util::io::read_file_into_string("data/shaders/gba.vert").unwrap();
+		let fragment_shader_src = ::util::io::read_file_into_string("data/shaders/gba.frag").unwrap();
+
 		let shape = vec![
 			Vertex { position: [1.0, 1.0], tex_coords: [1.0, 0.0] },
 			Vertex { position: [-1.0, 1.0], tex_coords: [0.0, 0.0] },
@@ -79,7 +48,7 @@ impl GbaDevice {
 		];
 		let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 		let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
-		let program = glium::Program::from_source(&display, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC, None).unwrap();
+		let program = glium::Program::from_source(&display, &vertex_shader_src, &fragment_shader_src, None).unwrap();
 
 		let texture = Texture2d::empty_with_format(&display,
 						UncompressedFloatFormat::U8U8U8, MipmapsOption::EmptyMipmaps,
