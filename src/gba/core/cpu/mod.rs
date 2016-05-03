@@ -13,42 +13,9 @@ use self::clock::*;
 const SWI_VECTOR: u32 = 0x08;
 const HWI_VECTOR: u32 = 0x18;
 
-struct Pipeline<T : Copy> {
-	fetched: T,
-	decoded: T,
-	count: u8
-}
-
-impl<T : Copy> Pipeline<T> {
-	pub fn new(init_to: T) -> Pipeline<T> {
-		Pipeline {
-			fetched: init_to,
-			decoded: init_to,
-			count: 0u8
-		}
-	}
-
-	pub fn flush(&mut self) {
-		self.count = 0;
-	}
-
-	pub fn next(&mut self, instr: T) {
-		self.decoded = self.fetched;
-		self.fetched = instr;
-		if !self.ready() {
-			self.count += 1;
-		}
-	}
-
-	/// Returns true if this pipeline is ready to execute.
-	pub fn ready(&self) -> bool { self.count > 1 }
-}
-
-
 /// GameBoy ARM7TDMI Cpu.
 pub struct ArmCpu {
-	thumb_pipeline: Pipeline<u16>,
-	arm_pipeline: Pipeline<u32>,
+	pub prefetch_wait: u8,
 	pub registers: ArmRegisters,
 	pub memory: GbaMemory,
 	pub clock: ArmCpuClock,
@@ -58,13 +25,24 @@ pub struct ArmCpu {
 impl ArmCpu {
 	pub fn new() -> ArmCpu {
 		ArmCpu {
-			thumb_pipeline: Pipeline::new(0u16),
-			arm_pipeline: Pipeline::new(0u32),
+			prefetch_wait: 2,
 			registers: ArmRegisters::new(),
 			memory: GbaMemory::new(),
 			clock: ArmCpuClock::new(),
 			branched: false
 		}
+	}
+
+	pub fn pipeline_ready(&self) -> bool {
+		self.prefetch_wait == 0
+	}
+
+	pub fn pipeline_flush(&mut self) {
+		self.prefetch_wait = 2
+	}
+
+	pub fn pipeline_next(&mut self) {
+		self.prefetch_wait -= 1;
 	}
 
 	/// Advances the ARM pipeline.
@@ -171,19 +149,22 @@ impl ArmCpu {
 	fn arm_tick(&mut self) {
 		let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 
-		if self.arm_pipeline.ready() {
-			let decoded = self.arm_pipeline.decoded;
+		if self.pipeline_ready() {
+			let e = self.get_pc() - 8;
+			let decoded = self.memory.read32(e);
 			let condition = (decoded >> 28) & 0xf;
 			if self.check_condition(condition) {
 				before_execution(exec_addr, self); // #TODO remove this debug code.
 				execute_arm(self, decoded);
 				after_execution(exec_addr, self); // #TODO remove this debug code.
 			}
+		} else {
+			self.pipeline_next();
 		}
 
 		if self.branched {
 			self.align_pc();
-			self.arm_pipeline.flush();
+			self.pipeline_flush();
 			self.branched = false;
 			self.fill_pipeline();
 
@@ -195,25 +176,26 @@ impl ArmCpu {
 			}
 		} else {
 			let pc = self.get_pc();
-			let next = self.memory.read32(pc);
 			self.registers.set(REG_PC, pc + 4);
-			self.arm_pipeline.next(next);
 		}
 	}
 
 	fn thumb_tick(&mut self) {
 		let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 
-		if self.thumb_pipeline.ready() {
-			let decoded = self.thumb_pipeline.decoded as u32;
+		if self.pipeline_ready() {
+			let e = self.get_pc() - 4;
+			let decoded = self.memory.read32(e);
 			before_execution(exec_addr, self); // #TODO remove this debug code.
 			execute_thumb(self, decoded);
 			after_execution(exec_addr, self); // #TODO remove this debug code.
+		} else {
+			self.pipeline_next();
 		}
 
 		if self.branched {
 			self.align_pc(); // half-word aligning the program counter for THUMB mode.
-			self.thumb_pipeline.flush();
+			self.pipeline_flush();
 			self.branched = false;
 			self.fill_pipeline();
 
@@ -225,9 +207,7 @@ impl ArmCpu {
 			}
 		} else {
 			let pc = self.get_pc();
-			let next = self.memory.read16(pc);
 			self.registers.set(REG_PC, pc + 2);
-			self.thumb_pipeline.next(next);
 		}
 	}
 
@@ -309,11 +289,7 @@ impl ArmCpu {
 	/// Returns true if the program counter is at an executable
 	/// location.
 	pub fn executable(&self) -> bool {
-		let ready = if self.thumb_mode() {
-			self.thumb_pipeline.ready()
-		} else {
-			self.arm_pipeline.ready()
-		};
+		let ready = self.pipeline_ready();
 
 		if ready {
 			let pc = self.get_exec_address();
@@ -366,9 +342,6 @@ impl ArmCpu {
 		let next_pc = self.get_pc() - 4;
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
-		// self.align_pc();
-		// self.arm_pipeline.flush();
-		// self.branched = false;
 	}
 
 	/// Perform Software Interrupt:
@@ -384,9 +357,6 @@ impl ArmCpu {
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, SWI_VECTOR); // The tick function will handle flushing the pipeline.
 		self.registers.clearf_t(); // Enters ARM mode.
-		// self.align_pc();
-		// self.thumb_pipeline.flush();
-		// self.branched = false;
 	}
 
 	pub fn thumb_swi(&mut self) {
@@ -412,35 +382,25 @@ impl ArmCpu {
 	}
 
 	pub fn fill_arm_pipeline(&mut self) {
-		if self.arm_pipeline.count == 0 {
+		if self.prefetch_wait == 2 {
 			let pc = self.get_pc();
-			let mut next = self.memory.read32(pc);
-			self.arm_pipeline.next(next);
-			next = self.memory.read32(pc + 4);
-			self.arm_pipeline.next(next);
 			self.registers.set(REG_PC, pc + 8);
-		} else if self.arm_pipeline.count == 1 {
+		} else if self.prefetch_wait == 1 {
 			let pc = self.get_pc();
-			let next = self.memory.read32(pc);
 			self.registers.set(REG_PC, pc + 4);
-			self.arm_pipeline.next(next);
 		}
+		self.prefetch_wait = 0;
 	}
 
 	pub fn fill_thumb_pipeline(&mut self) {
-		if self.thumb_pipeline.count == 0 {
+		if self.prefetch_wait == 2 {
 			let pc = self.get_pc();
-			let mut next = self.memory.read16(pc);
-			self.thumb_pipeline.next(next);
-			next = self.memory.read16(pc + 2);
-			self.thumb_pipeline.next(next);
 			self.registers.set(REG_PC, pc + 4);
-		} else if self.thumb_pipeline.count == 1 {
+		} else if self.prefetch_wait == 1 {
 			let pc = self.get_pc();
-			let next = self.memory.read16(pc);
-			self.thumb_pipeline.next(next);
 			self.registers.set(REG_PC, pc + 2);
 		}
+		self.prefetch_wait = 0;
 	}
 
 	/// The branch part of the hardware interrupt with the state
@@ -484,8 +444,7 @@ impl ArmCpu {
 		self.rset(REG_LR, next_pc);
 		self.rset(REG_PC, HWI_VECTOR);
 		self.registers.clearf_t(); // Enters ARM mode.
-		self.thumb_pipeline.flush();
-		self.arm_pipeline.flush();
+		self.pipeline_flush();
 		self.align_pc();
 		self.branched = false;
 	}
@@ -501,11 +460,10 @@ impl ArmCpu {
 	/// Returns the address of the instruction currently
 	/// being executed.
 	pub fn get_exec_address(&self) -> u32 {
+		let c = (2 - self.prefetch_wait) as u32;
 		if self.thumb_mode() {
-			let c = self.thumb_pipeline.count as u32;
 			(self.registers.get(15) - (c * 2))
 		} else {
-			let c = self.arm_pipeline.count as u32;
 			(self.registers.get(15) - (c * 4))
 		}
 	}
