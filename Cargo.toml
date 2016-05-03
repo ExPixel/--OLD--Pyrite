@@ -8,6 +8,7 @@ default = ["emulate-swi"]
 
 # The CPU will emulate software interrupts rather than
 # jumping to the code in the BIOS.
+# TODO I don't actually do this.
 emulate-swi = []
 
 [profile.dev]
