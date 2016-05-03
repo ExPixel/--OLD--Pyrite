@@ -1,4 +1,5 @@
 pub mod frame_counter;
+pub mod io;
 
 macro_rules! max {
 	($a:expr, $b:expr) => ({
