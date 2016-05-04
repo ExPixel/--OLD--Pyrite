@@ -6,4 +6,4 @@ Cargo.lock
 roms/legal/
 
 # I store a lot of debug information in here.
-debug/
+debug-info/
