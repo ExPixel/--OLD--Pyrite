@@ -1,4 +1,6 @@
 use super::super::gba::Gba;
+use super::super::gba::core::memory::*;
+use super::bitdesc::*;
 use std::default::Default;
 use rustbox::{Color, RustBox};
 use rustbox::Key;
@@ -17,6 +19,7 @@ const IMPLEMENTED_COMMANDS: &'static [&'static str] = &[
 	"exit",
 	"kill-emulator",
 	"print-memory",
+	"ioreg",
 	"help"
 ];
 
@@ -129,6 +132,14 @@ impl<'a> GbaDebugger<'a> {
 				self.print_help();
 			},
 
+			"ioreg" => {
+				if arguments.len() < 1 {
+					self.too_few_args(1, &command_name, &arguments);
+					return;
+				}
+				self.cmd_ioreg(&arguments);
+			},
+
 			_ => {
 				self.write_error_line(&format!("Unrecognized command '{}'", command_name));
 			}
@@ -137,6 +148,29 @@ impl<'a> GbaDebugger<'a> {
 
 	pub fn too_few_args(&self, arg_req: usize, cname: &String, cargs: &[String]) {
 		self.write_error_line(&format!("Command {} requires {} arguments ({} provided)", cname, arg_req, cargs.len()));
+	}
+
+	pub fn cmd_ioreg(&self, args: &[String]) {
+		macro_rules! generate_reg_descriptions {
+			($($cmd_arg: expr, $reg_name: ident, $reg_desc_type: ident)+) => (
+				match args[0].to_ascii_lowercase().as_ref() {
+					// "dispcnt" => ("DISPCNT", RegDispcntDesc::from(self.gba.cpu.memory.get_reg(ioreg::DISPCNT) as u32)),
+					$(
+						$cmd_arg => (stringify!($reg_name), $reg_desc_type::from(self.gba.cpu.memory.get_reg(ioreg::$reg_name) as u32)),
+					)+
+					_ => {
+						self.write_error_line(&format!("Unsupported IO register `{}`.", args[0]));
+						return;
+					}
+				};
+			)
+		}
+
+		let data = generate_reg_descriptions!(
+			"dispcnt", DISPCNT, RegDispcntDesc
+		);
+
+		self.print_bitdesc_data(data.0, data.1);
 	}
 
 	pub fn cmd_print_memory_table(&self, args: &[String]) {
@@ -180,6 +214,23 @@ impl<'a> GbaDebugger<'a> {
 				column += 3;
 				address += 1;
 			}
+			row += 1;
+		}
+	}
+
+	pub fn print_bitdesc_data<'l, D: BitDescriptor + Sized>(&self, desc_name: &'l str, desc: D) {
+		let mut row = DSTART;
+
+		self.rustbox.print(1, row, rustbox::RB_BOLD, Color::Default, Color::Default, "REGISTER:");
+		self.rustbox.print(12, row, rustbox::RB_BOLD, Color::Yellow, Color::Default, desc_name);
+		row += 1;
+
+		for i in 0..desc.property_count() {
+			let property_name_len = desc.get_property_name(i).len();
+			let property_value = desc.get_property_value(i).to_string();
+			self.rustbox.print(1, row, rustbox::RB_BOLD, Color::Default, Color::Default, desc.get_property_name(i));
+			self.rustbox.print(property_name_len + 1, row, rustbox::RB_BOLD, Color::Default, Color::Default, ": ");
+			self.rustbox.print(property_name_len + 3, row, rustbox::RB_BOLD, Color::Yellow, Color::Default, &property_value);
 			row += 1;
 		}
 	}

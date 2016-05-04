@@ -1,5 +1,6 @@
 pub mod armdis;
 pub mod debugger;
+pub mod bitdesc;
 
 // not ready.
 // pub mod armasm;
