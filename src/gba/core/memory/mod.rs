@@ -1,5 +1,9 @@
 pub mod ioreg;
 
+// #TODO reduce the calls to transform.
+// I have yet to see a memory access that reads/writes from more 
+// than one memory area.
+
 use self::ioreg::IORegister8;
 use self::ioreg::IORegister16;
 use self::ioreg::IORegister32;
