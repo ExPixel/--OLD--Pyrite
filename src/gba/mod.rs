@@ -68,7 +68,7 @@ pub struct GbaExtras {
 	paused: bool,
 	request_pause: bool,
 
-	request_debugger: bool,
+	pub request_debugger: bool,
 
 	// #TODO remove temporary code.
 	request_save_state: u8 // 0 - nothing, 1 - save, 2 - load

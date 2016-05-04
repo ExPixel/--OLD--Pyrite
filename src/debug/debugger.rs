@@ -140,6 +140,11 @@ impl<'a> GbaDebugger<'a> {
 				self.cmd_ioreg(&arguments);
 			},
 
+			"frame" => { // This will run one frame of the GBA.
+				self.running = false;
+				self.gba.extras.request_debugger = true;
+			},
+
 			_ => {
 				self.write_error_line(&format!("Unrecognized command '{}'", command_name));
 			}
