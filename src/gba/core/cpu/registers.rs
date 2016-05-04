@@ -62,6 +62,7 @@ pub const REG_LR: u32 = 14;
 /// Program Counter
 pub const REG_PC: u32 = 15;
 
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ArmRegisters {
 	internal_registers: [u32; 31],
 

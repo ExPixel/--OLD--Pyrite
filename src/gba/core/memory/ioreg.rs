@@ -187,7 +187,7 @@ macro_rules! put_hi16 {
 	)
 }
 
-#[derive(Default)]
+#[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct DMAInternalReg {
 	pub reload: bool,
 	pub repeat: bool,
@@ -210,7 +210,7 @@ pub struct DMAInternalReg {
 	pub first_transfer: bool
 }
 
-#[derive(Default)]
+#[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct TimerInternalReg {
 	pub prescaler: u32,
 
@@ -229,7 +229,7 @@ pub struct TimerInternalReg {
 }
 
 // Internal IO registers.
-#[derive(Default)]
+#[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct InternalRegisters {
 	pub bg2x: u32,
 	pub bg2y: u32,

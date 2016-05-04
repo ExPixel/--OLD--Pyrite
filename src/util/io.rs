@@ -12,8 +12,8 @@ pub fn read_file_into_string<'a>(file_path: &'a str) -> Result<String, String> {
 
 pub fn read_file_into_string_buf<'a>(file_path: &'a str, buf: &mut String) -> Result<usize, String> {
 	let mut f = match File::open(file_path) {
-	    Ok(file) => file,
-	    Err(e) => return Err(format!("Failed to open file `{}`. Error: {}", file_path, e)),
+		Ok(file) => file,
+		Err(e) => return Err(format!("Failed to open file `{}`. Error: {}", file_path, e)),
 	};
 
 	return match f.read_to_string(buf) {

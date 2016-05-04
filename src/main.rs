@@ -4,6 +4,8 @@ pub mod debug;
 
 extern crate time;
 #[macro_use] extern crate glium;
+extern crate rustc_serialize;
+extern crate bincode;
 
 use std::io::prelude::*;
 use std::env;

@@ -1,5 +1,5 @@
 
-
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ArmCpuClock {
 	/// The number of cycles that have gone by.
 	pub cycles: u64,

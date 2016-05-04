@@ -26,10 +26,10 @@ impl ArmCpu {
 	pub fn new() -> ArmCpu {
 		ArmCpu {
 			prefetch_wait: 2,
+			branched: false,
 			registers: ArmRegisters::new(),
 			memory: GbaMemory::new(),
 			clock: ArmCpuClock::new(),
-			branched: false
 		}
 	}
 

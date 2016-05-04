@@ -1,6 +1,7 @@
 pub mod core;
 pub mod hw;
 pub mod device;
+pub mod serialization;
 
 
 use glium::glutin::{Event, ElementState, VirtualKeyCode};
@@ -15,6 +16,7 @@ use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
 use self::hw::dma::*;
+use self::serialization::*;
 
 // #TODO remove this debug code.
 // I'm using vsync now and because my monitor's refresh rate is 60Hz
@@ -62,14 +64,20 @@ pub const INT_GAMEPAK: u16 = 0x2000;
 #[derive(Default)]
 pub struct GbaExtras {
 	paused: bool,
-	request_pause: bool
+	request_pause: bool,
+
+	// #TODO remove temporary code.
+	request_save_state: u8 // 0 - nothing, 1 - save, 2 - load
 }
 
 impl GbaExtras {
 	pub fn new() -> GbaExtras {
 		GbaExtras {
 			paused: false,
-			request_pause: false
+			request_pause: false,
+
+			// #TODO remove temporary code.
+			request_save_state: 0
 		}
 	}
 }
@@ -148,6 +156,21 @@ impl Gba {
 		self.device.render(&self.lcd.screen_buffer);
 		let end_time = time::precise_time_ns();
 		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
+
+		// #TODO remove temporary code.
+		// Because of the current way the Gba ticks,
+		// this should be done in the end of a frame to preserve what
+		// little timing we have.
+		if self.extras.request_save_state != 0 {
+			if self.extras.request_save_state == 1 {
+				self.save_to_file();
+				println!("Saved state to file.");
+			} else if self.extras.request_save_state == 2 {
+				self.load_from_file();
+				println!("Loaded state from file.");
+			}
+			self.extras.request_save_state = 0;
+		}
 	}
 
 	fn update_window_title(&mut self, _: u64, frame_start_time: f64, render_start_time: f64, end_time: f64) {
@@ -399,8 +422,19 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::R)) => {
 					self.cpu.reg_dump_pretty();
 				},
+
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::P)) => {
 					self.extras.request_pause = !self.extras.paused;
+				},
+				
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Comma)) => { // The '<' key for me.
+					self.extras.request_save_state = 1;
+					println!("Requested Save...");
+				},
+				
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Period)) => { // The '>' key for me.
+					self.extras.request_save_state = 2;
+					println!("Requested Load...");
 				},
 
 			// DEBUGGING LAYERS IN GRAPHICS:

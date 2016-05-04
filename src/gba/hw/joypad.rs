@@ -2,6 +2,7 @@ use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
 use glium::glutin::VirtualKeyCode;
 
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct GbaJoypad {
 	key_input: u16,
 	dirty: bool
