@@ -6,6 +6,7 @@ extern crate time;
 #[macro_use] extern crate glium;
 extern crate rustc_serialize;
 extern crate bincode;
+extern crate rustbox;
 
 use std::io::prelude::*;
 use std::env;

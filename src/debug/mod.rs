@@ -1,4 +1,5 @@
 pub mod armdis;
+pub mod debugger;
 
 // not ready.
 // pub mod armasm;

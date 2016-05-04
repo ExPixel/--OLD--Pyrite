@@ -18,6 +18,8 @@ use self::hw::joypad::GbaJoypad;
 use self::hw::dma::*;
 use self::serialization::*;
 
+use super::debug::debugger::GbaDebugger;
+
 // #TODO remove this debug code.
 // I'm using vsync now and because my monitor's refresh rate is 60Hz
 // I don't limit the FPS, this is bad to leave false though :P
@@ -66,6 +68,8 @@ pub struct GbaExtras {
 	paused: bool,
 	request_pause: bool,
 
+	request_debugger: bool,
+
 	// #TODO remove temporary code.
 	request_save_state: u8 // 0 - nothing, 1 - save, 2 - load
 }
@@ -75,6 +79,7 @@ impl GbaExtras {
 		GbaExtras {
 			paused: false,
 			request_pause: false,
+			request_debugger: false,
 
 			// #TODO remove temporary code.
 			request_save_state: 0
@@ -170,6 +175,11 @@ impl Gba {
 				println!("Loaded state from file.");
 			}
 			self.extras.request_save_state = 0;
+		}
+
+		if self.extras.request_debugger {
+			self.extras.request_debugger = false;
+			GbaDebugger::new(self).start();
 		}
 	}
 
@@ -435,6 +445,11 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Period)) => { // The '>' key for me.
 					self.extras.request_save_state = 2;
 					println!("Requested Load...");
+				},
+				
+				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::H)) => { // The '>' key for me.
+					self.extras.request_debugger = true;
+					println!("Request Debugger...");
 				},
 
 			// DEBUGGING LAYERS IN GRAPHICS:
