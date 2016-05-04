@@ -16,7 +16,8 @@ const MAX_HISTORY_SIZE: usize = 32;
 const IMPLEMENTED_COMMANDS: &'static [&'static str] = &[
 	"exit",
 	"kill-emulator",
-	"print-memory"
+	"print-memory",
+	"help"
 ];
 
 pub struct GbaDebugger<'a> {
@@ -117,11 +118,15 @@ impl<'a> GbaDebugger<'a> {
 			},
 
 			"print-memory" => {
-				if arguments.len() < 2 {
-					self.too_few_args(2, &command_name, &arguments);
+				if arguments.len() < 1 {
+					self.too_few_args(1, &command_name, &arguments);
 					return;
 				}
 				self.cmd_print_memory_table(&arguments);
+			},
+
+			"help" => {
+				self.print_help();
 			},
 
 			_ => {
@@ -136,13 +141,18 @@ impl<'a> GbaDebugger<'a> {
 
 	pub fn cmd_print_memory_table(&self, args: &[String]) {
 		let start = match auto_radix_parse_u32(&args[0]) {
-			Some(_start) => _start,
+			Some(_start) => _start & !(0xF),
 			None => { self.write_error_line(&format!("{} is not a number.", args[0])); return }
 		};
 
-		let end = match auto_radix_parse_u32(&args[1]) {
-			Some(_end) => _end,
-			None => { self.write_error_line(&format!("{} is not a number.", args[1])); return }
+
+		let end = if args.len() > 1 {
+			match auto_radix_parse_u32(&args[1]) {
+				Some(_end) => _end,
+				None => { self.write_error_line(&format!("{} is not a number.", args[1])); return }
+			}
+		} else {
+			start + 2048
 		};
 
 		self.print_memory_table(start, end);
@@ -161,16 +171,39 @@ impl<'a> GbaDebugger<'a> {
 		let mut column;
 
 		while address <= end && row < _height {
-			self.rustbox.print(1, row, rustbox::RB_BOLD, Color::Red, Color::Default, &format!("{:08X}", address));
+			self.rustbox.print(1, row, rustbox::RB_BOLD, Color::Default, Color::Default, &format!("{:08X}", address));
 			column = 9;
 			while column < (_width - 3) && column < 56 {
 				let byte = self.gba.cpu.memory.read8(address);
-				self.rustbox.print(column, row, rustbox::RB_NORMAL, Color::Red, Color::Default,
+				self.rustbox.print(column, row, rustbox::RB_NORMAL, Color::Default, Color::Default,
 					&format!(" {:02X}", byte));
 				column += 3;
 				address += 1;
 			}
 			row += 1;
+		}
+	}
+
+	pub fn print_help(&self) {
+		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default, "Available Commands:");
+		let mut row = DSTART + 1;
+		let mut column = 1;
+		let mut max_column_width = 0;
+		for i in 0..IMPLEMENTED_COMMANDS.len() {
+			let cmd = IMPLEMENTED_COMMANDS[i];
+			self.rustbox.print(column, row, rustbox::RB_BOLD, Color::Green, Color::Default, cmd);
+
+			if cmd.len() > max_column_width {
+				max_column_width = cmd.len();
+			}
+
+			row += 1;
+
+			if row > self.rustbox.height() {
+				row = DSTART + 1;
+				column += max_column_width + 1;
+				max_column_width = 0;
+			}
 		}
 	}
 
@@ -199,13 +232,29 @@ impl<'a> GbaDebugger<'a> {
 	}
 
 	pub fn complete_command(&mut self) {
+		let mut set_command = false;
+		let mut create_space = false;
+
 		for i in 0..IMPLEMENTED_COMMANDS.len() {
 			let test = IMPLEMENTED_COMMANDS[i];
 			if test.starts_with(&self.command_buffer.to_ascii_lowercase()) {
-				self.command_buffer = String::from(test);
-				self.command_buffer.push(' ');
-				self.display_command();
+				if set_command {
+					create_space = false;
+					break
+				} else {
+					self.command_buffer = String::from(test);
+					set_command = true;
+					create_space = true;
+				}
 			}
+		}
+
+		if create_space {
+			self.command_buffer.push(' ');
+		}
+
+		if set_command {
+			self.display_command();
 		}
 	}
 

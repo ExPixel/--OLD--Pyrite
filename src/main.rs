@@ -147,6 +147,7 @@ fn main() {
 			let mut gba = Box::new(Gba::new());
 			load_bios(&mut gba.cpu.memory);
 			load_rom(&mut gba, rom_file);
+			println!("Press H to open up the debugger.");
 			run_gba(&mut gba);
 		}
 	} else {
