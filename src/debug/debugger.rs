@@ -156,7 +156,7 @@ impl<'a> GbaDebugger<'a> {
 				match args[0].to_ascii_lowercase().as_ref() {
 					// "dispcnt" => ("DISPCNT", RegDispcntDesc::from(self.gba.cpu.memory.get_reg(ioreg::DISPCNT) as u32)),
 					$(
-						$cmd_arg => (stringify!($reg_name), $reg_desc_type::from(self.gba.cpu.memory.get_reg(ioreg::$reg_name) as u32)),
+						$cmd_arg => (stringify!($reg_name), Box::new($reg_desc_type::from(self.gba.cpu.memory.get_reg(ioreg::$reg_name) as u32))),
 					)+
 					_ => {
 						self.write_error_line(&format!("Unsupported IO register `{}`.", args[0]));
@@ -166,8 +166,13 @@ impl<'a> GbaDebugger<'a> {
 			)
 		}
 
-		let data = generate_reg_descriptions!(
+		let data: (&str, Box<BitDescriptor>) = generate_reg_descriptions!(
 			"dispcnt", DISPCNT, RegDispcntDesc
+			"dispstat", DISPSTAT, RegDispStat
+			"bg0cnt", BG0CNT, RegBGCnt
+			"bg1cnt", BG1CNT, RegBGCnt
+			"bg2cnt", BG2CNT, RegBGCnt
+			"bg3cnt", BG3CNT, RegBGCnt
 		);
 
 		self.print_bitdesc_data(data.0, data.1);
@@ -218,7 +223,7 @@ impl<'a> GbaDebugger<'a> {
 		}
 	}
 
-	pub fn print_bitdesc_data<'l, D: BitDescriptor + Sized>(&self, desc_name: &'l str, desc: D) {
+	pub fn print_bitdesc_data<'l>(&self, desc_name: &'l str, desc: Box<BitDescriptor>) {
 		let mut row = DSTART;
 
 		self.rustbox.print(1, row, rustbox::RB_BOLD, Color::Default, Color::Default, "REGISTER:");
