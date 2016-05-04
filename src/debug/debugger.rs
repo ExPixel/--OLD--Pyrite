@@ -13,8 +13,7 @@ const DSTART: usize = 3; // display start
 
 const MAX_HISTORY_SIZE: usize = 32;
 
-const IMPLEMENTED_COMMANDS_LEN: usize = 3;
-const IMPLEMENTED_COMMANDS: [&'static str; IMPLEMENTED_COMMANDS_LEN] = [
+const IMPLEMENTED_COMMANDS: &'static [&'static str] = &[
 	"exit",
 	"kill-emulator",
 	"print-memory"
@@ -200,7 +199,7 @@ impl<'a> GbaDebugger<'a> {
 	}
 
 	pub fn complete_command(&mut self) {
-		for i in 0..IMPLEMENTED_COMMANDS_LEN {
+		for i in 0..IMPLEMENTED_COMMANDS.len() {
 			let test = IMPLEMENTED_COMMANDS[i];
 			if test.starts_with(&self.command_buffer.to_ascii_lowercase()) {
 				self.command_buffer = String::from(test);
@@ -268,7 +267,7 @@ impl<'a> GbaDebugger<'a> {
 				return;
 			}
 		}
-		
+
 		self.command_history.push(command);
 		if self.command_history.len() > MAX_HISTORY_SIZE {
 			self.command_history.remove(0);
