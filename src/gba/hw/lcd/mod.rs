@@ -250,7 +250,7 @@ impl GbaLcd {
 					blending_params.source_on_top = false;
 				} else {
 					blending_params.source_on_top = false;
-					// blending_params.target_overwritten = true;
+					blending_params.target_overwritten = true;
 				}
 			}
 		};

@@ -7,6 +7,9 @@ use rustbox::Key;
 use rustbox::Style;
 use rustbox;
 use std::ascii::AsciiExt;
+use std::time::Duration;
+
+use glium::glutin;
 
 const HEADER_LINE: usize = 0;
 const COMMAND_LINE: usize = 1;
@@ -55,7 +58,7 @@ impl<'a> GbaDebugger<'a> {
 
 		while self.running {
 			self.rustbox.present();
-			match self.rustbox.poll_event(false) {
+			match self.rustbox.peek_event(Duration::from_millis(30), false) {
 				Ok(rustbox::Event::KeyEvent(key)) => {
 					match key {
 						Key::Char(c) => { self.char_typed(c) },
@@ -69,6 +72,15 @@ impl<'a> GbaDebugger<'a> {
 				},
 				Err(e) => panic!("Failed to read rustbox event: {}", e),
 				_ => {}
+			}
+			for event in self.gba.device.display.poll_events() {
+				match event {
+					glutin::Event::Closed => {
+						self.running = false;
+						self.gba.request_exit = true;
+					},
+					_ => {} // We throw away most of the glutin events.
+				}
 			}
 		}
 	}
@@ -87,6 +99,60 @@ impl<'a> GbaDebugger<'a> {
 		}
 	}
 
+	pub fn parse_command(command_string: &String) -> Option<(String, Vec<String>)> {
+		let trimmed = command_string.trim();
+		if trimmed.len() == 0 { return None }
+		let mut command_name: Option<String> = None;
+		let mut command_args: Vec<String> = Vec::new();
+		let mut parsed_command_name = false;
+		let mut in_string = false;
+		let mut escaped = false;
+		let mut buffer = String::new();
+		for c in trimmed.chars() {
+			if c == '"' {
+				if escaped {
+					buffer.push(c);
+				} else {
+					if in_string {
+						in_string = false;
+						if parsed_command_name { command_args.push(buffer.clone()); }
+						else { command_name = Some(buffer.clone()); parsed_command_name = true; }
+						buffer.clear();
+					} else {
+						in_string = true;
+					}
+				}
+			} else {
+				if (c as u32) <= 32 {
+					if !in_string {
+						if parsed_command_name { command_args.push(buffer.clone()); }
+						else { command_name = Some(buffer.clone()); parsed_command_name = true; }
+						buffer.clear();
+					} else {
+						buffer.push(c);
+					}
+				} else if c == '\\' {
+					if escaped { buffer.push(c) }
+					else { escaped = true; continue; }
+				} else {
+					buffer.push(c);
+				}
+			}
+			escaped = false;
+		}
+
+		if buffer.len() > 0 {
+			if parsed_command_name { command_args.push(buffer.clone()); }
+			else { command_name = Some(buffer.clone()); }
+		}
+		
+		if let Some(cname) = command_name {
+			return Some((cname, command_args))
+		} else {
+			return None
+		}
+	}
+
 	pub fn process_command(&mut self) {
 		let history = self.command_buffer.clone();
 		self.push_to_history(history);
@@ -94,22 +160,13 @@ impl<'a> GbaDebugger<'a> {
 		self.command_history_index = -1;
 		self.clear_row(2); // Clears the error line.
 
-		let command_name;
-		let mut arguments: Vec<String> = Vec::new();
-
-		{
-			let mut split = self.command_buffer.split_whitespace();
-			if let Some(name) = split.next() {
-				command_name = String::from(name);
-			} else {
+		let (command_name, arguments) = match Self::parse_command(&self.command_buffer) {
+			Some((c, a)) => (c, a),
+			None => {
 				self.write_error_line("No command provided.");
 				return
 			}
-
-			while let Some(arg) = split.next() {
-				arguments.push(String::from(arg));
-			}
-		}
+		};
 
 		self.clear_display_area();
 		match command_name.to_ascii_lowercase().as_ref() {
