@@ -7,3 +7,5 @@ roms/legal/
 
 # I store a lot of debug information in here.
 debug-info/
+
+data/sav/

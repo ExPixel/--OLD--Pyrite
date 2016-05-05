@@ -13,40 +13,38 @@ const PYRITE_HEADER: [u8; 8] = [0x70, 0x79, 0x72, 0x69, 0x74, 0x65, 0x39, 0x36];
 /// The version of the current format.
 const VERSION: u8 = 0;
 
-
-// #TODO remove this temporary code.
-const SAVE_FILE_PATH: &'static str = "data/temp/temp.psav";
-
 pub trait BinarySerialization {
 	fn serialize(&self, writer: &mut Write);
 	fn deserialize<R: Read>(&mut self, reader: &mut R) -> Result<&'static str, &'static str>;
 
 	// #TODO remove this temporary code.
-	fn save_to_file(&self);
-	fn load_from_file(&mut self);
+	fn save_to_file<'a>(&self, file_path: &'a str) -> Result<&'static str, String>;
+	fn load_from_file<'a>(&mut self, file_path: &'a str) -> Result<&'static str, String>;
 }
 
 impl BinarySerialization for Gba {
 	// #TODO remove this temporary code.
-	fn save_to_file(&self) {
-		let _save_path = Path::new(SAVE_FILE_PATH);
+	fn save_to_file<'a>(&self, file_path: &'a str) -> Result<&'static str, String> {
+		let _save_path = Path::new(file_path);
 		let _save_path_parent = _save_path.parent().expect("Getting save file path parent directory");
 		create_dir_all(_save_path_parent).expect("Creating save file path parent directories");
 
-		let mut f = match File::create(SAVE_FILE_PATH) {
+		let mut f = match File::create(file_path) {
 			Ok(file) => file,
-			Err(_) => panic!("Failed to open {}", SAVE_FILE_PATH)
+			Err(_) => return Err(format!("Failed to open {}", file_path))
 		};
 		self.serialize(&mut f);
+		return Ok("ok")
 	}
 
 	// #TODO remove this temporary code.
-	fn load_from_file(&mut self) {
-		let mut f = match File::open(SAVE_FILE_PATH) {
+	fn load_from_file<'a>(&mut self, file_path: &'a str) -> Result<&'static str, String> {
+		let mut f = match File::open(file_path) {
 			Ok(file) => file,
-			Err(_) => panic!("Failed to open {}", SAVE_FILE_PATH)
+			Err(_) => return Err(format!("Failed to open {}", file_path))
 		};
 		self.deserialize(&mut f).unwrap();
+		return Ok("ok")
 	}
 
 	fn serialize(&self, w: &mut Write) {

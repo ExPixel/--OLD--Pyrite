@@ -1,4 +1,5 @@
 use super::super::gba::Gba;
+use super::super::gba::serialization::*;
 use super::super::gba::core::memory::*;
 use super::bitdesc::*;
 use std::default::Default;
@@ -23,7 +24,11 @@ const IMPLEMENTED_COMMANDS: &'static [&'static str] = &[
 	"kill-emulator",
 	"print-memory",
 	"ioreg",
-	"help"
+	"help",
+	"frame",
+	"frame-s",
+	"save-state",
+	"load-state"
 ];
 
 pub struct GbaDebugger<'a> {
@@ -198,8 +203,31 @@ impl<'a> GbaDebugger<'a> {
 			},
 
 			"frame" => { // This will run one frame of the GBA.
-				self.running = false;
-				self.gba.extras.request_debugger = true;
+				self.cmd_frame(false, &arguments);
+				// self.running = false;
+				// self.gba.extras.request_debugger = true;
+			},
+
+			"frame-s" => { // This will run one frame of the GBA.
+				self.cmd_frame(true, &arguments);
+				// self.running = false;
+				// self.gba.extras.request_debugger = true;
+			},
+
+			"save-state" => {
+				if arguments.len() < 1 {
+					self.too_few_args(1, &command_name, &arguments);
+					return;
+				}
+				self.cmd_save_state(&arguments);
+			},
+
+			"load-state" => {
+				if arguments.len() < 1 {
+					self.too_few_args(1, &command_name, &arguments);
+					return;
+				}
+				self.cmd_load_state(&arguments);
 			},
 
 			_ => {
@@ -210,6 +238,55 @@ impl<'a> GbaDebugger<'a> {
 
 	pub fn too_few_args(&self, arg_req: usize, cname: &String, cargs: &[String]) {
 		self.write_error_line(&format!("Command {} requires {} arguments ({} provided)", cname, arg_req, cargs.len()));
+	}
+
+	pub fn cmd_save_state(&mut self, args: &[String]) {
+		let sfile = format!("data/sav/{}.psav", args[0]);
+		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default, &format!("Saving state to {}...", sfile));
+		if let Ok(_) = self.gba.save_to_file(&sfile) {
+			self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Green, Color::Default, &format!("Successfully saved state to {}...", sfile));
+		} else {
+			self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Red, Color::Default, &format!("Failed to save state to {}...", sfile));
+		}
+	}
+
+	pub fn cmd_load_state(&mut self, args: &[String]) {
+		let sfile = format!("data/sav/{}.psav", args[0]);
+		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default, &format!("Loading state from {}...", sfile));
+		if let Ok(_) = self.gba.load_from_file(&sfile) {
+			self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Green, Color::Default, &format!("Successfully loaded state from {}...", sfile));
+		} else {
+			self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Red, Color::Default, &format!("Failed to load state from {}...", sfile));
+		}
+	}
+
+	pub fn cmd_frame(&mut self, silent: bool, args: &[String]) {
+		let mut frames = 1;
+
+		if args.len() > 0 {
+			frames = match auto_radix_parse_u32(&args[0]) {
+				Some(_frames) => _frames,
+				None => { self.write_error_line(&format!("{} is not a number.", args[0])); return }
+			};
+		}
+
+		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default, &format!("Running {} frames...", frames));
+		self.rustbox.present();
+		while frames > 0 {
+			self.gba.tick(0);
+			if self.gba.request_exit {
+				self.running = false;
+				self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Green, Color::Default, "Close requested while running frames.");
+				self.rustbox.present();
+				return
+			} else if !silent {
+				self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Yellow, Color::Default, &format!("{} frames remaining...", frames));
+				self.rustbox.present();
+			}
+			frames -= 1;
+		}
+		self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Green, Color::Default, "Finished running frames.");
+		self.rustbox.present();
 	}
 
 	pub fn cmd_ioreg(&self, args: &[String]) {

@@ -16,7 +16,6 @@ use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
 use self::hw::dma::*;
-use self::serialization::*;
 
 use super::debug::debugger::GbaDebugger;
 
@@ -67,11 +66,7 @@ pub const INT_GAMEPAK: u16 = 0x2000;
 pub struct GbaExtras {
 	paused: bool,
 	request_pause: bool,
-
 	pub request_debugger: bool,
-
-	// #TODO remove temporary code.
-	request_save_state: u8 // 0 - nothing, 1 - save, 2 - load
 }
 
 impl GbaExtras {
@@ -79,10 +74,7 @@ impl GbaExtras {
 		GbaExtras {
 			paused: false,
 			request_pause: false,
-			request_debugger: false,
-
-			// #TODO remove temporary code.
-			request_save_state: 0
+			request_debugger: false
 		}
 	}
 }
@@ -154,29 +146,13 @@ impl Gba {
 		println!("-- Shutdown successfully.");
 	}
 
-	fn tick(&mut self, frame: u64) {
+	pub fn tick(&mut self, frame: u64) {
 		let frame_start_time = time::precise_time_ns();
 		self.frame();
 		let render_start_time = time::precise_time_ns();
 		self.device.render(&self.lcd.screen_buffer);
 		let end_time = time::precise_time_ns();
 		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
-
-		// #TODO remove temporary code.
-		// Because of the current way the Gba ticks,
-		// this should be done in the end of a frame to preserve what
-		// little timing we have.
-		if self.extras.request_save_state != 0 {
-			if self.extras.request_save_state == 1 {
-				self.save_to_file();
-				println!("Saved state to file.");
-			} else if self.extras.request_save_state == 2 {
-				self.load_from_file();
-				println!("Loaded state from file.");
-			}
-			self.extras.request_save_state = 0;
-		}
-
 		if self.extras.request_debugger {
 			self.extras.request_debugger = false;
 			GbaDebugger::new(self).start();
@@ -435,16 +411,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::P)) => {
 					self.extras.request_pause = !self.extras.paused;
-				},
-				
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Comma)) => { // The '<' key for me.
-					self.extras.request_save_state = 1;
-					println!("Requested Save...");
-				},
-				
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Period)) => { // The '>' key for me.
-					self.extras.request_save_state = 2;
-					println!("Requested Load...");
 				},
 				
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::H)) => { // The '>' key for me.
