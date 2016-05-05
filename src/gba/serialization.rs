@@ -1,21 +1,27 @@
 use super::Gba;
+use super::core::memory::MEM_BIOS;
+
+use bincode::rustc_serialize::{encode, decode_from};
+use bincode::SizeLimit;
+
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 use std::fs::create_dir_all;
-use bincode::rustc_serialize::{encode, decode_from};
-use bincode::SizeLimit;
-use super::core::memory::MEM_BIOS;
+
+use flate2::Compression;
+use flate2::write::DeflateEncoder;
+use flate2::read::DeflateDecoder;
 
 /// Header for pyrite. It just says pyrite96
 const PYRITE_HEADER: [u8; 8] = [0x70, 0x79, 0x72, 0x69, 0x74, 0x65, 0x39, 0x36];
 
 /// The version of the current format.
-const VERSION: u8 = 0;
+const VERSION: u8 = 1;
 
 pub trait BinarySerialization {
 	fn serialize(&self, writer: &mut Write);
-	fn deserialize<R: Read>(&mut self, reader: &mut R) -> Result<&'static str, &'static str>;
+	fn deserialize(&mut self, reader: &mut Read) -> Result<&'static str, &'static str>;
 
 	// #TODO remove this temporary code.
 	fn save_to_file<'a>(&self, file_path: &'a str) -> Result<&'static str, String>;
@@ -47,7 +53,9 @@ impl BinarySerialization for Gba {
 		return Ok("ok")
 	}
 
-	fn serialize(&self, w: &mut Write) {
+	fn serialize(&self, w_unwrapped: &mut Write) {
+		let mut w = DeflateEncoder::new(w_unwrapped, Compression::Default);
+
 		w.write(&PYRITE_HEADER).expect("Write pyrite header.");
 
 		let data = [
@@ -73,7 +81,9 @@ impl BinarySerialization for Gba {
 		w.write(&ram).expect("Write RAM.");
 	}
 
-	fn deserialize<R: Read>(&mut self, r: &mut R) -> Result<&'static str, &'static str> {
+	fn deserialize(&mut self, r_unwrapped: &mut Read) -> Result<&'static str, &'static str> {
+		let mut r = DeflateDecoder::new(r_unwrapped);
+
 		let mut buffer = [0u8; 16];
 
 		if r.read_exact(&mut buffer[0..8]).is_ok() {
@@ -97,25 +107,25 @@ impl BinarySerialization for Gba {
 			return Err("Failed to read CPU and version information.");
 		}
 
-		if let Ok(cpu_registers) = decode_from(r, SizeLimit::Infinite) {
+		if let Ok(cpu_registers) = decode_from(&mut r, SizeLimit::Infinite) {
 			self.cpu.registers = cpu_registers;
 		} else {
 			return Err("Failed to decode the CPU registers.");
 		}
 
-		if let Ok(cpu_clock) = decode_from(r, SizeLimit::Infinite) {
+		if let Ok(cpu_clock) = decode_from(&mut r, SizeLimit::Infinite) {
 			self.cpu.clock = cpu_clock;
 		} else {
 			return Err("Failed to decode the CPU clock.");
 		}
 
-		if let Ok(joypad) = decode_from(r, SizeLimit::Infinite) {
+		if let Ok(joypad) = decode_from(&mut r, SizeLimit::Infinite) {
 			self.joypad = joypad;
 		} else {
 			return Err("Failed to decode the Joypad data.");
 		}
 
-		if let Ok(internal_regs) = decode_from(r, SizeLimit::Infinite) {
+		if let Ok(internal_regs) = decode_from(&mut r, SizeLimit::Infinite) {
 			self.cpu.memory.internal_regs = internal_regs;
 		} else {
 			return Err("Failed to decode the internal registers.");
