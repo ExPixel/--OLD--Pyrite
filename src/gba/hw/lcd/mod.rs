@@ -16,6 +16,13 @@ pub mod mode3;
 pub mod mode4;
 pub mod mode5;
 
+const MASK_BG0: u16 = 0x01;
+const MASK_BG1: u16 = 0x02;
+const MASK_BG2: u16 = 0x04;
+const MASK_BG3: u16 = 0x08;
+const MASK_OBJ: u16 = 0x10;
+const MASK_SBD: u16 = 0x20; // Screen backdrop.
+
 pub type GbaPixel = u16;
 pub type OutputPixel = (u8, u8, u8);
 pub type GbaLcdLine = Vec<OutputPixel>;
@@ -52,17 +59,17 @@ impl ObjLineInfo {
 	}
 
 	#[inline(always)]
-	pub fn is_transparent(&self, idx: usize) -> bool {
+	pub fn is_semi_transparent(&self, idx: usize) -> bool {
 		(self.data[idx] & 0x10) != 0
 	}
 
 	#[inline(always)]
-	pub fn set_transparent(&mut self, idx: usize) {
+	pub fn set_semi_transparent(&mut self, idx: usize) {
 		self.data[idx] |= 0x10;
 	}
 
 	#[inline(always)]
-	pub fn clear_transparent(&mut self, idx: usize) {
+	pub fn clear_semi_transparent(&mut self, idx: usize) {
 		self.data[idx] &= !0x10;
 	}
 }
@@ -70,29 +77,6 @@ impl ObjLineInfo {
 // No point in having a secondary screen buffer
 // since the GBA renders in scan lines anyway.
 pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
-
-#[derive(Default)]
-struct BlendingParams {
-	target_drawn: bool,
-	source_on_top: bool,
-	target_overwritten: bool,
-	source_pixel: GbaPixel,
-	target_pixel: GbaPixel,
-	force_obj_blend: bool,
-	current_window_prio: u8,
-	window_blending_disabled: bool
-}
-
-impl BlendingParams {
-	fn reset_for_window(&mut self, window_prio: u8, window_blending_disabled: bool) {
-		self.target_drawn = false;
-		self.source_on_top = false;
-		self.target_overwritten = false;
-		self.force_obj_blend = false;
-		self.current_window_prio = window_prio;
-		self.window_blending_disabled = window_blending_disabled;
-	}
-}
 
 // Add a way for modes themselves to turn these off
 // mode 3 for instance only uses bg2, no need for the others.
@@ -193,20 +177,10 @@ impl GbaLcd {
 		let bldy = memory.get_reg(ioreg::BLDY);
 		let blend_evy = bldy & 0x1f;
 
-		let pixel_brightness_fn: fn(u16, OutputPixel) -> OutputPixel = match blend_mode {
+		let pixel_brightness_fn: fn(u16, GbaPixel) -> OutputPixel = match blend_mode {
 			2 => brighten_pixel,
 			3 => darken_pixel,
 			_ => pixel_lum_nop
-		};
-
-		let mut blending_params: BlendingParams = Default::default();
-
-		let change_pixel_brightness = |blend_evy: u16, color: OutputPixel, blending_params: &mut BlendingParams| -> OutputPixel {
-			if !blending_params.window_blending_disabled {
-				return pixel_brightness_fn(blend_evy, color);
-			} else {
-				return color
-			}
 		};
 
 		let win0_enabled = ((dispcnt >> 13) & 1) == 1;
@@ -230,187 +204,112 @@ impl GbaLcd {
 		let win1_top = (win1v >> 8) & 0xff; // inclusive
 		let win1_bottom = min!(160, win1v & 0xff); // exclusive
 
-		let win0_in = winin & 0x1f;
-		let win1_in = (winin >> 8) & 0x1f;
-		let winout_in = winout & 0x1f;
-		let win_obj_in = (winout >> 8) & 0x1f;
+		let win0_in = winin & 0x3f;
+		let win1_in = (winin >> 8) & 0x3f;
+		let winout_in = winout & 0x3f;
+		let win_obj_in = (winout >> 8) & 0x3f;
 
-		let on_pixel_drawn = |layer_idx: u16, color: GbaPixel, force_source: bool, blending_params: &mut BlendingParams| {
-			if !is_transparent(color) && !blending_params.window_blending_disabled {
-				if force_source || ((blend_sources >> layer_idx) & 1) == 1 { // This is a source layer.
-					blending_params.source_on_top = true;
-					blending_params.source_pixel = color;
-				} else if ((blend_targets >> layer_idx) & 1) == 1 { // This is a target layer.
-					if blending_params.target_drawn {
-						blending_params.target_overwritten = true;
-					} else {
-						blending_params.target_drawn = true;
-						blending_params.target_pixel = color;
-					}
-					blending_params.source_on_top = false;
+		for pidx in 0..240 {
+			let win_in_bits = if win0_enabled || win1_enabled || win_obj_enabled {
+				if win0_enabled && window_contains(pidx as u16, line, win0_left, win0_right, win0_top, win0_bottom) {
+					win0_in
+				} else if win1_enabled && window_contains(pidx as u16, line, win1_left, win1_right, win1_top, win1_bottom) {
+					win1_in
+				} else if self.lines.obj_info.is_window(pidx) {
+					win_obj_in
 				} else {
-					blending_params.source_on_top = false;
-					blending_params.target_overwritten = true;
-				}
-			}
-		};
-
-		on_pixel_drawn(5, backdrop, false, &mut blending_params);
-		let darkened_backdrop = backdrop;
-
-		// I'll have borrowing issues if I don't define this here like so:
-		let obj_info = &self.lines.obj_info;
-
-		let window_clip_pixel = |line: u16, column: u16, _: GbaPixel, layer_idx: u16, dest_pixel: &mut GbaPixel, blending_params: &mut BlendingParams| -> bool {
-			if !win0_enabled && !win1_enabled && !win_obj_enabled { // Windowing is turned off.
-				return true;
-			}
-			let pwindow_priority;
-			let window_disables_blending;
-			if win0_enabled && window_contains(column, line, win0_left, win0_right, win0_top, win0_bottom) {
-				pwindow_priority = 4;
-				window_disables_blending = ((winin >> 5) & 1) == 0;
-				if ((win0_in >> layer_idx) & 1) == 0 {
-					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.reset_for_window(pwindow_priority, window_disables_blending); // #FIXME do I need to be doing this?
-						// we basically act like the backdrop has been drawn again.
-						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop, false, blending_params);
-					}
-					return false;
-				}
-			} else if win1_enabled && window_contains(column, line, win1_left, win1_right, win1_top, win1_bottom) {
-				pwindow_priority = 3;
-				window_disables_blending = ((winin >> 13) & 1) == 0;
-				if ((win1_in >> layer_idx) & 1) == 0 {
-					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
-						// we basically act like the backdrop has been drawn again.
-						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop, false, blending_params);
-					}
-					return false;
-				}
-			} else if obj_info.is_window(column as usize) {
-				pwindow_priority = 2;
-				window_disables_blending = ((winout >> 13) & 1) == 0;
-				if ((win_obj_in >> layer_idx) & 1) == 0 {
-					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
-						// we basically act like the backdrop has been drawn again.
-						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop, false, blending_params);
-					}
-					return false;
+					winout_in
 				}
 			} else {
-				pwindow_priority = 1;
-				window_disables_blending = ((winout >> 5) & 1) == 0;
-				if ((winout_in >> layer_idx) & 1) == 0 {
-					if pwindow_priority > blending_params.current_window_prio {
-						blending_params.reset_for_window(pwindow_priority, window_disables_blending);
-						// we basically act like the backdrop has been drawn again.
-						*dest_pixel = darkened_backdrop;
-						on_pixel_drawn(5, backdrop, false, blending_params);
-					}
-					return false;
-				}
-			}
+				0xFFFF // Just turn on everything.
+			};
 
-			if pwindow_priority < blending_params.current_window_prio {
-				return false
-			} else if pwindow_priority > blending_params.current_window_prio {
-				blending_params.reset_for_window(pwindow_priority, window_disables_blending);
-				// we basically act like the backdrop has been drawn again.
-				*dest_pixel = darkened_backdrop;
-				on_pixel_drawn(5, backdrop, false, blending_params);
-			}
-			return true
-		};
+			let allow_blending = blend_mode != 0 && (win_in_bits & 0x20) != 0;
 
-		for pix in 0..240 {
-			let mut output_pixel = darkened_backdrop;
+			let mut semi_transparent_obj = false;
+			let mut output_color = backdrop;
+
+			let mut blend_target_layer = 0;
+			let mut blend_target_color = 0;
+
+			let mut top_layer = MASK_SBD;
 
 			for priority in (0..4).rev() {
-				if bg3_enabled && bg3_priority == priority {
-					let src_pixel = self.lines.bg3[pix];
-					if window_clip_pixel(line, pix as u16, src_pixel, 3, &mut output_pixel, &mut blending_params) {
-						on_pixel_drawn(3, src_pixel, false, &mut blending_params);
-						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
-					}
+
+				if bg3_enabled && priority == bg3_priority && !is_transparent(self.lines.bg3[pidx]) && (win_in_bits & MASK_BG3) != 0 {
+					blend_target_layer = top_layer;
+					blend_target_color = output_color;
+					output_color = self.lines.bg3[pidx];
+					top_layer = MASK_BG3;
 				}
 
-				if bg2_enabled && bg2_priority == priority {
-					let src_pixel = self.lines.bg2[pix];
-					if window_clip_pixel(line, pix as u16, src_pixel, 2, &mut output_pixel, &mut blending_params) {
-						on_pixel_drawn(2, src_pixel, false, &mut blending_params);
-						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
-					}
+				if bg2_enabled && priority == bg2_priority && !is_transparent(self.lines.bg2[pidx]) && (win_in_bits & MASK_BG2) != 0 {
+					blend_target_layer = top_layer;
+					blend_target_color = output_color;
+					output_color = self.lines.bg2[pidx];
+					top_layer = MASK_BG2;
 				}
 
-				if bg1_enabled && bg1_priority == priority {
-					let src_pixel = self.lines.bg1[pix];
-					if window_clip_pixel(line, pix as u16, src_pixel, 1, &mut output_pixel, &mut blending_params) {
-						on_pixel_drawn(1, src_pixel, false, &mut blending_params);
-						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
-					}
+				if bg1_enabled && priority == bg1_priority && !is_transparent(self.lines.bg1[pidx]) && (win_in_bits & MASK_BG1) != 0 {
+					blend_target_layer = top_layer;
+					blend_target_color = output_color;
+					output_color = self.lines.bg1[pidx];
+					top_layer = MASK_BG1;
 				}
 
-				if bg0_enabled && bg0_priority == priority {
-					let src_pixel = self.lines.bg0[pix];
-					if window_clip_pixel(line, pix as u16, src_pixel, 0, &mut output_pixel, &mut blending_params) {
-						on_pixel_drawn(0, src_pixel, false, &mut blending_params);
-						output_pixel = Self::blend_pixels(src_pixel, output_pixel);
-					}
+				if bg0_enabled && priority == bg0_priority && !is_transparent(self.lines.bg0[pidx]) && (win_in_bits & MASK_BG0) != 0 {
+					blend_target_layer = top_layer;
+					blend_target_color = output_color;
+					output_color = self.lines.bg0[pidx];
+					top_layer = MASK_BG0;
 				}
 
-				let obj_priority = self.lines.obj_info.get_priority(pix);
-				if obj_enabled && obj_priority > 0 && (obj_priority - 1) == (priority as u8) {
-					let obj_pixel = self.lines.obj[pix];
-					if window_clip_pixel(line, pix as u16, obj_pixel, 4, &mut output_pixel, &mut blending_params) {
-						on_pixel_drawn(4, obj_pixel, self.lines.obj_info.is_transparent(pix), &mut blending_params);
-						output_pixel = Self::blend_pixels(obj_pixel, output_pixel);
-						blending_params.force_obj_blend |= self.lines.obj_info.is_transparent(pix);
+				if obj_enabled {
+					let obj_priority = self.lines.obj_info.get_priority(pidx) as u16;
+					if obj_priority!= 0 && priority == (obj_priority - 1) && !is_transparent(self.lines.obj[pidx]) && (win_in_bits & MASK_OBJ) != 0 {
+						semi_transparent_obj = self.lines.obj_info.is_semi_transparent(pidx);
+						blend_target_layer = top_layer;
+						blend_target_color = output_color;
+						output_color = self.lines.obj[pidx];
+						top_layer = MASK_OBJ;
 					}
 				}
 			}
 
-			if !blending_params.window_blending_disabled && (blend_mode == 1 || (blending_params.force_obj_blend && blend_mode > 0)) && (blending_params.target_drawn && !blending_params.target_overwritten && blending_params.source_on_top) {
-				let (t_r, t_g, t_b) = expand_color(blending_params.target_pixel);
-				let (s_r, s_g, s_b) = expand_color(blending_params.source_pixel);
-
-				// I = MIN ( 31, I1st*EVA + I2nd*EVB )
-				output[pix] = (
-					min!(255, (((s_r as u16) * blend_eva) >> 4) + (((t_r as u16) * blend_evb) >> 4)) as u8,
-					min!(255, (((s_g as u16) * blend_eva) >> 4) + (((t_g as u16) * blend_evb) >> 4)) as u8,
-					min!(255, (((s_b as u16) * blend_eva) >> 4) + (((t_b as u16) * blend_evb) >> 4)) as u8,
-				);
-			} else {
-				let expanded = expand_color(output_pixel); 
-				if blending_params.source_on_top {
-					output[pix] = change_pixel_brightness(blend_evy, expanded, &mut blending_params);
+			if allow_blending {
+				if semi_transparent_obj && (top_layer & MASK_OBJ) != 0 {
+					// semi transparent objs are always treated as blending 1st target (source)
+					// getting here also means that the OBJ layer is the top layer
+					// so now we try to get the next layer down.
+					if (blend_targets & blend_target_layer) != 0 { // This is indeed a blending 2nd target pixel
+						output[pidx] = blend_pixels(blend_eva, blend_evb, output_color, blend_target_color);
+					} else {
+						output[pidx] = pixel_brightness_fn(blend_evy, output_color);
+					}
 				} else {
-					output[pix] = expanded;
+					// Here we check that the top layer is a source layer.
+					if (blend_sources & top_layer) != 0 {
+						// Then if we check if we're blending or changing brightness.
+						if blend_mode != 1 { // changing brightness
+							output[pidx] = pixel_brightness_fn(blend_evy, output_color);
+						} else if(blend_targets & blend_target_layer) != 0 { // blending two layers (also checking the second layer down is a 2nd target.)
+							output[pidx] = blend_pixels(blend_eva, blend_evb, output_color, blend_target_color);
+						} else { // No blending / brightness changes will occur.
+							output[pidx] = expand_color(output_color);
+						}
+					} else {
+						output[pidx] = expand_color(output_color);
+					}
 				}
+			} else {
+				output[pidx] = expand_color(output_color);
 			}
-
-			blending_params.target_drawn = false;
-			blending_params.source_on_top = false;
-			blending_params.target_overwritten = false;
-			blending_params.force_obj_blend = false;
-			blending_params.window_blending_disabled = false;
-			blending_params.current_window_prio = 0; // reset it to winout.
 		}
-	}
-
-	#[inline(always)]
-	fn blend_pixels(a: GbaPixel, b: GbaPixel) -> GbaPixel {
-		if is_transparent(a) { b }
-		else { a }
 	}
 }
 
-pub fn expand_color(rgb5: u16) -> (u8, u8, u8) {
+#[inline(always)]
+pub fn expand_color(rgb5: u16) -> OutputPixel {
 	(
 		(((rgb5 & 0x1f) * 527 + 23 ) >> 6) as u8,
 		((((rgb5 >> 5) & 0x1f) * 527 + 23 ) >> 6) as u8,
@@ -442,11 +341,22 @@ fn window_contains(x: u16, y: u16, w_left: u16, w_right: u16, w_top: u16, w_bott
 	(y >= w_top) && (y < w_bottom)
 }
 
+fn blend_pixels(eva: u16, evb: u16, front: GbaPixel, back: GbaPixel) -> OutputPixel {
+	let (f_r, f_g, f_b) = expand_color(front);
+	let (b_r, b_g, b_b) = expand_color(back);
+
+	return (
+		min!(255, (((f_r as u16) * eva) >> 4) + (((b_r as u16) * evb) >> 4)) as u8,
+		min!(255, (((f_g as u16) * eva) >> 4) + (((b_g as u16) * evb) >> 4)) as u8,
+		min!(255, (((f_b as u16) * eva) >> 4) + (((b_b as u16) * evb) >> 4)) as u8,
+	);
+}
 
 // PIXEL BRIGHTNESS FUNCTIONS:
 
 /// I1st + (31-I1st)*EVY
-fn brighten_pixel(blend_evy: u16, color: OutputPixel) -> OutputPixel {
+fn brighten_pixel(blend_evy: u16, color: GbaPixel) -> OutputPixel {
+	let color = expand_color(color);
 	(
 		((color.0 as u16) + (((255 - (color.0 as u16)) * blend_evy) >> 4)) as u8,
 		((color.1 as u16) + (((255 - (color.1 as u16)) * blend_evy) >> 4)) as u8,
@@ -455,7 +365,8 @@ fn brighten_pixel(blend_evy: u16, color: OutputPixel) -> OutputPixel {
 }
 
 /// I1st - (I1st)*EVY
-fn darken_pixel(blend_evy: u16, color: OutputPixel) -> OutputPixel {
+fn darken_pixel(blend_evy: u16, color: GbaPixel) -> OutputPixel {
+	let color = expand_color(color);
 	(
 		((color.0 as u16) - (((color.0 as u16) * blend_evy) >> 4)) as u8,
 		((color.1 as u16) - (((color.1 as u16) * blend_evy) >> 4)) as u8,
@@ -464,6 +375,6 @@ fn darken_pixel(blend_evy: u16, color: OutputPixel) -> OutputPixel {
 }
 
 /// Just does nothing to the pixel
-fn pixel_lum_nop(_: u16, color: OutputPixel) -> OutputPixel {
-	color
+fn pixel_lum_nop(_: u16, color: GbaPixel) -> OutputPixel {
+	expand_color(color)
 }
