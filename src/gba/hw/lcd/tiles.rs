@@ -4,8 +4,6 @@ use super::super::super::core::memory::ioreg::IORegister16;
 use super::super::super::core::memory::ioreg::IORegister32;
 
 // This is here temporarily so that I don't lose my mind.
-// #TODO I can turn all of these into shifts since n is always a power
-// of 2 anyways (al least for all of the GBA's needs).
 macro_rules! kbytes {
 	($n: expr) => ($n * 1024)
 }
