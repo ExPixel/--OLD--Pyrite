@@ -412,6 +412,35 @@ impl ArmCpu {
 		self.prefetch_wait = 0;
 	}
 
+	/// Taken From TONC:
+	/// There are three registers specifically for interrupts: REG_IE (0400:0200h), 
+	/// REG_IF (0400:0202h) and REG_IME (0400:0208h). REG_IME is the master interrupt control; 
+	/// unless this is set to ‘1’, interrupts will be ignored completely. 
+	/// To enable a specific interrupt you need to set the appropriate bit in REG_IE. 
+	/// When an interrupt occurs, the corresponding bit in REG_IF will be set.
+	pub fn hardware_interrupt(&mut self, mask: u16) {
+		let reg_ime = self.memory.get_reg(ioreg::IME);
+		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
+		let reg_ie = self.memory.get_reg(ioreg::IE);
+		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
+		self.wake_up_cpu(); // At this point the CPU can wake up.
+		let mut reg_if = self.memory.get_reg(ioreg::IF);
+		reg_if |= mask; // set the corresponding bit in IF.
+		self.memory.set_reg(ioreg::IF, reg_if);
+		if !self.allow_irq_interrupt() { return; }
+		self.irq_interrupt();
+	}
+
+	/// Wakes up the CPU if it was halted.
+	pub fn wake_up_cpu(&mut self) {
+		// // #TODO remove testing code:
+		// if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped {
+		// 	println!("WAKING UP CPU: 0x{:0x}", mask);
+		// }
+		self.memory.internal_regs.halted = false;
+		self.memory.internal_regs.stopped = false; // Not sure if this is supposed to be here.
+	}
+
 	/// The branch part of the hardware interrupt with the state
 	/// and status changes.
 	///
@@ -424,7 +453,7 @@ impl ArmCpu {
 	///    depending on the mode you are in. 
 	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
 	///    (which you, the programmer, never see)
-	pub fn irq_interrupt(&mut self) {
+	fn irq_interrupt(&mut self) {
 		// println!("[0x{:08X} ({})] IRQ INTERRUPT: 0x{:04X}", self.get_exec_address(), debug_get_mode_char(self.thumb_mode()), self.memory.get_reg(ioreg::IF));
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);

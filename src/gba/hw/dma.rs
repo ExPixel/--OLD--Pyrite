@@ -79,14 +79,14 @@ const CHANNELS: [DmaChannel; 4] = [
 
 pub trait DmaHandler {
 	fn dma_ongoing(&mut self) -> bool;
-	fn dma_tick(&mut self) -> u16;
-	fn dma_tick_channel(&mut self, channel_index: usize) -> u16;
+	fn dma_tick(&mut self);
+	fn dma_tick_channel(&mut self, channel_index: usize);
 	fn dma_check_started(&mut self, timing: u16, channel_index: usize);
 	fn dma_start(&mut self, channel_index: usize);
 
 	/// Returns an interrupt mask for the DMA register that is completed if
 	/// IRQ interrupts are enabled for the given DMA channel.
-	fn dma_completed(&mut self, channel_index: usize) -> u16;
+	fn dma_completed(&mut self, channel_index: usize);
 }
 
 macro_rules! dma_reg {
@@ -103,25 +103,19 @@ impl DmaHandler for ArmCpu {
 		(dma_reg!(self, 3).units_remaining != 0 && dma_reg!(self, 3).enabled)
 	}
 
-	fn dma_tick(&mut self) -> u16 {
-		if dma_reg!(self, 0).units_remaining > 0 && 
-			dma_reg!(self, 0).enabled {
-				self.dma_tick_channel(0)
-		} else if dma_reg!(self, 1).units_remaining > 0 && 
-			dma_reg!(self, 1).enabled {
-				self.dma_tick_channel(1)
-		} else if dma_reg!(self, 2).units_remaining > 0 && 
-			dma_reg!(self, 2).enabled {
-				self.dma_tick_channel(2)
-		} else if dma_reg!(self, 3).units_remaining > 0 && 
-			dma_reg!(self, 3).enabled {
-				self.dma_tick_channel(3)
-		} else {
-			0
+	fn dma_tick(&mut self) {
+		if dma_reg!(self, 0).units_remaining > 0 && dma_reg!(self, 0).enabled {
+			self.dma_tick_channel(0)
+		} else if dma_reg!(self, 1).units_remaining > 0 && dma_reg!(self, 1).enabled {
+			self.dma_tick_channel(1)
+		} else if dma_reg!(self, 2).units_remaining > 0 && dma_reg!(self, 2).enabled {
+			self.dma_tick_channel(2)
+		} else if dma_reg!(self, 3).units_remaining > 0 && dma_reg!(self, 3).enabled {
+			self.dma_tick_channel(3)
 		}
 	}
 
-	fn dma_tick_channel(&mut self, channel_index: usize) -> u16 {
+	fn dma_tick_channel(&mut self, channel_index: usize) {
 		let src = dma_reg!(self, channel_index).source_addr;
 		let dest = dma_reg!(self, channel_index).destination_addr;
 		if dma_reg!(self, channel_index).transfer_word {
@@ -179,9 +173,6 @@ impl DmaHandler for ArmCpu {
 		return if dma_reg!(self, channel_index).units_remaining == 0 {
 			// The DMA is completed:
 			self.dma_completed(channel_index)
-		} else {
-			// The DMA is still going
-			0
 		}
 	}
 
@@ -216,7 +207,7 @@ impl DmaHandler for ArmCpu {
 
 	/// Returns an interrupt mask for the DMA register that is completed if
 	/// IRQ interrupts are enabled for the given DMA channel.
-	fn dma_completed(&mut self, channel_index: usize) -> u16 {
+	fn dma_completed(&mut self, channel_index: usize) {
 		if !dma_reg!(self, channel_index).repeat {
 			// We clear the enable bit if the DMA is not repeating.
 			dma_reg!(self, channel_index).enabled = false;
@@ -234,9 +225,7 @@ impl DmaHandler for ArmCpu {
 		dma_reg!(self, channel_index).first_transfer = true;
 
 		if dma_reg!(self, channel_index).irq {
-			return INT_DMA0 << (channel_index as u16);
-		} else {
-			return 0
+			self.hardware_interrupt(INT_DMA0 << (channel_index as u16));
 		}
 	}
 }

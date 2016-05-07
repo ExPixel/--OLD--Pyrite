@@ -9,15 +9,18 @@ pub struct MeasureInfo {
 }
 
 impl MeasureInfo {
+	#[allow(dead_code)]
 	fn begin(&mut self) {
 		self.start_time = time::precise_time_ns();
 	}
 
+	#[allow(dead_code)]
 	fn add_it(&mut self, iterations: u64) {
 		self.iterations += iterations;
 	}
 
-	pub fn end(&mut self) {
+	#[allow(dead_code)]
+	fn end(&mut self) {
 		let delta_time = time::precise_time_ns() - self.start_time;
 		let (ntotal, ov) = self.total_time.overflowing_add(delta_time);
 		if ov {

@@ -30,7 +30,7 @@ const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
 
 /// #TODO remove this debug code.
 /// true if the starting address should be 0 in SVC mode.
-const STARTUP_BIOS: bool = false;
+const STARTUP_BIOS: bool = true;
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -255,33 +255,8 @@ impl Gba {
 		}
 	}
 
-	/// Taken From TONC:
-	/// There are three registers specifically for interrupts: REG_IE (0400:0200h), 
-	/// REG_IF (0400:0202h) and REG_IME (0400:0208h). REG_IME is the master interrupt control; 
-	/// unless this is set to ‘1’, interrupts will be ignored completely. 
-	/// To enable a specific interrupt you need to set the appropriate bit in REG_IE. 
-	/// When an interrupt occurs, the corresponding bit in REG_IF will be set.
 	fn hardware_interrupt(&mut self, mask: u16) {
-		let reg_ime = self.cpu.memory.get_reg(ioreg::IME);
-		if reg_ime != 1 { return; } // We just stop here if IME is not 1.
-		let reg_ie = self.cpu.memory.get_reg(ioreg::IE);
-		if (reg_ie & mask) == 0 { return; } // This specific interrupt is not enabled.
-		self.wake_up_cpu(); // At this point the CPU can wake up.
-		let mut reg_if = self.cpu.memory.get_reg(ioreg::IF);
-		reg_if |= mask; // set the corresponding bit in IF.
-		self.cpu.memory.set_reg(ioreg::IF, reg_if);
-		if !self.cpu.allow_irq_interrupt() { return; }
-		self.cpu.irq_interrupt();
-	}
-
-	/// Wakes up the CPU if it was halted.
-	fn wake_up_cpu(&mut self) {
-		// // #TODO remove testing code:
-		// if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped {
-		// 	println!("WAKING UP CPU: 0x{:0x}", mask);
-		// }
-		self.cpu.memory.internal_regs.halted = false;
-		self.cpu.memory.internal_regs.stopped = false; // Not sure if this is supposed to be here.
+		self.cpu.hardware_interrupt(mask);
 	}
 
 	fn check_line_coincidence(&mut self, vcount: u16) {
@@ -365,10 +340,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		'cpu_loop: while self.cpu.clock.cycles < target {
 			if self.cpu.dma_ongoing() {
 				measure_iteration(MEASURE_DMA_TICKS_TIME);
-				let dma_int_mask = self.cpu.dma_tick();
-				if dma_int_mask != 0 {
-					self.hardware_interrupt(dma_int_mask);
-				}
+				self.cpu.dma_tick();
 			} else {
 				if self.cpu.executable() {
 					measure_iteration(MEASURE_CPU_TICKS_TIME);
