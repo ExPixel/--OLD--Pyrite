@@ -2,6 +2,8 @@ pub trait BitDescriptor {
 	fn property_count(&self) -> usize;
 	fn get_property_name(&self, index: usize) -> &'static str;
 	fn get_property_value(&self, index: usize) -> u32;
+	fn get_value(&self) -> u32;
+	fn data_length(&self) -> u32;
 }
 
 macro_rules! bit_descriptor {
@@ -35,6 +37,14 @@ macro_rules! bit_descriptor {
 		}
 
 		impl BitDescriptor for $desc_name {
+			fn get_value(&self) -> u32 {
+				self.value
+			}
+
+			fn data_length(&self) -> u32 {
+				self.length
+			}
+
 			fn property_count(&self) -> usize {
 				return self.properties.len();
 			}
@@ -208,12 +218,14 @@ bit_descriptor!(RegWinIn,
 	w0_bg2_enable: 1
 	w0_bg3_enable: 1
 	w0_obj_enable: 1
+	w0_sfx: 1
 	UNUSED: 2
 	w1_bg0_enable: 1
 	w1_bg1_enable: 1
 	w1_bg2_enable: 1
 	w1_bg3_enable: 1
 	w1_obj_enable: 1
+	w1_sfx: 1
 );
 
 /*
@@ -230,16 +242,18 @@ bit_descriptor!(RegWinIn,
 
 */
 bit_descriptor!(RegWinOut,
-	wOut_bg0_enable: 1
-	wOut_bg1_enable: 1
-	wOut_bg2_enable: 1
-	wOut_bg3_enable: 1
-	wOut_obj_enable: 1
+	wOUT_bg0_enable: 1
+	wOUT_bg1_enable: 1
+	wOUT_bg2_enable: 1
+	wOUT_bg3_enable: 1
+	wOUT_obj_enable: 1
+	wOUT_sfx: 1
 	UNUSED: 2
-	wObj_bg0_enable: 1
-	wObj_bg1_enable: 1
-	wObj_bg2_enable: 1
-	wObj_bg3_enable: 1
-	wObj_obj_enable: 1
+	wOBJ_bg0_enable: 1
+	wOBJ_bg1_enable: 1
+	wOBJ_bg2_enable: 1
+	wOBJ_bg3_enable: 1
+	wOBJ_obj_enable: 1
+	wOBJ_sfx: 1
 );
 

@@ -387,6 +387,21 @@ impl<'a> GbaDebugger<'a> {
 		self.rustbox.print(12, row, rustbox::RB_BOLD, Color::Yellow, Color::Default, desc_name);
 		row += 1;
 
+		self.rustbox.print(1, row, rustbox::RB_BOLD, Color::Default, Color::Default, "#value:");
+
+		if desc.data_length() <= 8 {
+			self.rustbox.print(10, row, rustbox::RB_BOLD, Color::Default, Color::Default, 
+				&format!("0x{:02X}", desc.get_value()));
+		} else if desc.data_length() <= 16 {
+			self.rustbox.print(10, row, rustbox::RB_BOLD, Color::Default, Color::Default, 
+				&format!("0x{:04X}", desc.get_value()));
+		} else {
+			self.rustbox.print(10, row, rustbox::RB_BOLD, Color::Default, Color::Default, 
+				&format!("0x{:08X}", desc.get_value()));
+		}
+
+		row += 1;
+
 		for i in 0..desc.property_count() {
 			let property_name_len = desc.get_property_name(i).len();
 			let property_value = desc.get_property_value(i).to_string();
