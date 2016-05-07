@@ -2,6 +2,7 @@ use super::*;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::IORegister16;
 use super::super::super::core::memory::ioreg::IORegister32;
+use ::util::measure::*;
 
 // This is here temporarily so that I don't lose my mind.
 macro_rules! kbytes {
@@ -50,6 +51,8 @@ const RS_MODE_SCREEN_SIZES: [(i32, i32); 4] = [
 ];
 
 pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &GbaMemory, line: u16, bg_line: &mut GbaBGLine) {
+	measure_start(MEASURE_TILE_RENDER_TIME);
+	measure_iteration(MEASURE_TILE_RENDER_TIME);
 	let vram_tile_data = memory.get_slice(0x06000000, 0x0600FFFF);
 
 	let character_base_block = (((bgcnt >> 2) & 0x3) as u32) * kbytes!(16); // (0-3, in units of 16 KBytes) (=BG Tile Data)
@@ -140,6 +143,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 				map_tile_info, 0, pixel_y & 7);
 		}
 	}
+	measure_end(MEASURE_TILE_RENDER_TIME);
 }
 
 pub struct BGRotScaleParams {

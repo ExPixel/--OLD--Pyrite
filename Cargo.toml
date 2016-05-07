@@ -10,6 +10,7 @@ default = ["emulate-swi"]
 # jumping to the code in the BIOS.
 # TODO I don't actually do this.
 emulate-swi = []
+measure = []
 
 [profile.dev]
 # Ideally I would just like to turn overflow checking off

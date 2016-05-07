@@ -1,5 +1,6 @@
 use super::*;
 use super::super::super::core::memory::*;
+use ::util::measure::*;
 // use super::super::super::core::memory::ioreg::IORegister16;
 // use super::super::super::core::memory::ioreg::IORegister32;
 
@@ -34,6 +35,8 @@ struct ObjAffineData {
 }
 
 pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, memory: &GbaMemory, line: u16, lines: &mut GbaDisplayLines) {
+	measure_start(MEASURE_OBJ_RENDER_TIME);
+	measure_iteration(MEASURE_OBJ_RENDER_TIME);
 	let tile_region = memory.get_slice(tiles_region.0, tiles_region.1);
 	let palette_region = memory.get_slice(0x05000200, 0x050003FF); // OBJ palettes are in a different location from tiles.
 	let oam_region = memory.get_region(MEM_OAM);
@@ -78,7 +81,8 @@ pub fn draw_objs(tiles_region: (u32, u32), one_dim: bool, hblank_free: bool, mem
 		}
 		if cycles_remaining <= 0 { break }
 		attr_addr += 8; // there's an empty slot for rot/scale
-	} 
+	}
+	measure_end(MEASURE_OBJ_RENDER_TIME);
 }
 
 

@@ -9,6 +9,7 @@ use rustbox::Style;
 use rustbox;
 use std::ascii::AsciiExt;
 use std::time::Duration;
+use ::util::measure::*;
 
 use glium::glutin;
 
@@ -28,7 +29,8 @@ const IMPLEMENTED_COMMANDS: &'static [&'static str] = &[
 	"frame",
 	"frame-s",
 	"save-state",
-	"load-state"
+	"load-state",
+	"measure"
 ];
 
 pub struct GbaDebugger<'a> {
@@ -230,6 +232,10 @@ impl<'a> GbaDebugger<'a> {
 				self.cmd_load_state(&arguments);
 			},
 
+			"measure" => {
+				self.cmd_measure(&arguments);
+			},
+
 			_ => {
 				self.write_error_line(&format!("Unrecognized command '{}'", command_name));
 			}
@@ -238,6 +244,51 @@ impl<'a> GbaDebugger<'a> {
 
 	pub fn too_few_args(&self, arg_req: usize, cname: &String, cargs: &[String]) {
 		self.write_error_line(&format!("Command {} requires {} arguments ({} provided)", cname, arg_req, cargs.len()));
+	}
+
+	pub fn cmd_measure(&mut self, args: &[String]) {
+		if args.len() < 1 {
+			self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default,
+				&format!("{} measures available.", AVAILABLE_MEASURES));
+			return;
+		}
+
+		let measure_index = match auto_radix_parse_u32(&args[0]) {
+			Some(mindex) => mindex,
+			None => { self.write_error_line(&format!("{} is not a number.", args[0])); return }
+		};
+
+		let measure = get_measure_info(measure_index as usize);
+		if measure.is_none() {
+			self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Red, Color::Default,
+				&format!("Measure #{} does not exist.", measure_index));
+			return;
+		}
+		let measure = measure.unwrap();
+
+		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default, "Measure Name:");
+		self.rustbox.print(16, DSTART, rustbox::RB_NORMAL, Color::Yellow, Color::Default,
+			&format!("{}", measure.name));
+
+		self.rustbox.print(1, DSTART + 1, rustbox::RB_BOLD, Color::Default, Color::Default, "Iterations:");
+		self.rustbox.print(14, DSTART + 1, rustbox::RB_NORMAL, Color::Yellow, Color::Default,
+			&format!("{}", measure.iterations));
+
+		self.rustbox.print(1, DSTART + 2, rustbox::RB_BOLD, Color::Default, Color::Default, "Total Time:");
+		self.rustbox.print(14, DSTART + 2, rustbox::RB_NORMAL, Color::Yellow, Color::Default,
+			&format!("{}", measure.total_time));
+
+		self.rustbox.print(1, DSTART + 3, rustbox::RB_BOLD, Color::Default, Color::Default, "Iteration Time(ns):");
+		self.rustbox.print(22, DSTART + 3, rustbox::RB_NORMAL, Color::Yellow, Color::Default,
+			&format!("{}", measure.iteration_time_ns()));
+
+		self.rustbox.print(1, DSTART + 4, rustbox::RB_BOLD, Color::Default, Color::Default, "Iteration Time(ms):");
+		self.rustbox.print(22, DSTART + 4, rustbox::RB_NORMAL, Color::Yellow, Color::Default,
+			&format!("{}", measure.iteration_time_ms()));
+
+		self.rustbox.print(1, DSTART + 5, rustbox::RB_BOLD, Color::Default, Color::Default, "Iteration Time( s):");
+		self.rustbox.print(22, DSTART + 5, rustbox::RB_NORMAL, Color::Yellow, Color::Default,
+			&format!("{}", measure.iteration_time_s()));
 	}
 
 	pub fn cmd_save_state(&mut self, args: &[String]) {

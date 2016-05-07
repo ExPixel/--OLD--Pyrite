@@ -9,6 +9,7 @@ use time;
 
 use std::thread;
 use std::time::Duration;
+use ::util::measure::*;
 use self::core::memory::*;
 use self::core::cpu::registers;
 use self::core::cpu::ArmCpu;
@@ -358,14 +359,19 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 
 		//dma_ongoing(&mut self.cpu)
 
+		measure_start(MEASURE_CPU_TICKS_TIME);
+		measure_start(MEASURE_DMA_TICKS_TIME);
+
 		'cpu_loop: while self.cpu.clock.cycles < target {
 			if self.cpu.dma_ongoing() {
+				measure_iteration(MEASURE_DMA_TICKS_TIME);
 				let dma_int_mask = self.cpu.dma_tick();
 				if dma_int_mask != 0 {
 					self.hardware_interrupt(dma_int_mask);
 				}
 			} else {
 				if self.cpu.executable() {
+					measure_iteration(MEASURE_CPU_TICKS_TIME);
 					self.cpu.tick();
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
@@ -376,6 +382,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				}
 			}
 		}
+
+		measure_end(MEASURE_CPU_TICKS_TIME);
+		measure_end(MEASURE_DMA_TICKS_TIME);
 	}
 
 	fn increment_timers(&mut self) {
