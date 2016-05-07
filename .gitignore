@@ -9,3 +9,6 @@ roms/legal/
 debug-info/
 
 data/sav/
+
+# No$GBA stuff
+*.sna
