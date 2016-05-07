@@ -455,6 +455,7 @@ impl ArmCpu {
 		self.registers.clearf_t(); // Enters ARM mode.
 		self.pipeline_flush();
 		self.align_pc();
+		self.fill_pipeline();
 		self.branched = false;
 	}
 
