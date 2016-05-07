@@ -219,6 +219,7 @@ impl DmaHandler for ArmCpu {
 	fn dma_completed(&mut self, channel_index: usize) -> u16 {
 		if !dma_reg!(self, channel_index).repeat {
 			// We clear the enable bit if the DMA is not repeating.
+			dma_reg!(self, channel_index).enabled = false;
 			let dma_cnt_h = self.memory.get_reg(CHANNELS[channel_index].reg_cnt_h);
 			self.memory.set_reg(CHANNELS[channel_index].reg_cnt_h, dma_cnt_h & 0x7fff);
 		} else {
