@@ -1,7 +1,5 @@
 General:
   ☐ Clean up leftover debug statements that have been commented out.
-  ☐ Move calculations for bgr5 -> argb to the GPU via shaders.
-     This may no longer be possible.
   ☐ Correct the Gamma and colors through the shaders.
   ☐ Masking for IO Registers certain bits should not be written or read
 Core:
@@ -85,6 +83,6 @@ Core:
       The error I get is 'Attempting to execute at unexecutable address 0xf0000000!' Luckily that's
       not an address that can be reached without a jump, so it should be easy to find where the
       problem starts.
-   ☐ When running the GBA test suite's memory tests, the test hangs.
+   ✔ When running the GBA test suite's memory tests, the test hangs. @done (16-05-06 21:39)
    ✔ When running the GBA test suite's video tests, the 'actual' and 'expected' labels are cut off. @done (16-05-03 01:19)
       Only the top left corner is drawn.
