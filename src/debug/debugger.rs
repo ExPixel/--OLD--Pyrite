@@ -308,10 +308,28 @@ impl<'a> GbaDebugger<'a> {
 		let data: (&str, Box<BitDescriptor>) = generate_reg_descriptions!(
 			"dispcnt", DISPCNT, RegDispcntDesc
 			"dispstat", DISPSTAT, RegDispStat
+
 			"bg0cnt", BG0CNT, RegBGCnt
 			"bg1cnt", BG1CNT, RegBGCnt
 			"bg2cnt", BG2CNT, RegBGCnt
 			"bg3cnt", BG3CNT, RegBGCnt
+
+			"bg0hofs", BG0HOFS, RegBGHOFS
+			"bg0vofs", BG0VOFS, RegBGVOFS
+			"bg1hofs", BG1HOFS, RegBGHOFS
+			"bg1vofs", BG1VOFS, RegBGVOFS
+			"bg2hofs", BG2HOFS, RegBGHOFS
+			"bg2vofs", BG2VOFS, RegBGVOFS
+			"bg3hofs", BG3HOFS, RegBGHOFS
+			"bg3vofs", BG3VOFS, RegBGVOFS
+
+			"win0h", WIN0H, RegWinH
+			"win1h", WIN1H, RegWinH
+			"win0v", WIN0V, RegWinV
+			"win1v", WIN1V, RegWinV
+
+			"winin", WININ, RegWinIn
+			"winout", WINOUT, RegWinOut
 		);
 
 		self.print_bitdesc_data(data.0, data.1);

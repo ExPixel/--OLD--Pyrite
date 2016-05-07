@@ -14,6 +14,7 @@ macro_rules! bit_descriptor {
 		}
 
 		impl $desc_name {
+			#[allow(unused_mut)]
 			pub fn from(value: u32) -> $desc_name {
 				static _PROPERTIES: &'static [&'static str] = &[$( stringify!($name), )+];
 				let mut values = Vec::new();
@@ -108,7 +109,7 @@ bit_descriptor!(RegDispStat,
 	vblank_irq_flag: 1
 	hblank_irq_flag: 1
 	vcounter_irq_flag: 1
-	unused: 2
+	UNUSED: 2
 	vcounter_setting: 8
 );
 
@@ -137,10 +138,108 @@ Internal Screen Size (dots) and size of BG Map (bytes):
 bit_descriptor!(RegBGCnt,
 	bg_priority: 2
 	character_base_block: 2
-	unused_0: 2
+	UNUSED: 2
 	mosaic: 1
 	palette_256: 1
 	screen_base_block: 5
 	wraparound: 1
 	screen_size: 2
 );
+
+/*
+
+4000010h - BG0HOFS - BG0 X-Offset (W)
+4000012h - BG0VOFS - BG0 Y-Offset (W)
+  Bit   Expl.
+  0-8   Offset (0-511)
+  9-15  Not used
+Specifies the coordinate of the upperleft first visible dot of BG0 background layer, ie. used to scroll the BG0 area.
+
+4000014h - BG1HOFS - BG1 X-Offset (W)
+4000016h - BG1VOFS - BG1 Y-Offset (W)
+Same as above BG0HOFS and BG0VOFS for BG1 respectively.
+
+4000018h - BG2HOFS - BG2 X-Offset (W)
+400001Ah - BG2VOFS - BG2 Y-Offset (W)
+Same as above BG0HOFS and BG0VOFS for BG2 respectively.
+
+400001Ch - BG3HOFS - BG3 X-Offset (W)
+400001Eh - BG3VOFS - BG3 Y-Offset (W)
+Same as above BG0HOFS and BG0VOFS for BG3 respectively.
+*/
+bit_descriptor!(RegBGHOFS, offset: 9);
+bit_descriptor!(RegBGVOFS, offset: 9);
+
+/*
+4000040h - WIN0H - Window 0 Horizontal Dimensions (W)
+4000042h - WIN1H - Window 1 Horizontal Dimensions (W)
+  Bit   Expl.
+  0-7   X2, Rightmost coordinate of window, plus 1
+  8-15  X1, Leftmost coordinate of window
+Garbage values of X2>240 or X1>X2 are interpreted as X2=240.
+*/
+bit_descriptor!(RegWinH, right:8 left:8);
+
+/*
+4000044h - WIN0V - Window 0 Vertical Dimensions (W)
+4000046h - WIN1V - Window 1 Vertical Dimensions (W)
+  Bit   Expl.
+  0-7   Y2, Bottom-most coordinate of window, plus 1
+  8-15  Y1, Top-most coordinate of window
+Garbage values of Y2>160 or Y1>Y2 are interpreted as Y2=160.
+*/
+bit_descriptor!(RegWinV, bottom:8 top:8);
+
+/*
+4000048h - WININ - Control of Inside of Window(s) (R/W)
+  Bit   Expl.
+  0-3   Window 0 BG0-BG3 Enable Bits     (0=No Display, 1=Display)
+  4     Window 0 OBJ Enable Bit          (0=No Display, 1=Display)
+  5     Window 0 Color Special Effect    (0=Disable, 1=Enable)
+  6-7   Not used
+  8-11  Window 1 BG0-BG3 Enable Bits     (0=No Display, 1=Display)
+  12    Window 1 OBJ Enable Bit          (0=No Display, 1=Display)
+  13    Window 1 Color Special Effect    (0=Disable, 1=Enable)
+  14-15 Not used
+*/
+bit_descriptor!(RegWinIn,
+	w0_bg0_enable: 1
+	w0_bg1_enable: 1
+	w0_bg2_enable: 1
+	w0_bg3_enable: 1
+	w0_obj_enable: 1
+	UNUSED: 2
+	w1_bg0_enable: 1
+	w1_bg1_enable: 1
+	w1_bg2_enable: 1
+	w1_bg3_enable: 1
+	w1_obj_enable: 1
+);
+
+/*
+400004Ah - WINOUT - Control of Outside of Windows & Inside of OBJ Window (R/W)
+  Bit   Expl.
+  0-3   Outside BG0-BG3 Enable Bits      (0=No Display, 1=Display)
+  4     Outside OBJ Enable Bit           (0=No Display, 1=Display)
+  5     Outside Color Special Effect     (0=Disable, 1=Enable)
+  6-7   Not used
+  8-11  OBJ Window BG0-BG3 Enable Bits   (0=No Display, 1=Display)
+  12    OBJ Window OBJ Enable Bit        (0=No Display, 1=Display)
+  13    OBJ Window Color Special Effect  (0=Disable, 1=Enable)
+  14-15 Not used
+
+*/
+bit_descriptor!(RegWinOut,
+	wOut_bg0_enable: 1
+	wOut_bg1_enable: 1
+	wOut_bg2_enable: 1
+	wOut_bg3_enable: 1
+	wOut_obj_enable: 1
+	UNUSED: 2
+	wObj_bg0_enable: 1
+	wObj_bg1_enable: 1
+	wObj_bg2_enable: 1
+	wObj_bg3_enable: 1
+	wObj_obj_enable: 1
+);
+
