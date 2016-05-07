@@ -83,9 +83,18 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 
 	{
 		let pixel_x = (xoffset as u32) & __sw_mask;
-		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
+
+		// Screen Chunk:
+		// a = pixel_x / 256 > 0 ; (pixel_x >> 8) & 1)
+		// b = pixel_y / 256 > 0 ; (pixel_y >> 8) & 1)
+		// if screen_width > 256 ; (screen_width >> 9)
+		//     b *= 2
+		// sc = a + b
+		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << (screen_width >> 9));
+
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
+
 		// 2kbytes per SC
 		// 2 bytes per tile (32 tiles per line)
 		// 		64 bytes per row
@@ -103,7 +112,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 	while column < 232 {
 		// #TODO handle mosaic
 		let pixel_x = (column + (xoffset as u32)) & __sw_mask;
-		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
+		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << (screen_width >> 9));
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
 
@@ -121,7 +130,7 @@ pub fn draw_tiles_text_mode(bgcnt: u16, xoffset: u16, yoffset: u16, memory: &Gba
 
 	{
 		let pixel_x = (column + (xoffset as u32)) & __sw_mask;
-		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << 1);
+		let sc = ((pixel_x >> 8) & 1) + (((pixel_y >> 8) & 1) << (screen_width >> 9));
 		let tile_x = (pixel_x & 255) >> 3;
 		let tile_y = (pixel_y & 255) >> 3;
 		let map_tile_data_addr = screen_base_block + (sc * kbytes!(2)) + (tile_y << 6) + (tile_x << 1);
