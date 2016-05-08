@@ -1,5 +1,9 @@
 # Pyrite
 
+If compilation doesn't work due to a conflict with `libc`. Use `cargo update -p libc:0.2.2` or just 'cargo update -p libc'
+first to see what specs are available for you to use. Not sure about any other ways to fix this
+issue at the moment.
+
 A GBA Emulator
 
 - For quick tests of the emulator's functionality, use ```cargo build``` and ```cargo run -- [ROM]``` (< 60 FPS, maybe < 30 FPS)
