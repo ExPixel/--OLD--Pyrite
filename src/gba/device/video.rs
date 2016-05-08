@@ -4,7 +4,7 @@ use glium::Surface;
 use glium::texture::UncompressedFloatFormat;
 use glium::texture::MipmapsOption;
 
-use super::hw::lcd::GbaLcdScreenBuffer;
+use super::super::hw::lcd::GbaLcdScreenBuffer;
 // use ::util::frame_counter::FrameCounter;
 
 const ENABLE_VSYNC: bool = true;
@@ -18,7 +18,7 @@ implement_vertex!(Vertex, position, tex_coords);
 
 const DEFAULT_SCALE: u32 = 1;
 
-pub struct GbaDevice {
+pub struct VideoDevice {
 	pub display: glium::backend::glutin_backend::GlutinFacade, // #TODO wtf
 	vertex_buffer: glium::vertex::VertexBuffer<Vertex>,
 	indices: glium::index::NoIndices,
@@ -26,8 +26,8 @@ pub struct GbaDevice {
 	pub screen_texture: Texture2d
 }
 
-impl GbaDevice {
-	pub fn new() -> GbaDevice {
+impl VideoDevice {
+	pub fn new() -> VideoDevice {
 		use glium::DisplayBuild;
 		let mut display_builder = glium::glutin::WindowBuilder::new()
 						.with_dimensions(GBA_SCREEN_WIDTH * DEFAULT_SCALE, GBA_SCREEN_HEIGHT * DEFAULT_SCALE);
@@ -54,7 +54,7 @@ impl GbaDevice {
 						UncompressedFloatFormat::U8U8U8, MipmapsOption::EmptyMipmaps,
 						GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT).expect("Failed to create screen texture.");
 
-		GbaDevice {
+		VideoDevice {
 			display: display,
 			vertex_buffer: vertex_buffer,
 			indices: indices,

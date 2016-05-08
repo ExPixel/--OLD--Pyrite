@@ -2,9 +2,6 @@ pub mod core;
 pub mod hw;
 pub mod device;
 pub mod serialization;
-
-
-use glium::glutin::{Event, ElementState, VirtualKeyCode};
 use time;
 
 use std::thread;
@@ -151,7 +148,7 @@ impl Gba {
 		let frame_start_time = time::precise_time_ns();
 		self.frame();
 		let render_start_time = time::precise_time_ns();
-		self.device.render(&self.lcd.screen_buffer);
+		self.device.video.render(&self.lcd.screen_buffer);
 		let end_time = time::precise_time_ns();
 		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
 		if self.extras.request_debugger {
@@ -164,7 +161,7 @@ impl Gba {
 		let frame_build_time = (render_start_time - frame_start_time) / 1000000.0;
 		let render_to_screen_time = (end_time - render_start_time) / 1000000.0;
 		let frame_build_and_render_time = (end_time - frame_start_time) / 1000000.0;
-		let window = self.device.display.get_window().expect("Failed to get device window.");
+		let window = self.device.video.display.get_window().expect("Failed to get device window.");
 		window.set_title(&format!("Pyrite - {:.1}ms [f: {:.1}ms, r: {:.1}ms]", frame_build_and_render_time, frame_build_time, render_to_screen_time));
 	}
 
@@ -367,61 +364,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 			self.hardware_interrupt(overflow_int_mask);
 		}
 	}
+}
 
-
-	/// Polls for and handles events from the device.
-	/// returns true if this should quit.
-	fn poll_device_events(&mut self) {
-		for event in self.device.display.poll_events() {
-			match event {
-				Event::Closed => self.request_exit = true,
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Escape)) => {
-					self.request_exit = true
-				},
-
-			// GENERAL DEBUGGING STUFF:
-				Event::KeyboardInput(state, _, Some(VirtualKeyCode::D)) => {
-					match state {
-						ElementState::Pressed => set_pyrite_dyn_debug!(true),
-						_ => set_pyrite_dyn_debug!(false)
-					}
-				},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::R)) => {
-					self.cpu.reg_dump_pretty();
-				},
-
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::P)) => {
-					self.extras.request_pause = !self.extras.paused;
-				},
-				
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::H)) => { // The '>' key for me.
-					self.extras.request_debugger = true;
-					println!("Request Debugger...");
-				},
-
-			// DEBUGGING LAYERS IN GRAPHICS:
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key1)) => {debug_toggle_layer!(0);},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key2)) => {debug_toggle_layer!(1);},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key3)) => {debug_toggle_layer!(2);},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key4)) => {debug_toggle_layer!(3);},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Key5)) => {debug_toggle_layer!(4);},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::L)) => {debug_turn_off_all_layers!();},
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::K)) => {debug_turn_on_all_layers!();},
-
-			// ACTUAL GBA SHIT:
-				Event::KeyboardInput(ElementState::Pressed, _, Some(keycode)) => {
-					self.joypad.key_pressed(keycode);
-				},
-				Event::KeyboardInput(ElementState::Released, _, Some(keycode)) => {
-					self.joypad.key_released(keycode);
-				},
-				_ => {}
-			}
-		}
-
-		if self.joypad.tick(&mut self.cpu) {
-			self.hardware_interrupt(INT_KEYPAD);
-		}
-	}
+pub trait GbaEventPoll {
+	fn poll_device_events(&mut self);
 }
 

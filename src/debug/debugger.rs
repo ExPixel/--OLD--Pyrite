@@ -80,7 +80,7 @@ impl<'a> GbaDebugger<'a> {
 				Err(e) => panic!("Failed to read rustbox event: {}", e),
 				_ => {}
 			}
-			for event in self.gba.device.display.poll_events() {
+			for event in self.gba.device.video.display.poll_events() {
 				match event {
 					glutin::Event::Closed => {
 						self.running = false;
