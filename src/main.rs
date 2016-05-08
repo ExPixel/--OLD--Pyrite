@@ -8,6 +8,7 @@ extern crate rustc_serialize;
 extern crate bincode;
 extern crate rustbox;
 extern crate flate2;
+extern crate portaudio;
 
 use std::io::prelude::*;
 use std::env;

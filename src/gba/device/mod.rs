@@ -1,3 +1,6 @@
+//! The device module contains methods for the emualtor
+//! to use in order to interface with your actual hardware.
+
 pub mod video;
 pub mod audio;
 pub mod events;

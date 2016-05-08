@@ -146,11 +146,23 @@ impl Gba {
 
 	pub fn tick(&mut self, frame: u64) {
 		let frame_start_time = time::precise_time_ns();
-		self.frame();
+		if !self.extras.paused {
+			self.frame();
+		} else {
+			self.poll_device_events();
+		}
 		let render_start_time = time::precise_time_ns();
 		self.device.video.render(&self.lcd.screen_buffer);
 		let end_time = time::precise_time_ns();
 		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
+		
+
+		if self.extras.paused != self.extras.request_pause {
+			self.extras.paused = self.extras.request_pause;
+			if self.extras.paused { println!("Paused."); }
+			else { println!("Unpaused"); }
+		}
+
 		if self.extras.request_debugger {
 			self.extras.request_debugger = false;
 			GbaDebugger::new(self).start();
@@ -208,15 +220,6 @@ impl Gba {
 		self.cpu.memory.internal_regs.on_frame_end(
 			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
 		);
-		if self.extras.paused != self.extras.request_pause {
-			self.extras.paused = self.extras.request_pause;
-			if self.extras.paused { println!("Paused."); }
-			else { println!("Unpaused"); }
-		}
-
-		pyrite_debugging!({
-			print_memory_table!(self.cpu.memory, 0x0600FB60, 0x0600FB60 + 63);
-		});
 	}
 
 	/// Attempts to fire an vblank interrupt
@@ -324,8 +327,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	}
 
 	fn run_cpu_cycles(&mut self, cycles: u64) {
-		if self.extras.paused { return }
-
 		if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 		let target = self.cpu.clock.cycles + cycles;
 
