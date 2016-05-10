@@ -14,6 +14,12 @@ const PHASE_MAX: FloatType = 1.0;
 const FRAMES_PER_BUFFER: u32 = 256;
 // const INTERLEAVED: bool = true;
 
+enum GbaAudioEvent {
+	UpdateChannel1(GbaSquareWave),
+	UpdateChannel2(GbaSquareWave),
+	UpdateChannel4(GbaNoise),
+}
+
 #[derive(Default, Copy, Clone)]
 pub struct GbaSquareWave {
 	frequency: FloatType, // 64Hz - 131072 Hz (131 KHz)
@@ -36,7 +42,7 @@ pub struct GbaChannels {
 
 pub struct AudioDevice {
 	pub channels: GbaChannels,
-	sender: Option<Sender<GbaChannels>>,
+	sender: Option<Sender<GbaAudioEvent>>,
 	output_thread: Option<thread::JoinHandle<()>>
 }
 
@@ -67,13 +73,12 @@ impl AudioDevice {
 		self.channels.channel1.duty_cycle = 0.5;
 		self.channels.channel1.amplitude = 1.0;
 		self.channels.channel1.on = false;
-		self.commit();
+		self.commit_channel1();
 	}
 
-	// Sends its channel data to the audio output thread.
-	pub fn commit(&mut self) {
+	fn send(&mut self, event: GbaAudioEvent) {
 		if let Some(sender) = self.sender.as_ref() {
-			match sender.send(self.channels) {
+			match sender.send(event) {
 				Ok(_) => {},
 				Err(e) => {
 					debug_error!("Error while sending data to the audio output thread. Error: {}", e);
@@ -81,6 +86,25 @@ impl AudioDevice {
 				}
 			}
 		}
+	}
+
+	pub fn commit_channel1(&mut self) {
+		let c = self.channels.channel1;
+		self.send(GbaAudioEvent::UpdateChannel1(c));
+	}
+
+	pub fn commit_channel2(&mut self) {
+		let c = self.channels.channel2;
+		self.send(GbaAudioEvent::UpdateChannel2(c));
+	}
+
+	pub fn commit_channel3(&mut self) {
+		unimplemented!(); // #TODO implement this.
+	}
+
+	pub fn commit_channel4(&mut self) {
+		let c = self.channels.channel4;
+		self.send(GbaAudioEvent::UpdateChannel4(c));
 	}
 
 	pub fn stop(&mut self) {
@@ -125,7 +149,7 @@ fn mix_gba_channels(phase: FloatType, channels: &mut GbaChannels) -> (FloatType,
 	return (left, right);
 }
 
-fn start_port_audio(rx: Receiver<GbaChannels>) {
+fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 	// SETUP:
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
 	let mut settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
@@ -137,7 +161,11 @@ fn start_port_audio(rx: Receiver<GbaChannels>) {
 	let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 		match rx.try_recv() {
 			Ok(data) => {
-				channels = data;
+				match data {
+					GbaAudioEvent::UpdateChannel1(c) => channels.channel1 = c,
+					GbaAudioEvent::UpdateChannel2(c) => channels.channel2 = c,
+					GbaAudioEvent::UpdateChannel4(c) => channels.channel4 = c,
+				}
 			},
 			Err(e) => {
 				match e {

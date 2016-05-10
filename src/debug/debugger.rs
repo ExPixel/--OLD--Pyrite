@@ -239,13 +239,13 @@ impl<'a> GbaDebugger<'a> {
 			// #TODO remove this temporary command.
 			"play-sound" => {
 				self.gba.device.audio.channels.channel1.on = true;
-				self.gba.device.audio.commit();
+				self.gba.device.audio.commit_channel1();
 			},
 
 			// #TODO remove this temporary command.
 			"stop-sound" => {
 				self.gba.device.audio.channels.channel1.on = false;
-				self.gba.device.audio.commit();
+				self.gba.device.audio.commit_channel1();
 			}
 
 			_ => {
