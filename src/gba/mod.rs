@@ -141,6 +141,11 @@ impl Gba {
 			frame += 1;
 		}
 		self.request_exit = false; // in case we don't actually close here.
+
+		// It's important that we do this so that we don't leak things
+		// beyond our comprehension.
+		self.device.close();
+
 		println!("-- Shutdown successfully.");
 	}
 

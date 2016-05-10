@@ -1,6 +1,6 @@
 #[macro_use] pub mod util;
+#[macro_use] pub mod debug;
 pub mod gba;
-pub mod debug;
 
 extern crate time;
 #[macro_use] extern crate glium;
@@ -9,6 +9,8 @@ extern crate bincode;
 extern crate rustbox;
 extern crate flate2;
 extern crate portaudio;
+
+#[macro_use] extern crate lazy_static;
 
 use std::io::prelude::*;
 use std::env;

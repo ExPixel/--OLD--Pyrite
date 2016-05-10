@@ -16,9 +16,15 @@ pub struct GbaDevice {
 
 impl GbaDevice {
 	pub fn new() -> GbaDevice {
-		GbaDevice {
+		let mut ret = GbaDevice {
 			video: VideoDevice::new(),
 			audio: AudioDevice::new()
-		}
+		};
+		ret.audio.start();
+		return ret;
+	}
+
+	pub fn close(&mut self) {
+		self.audio.stop();
 	}
 }

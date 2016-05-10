@@ -82,7 +82,7 @@ macro_rules! pyrite_debugging {
 }
 
 #[macro_export]
-macro_rules! debug_print {
+macro_rules! debug_print_vars {
 	($($x:expr),*) => (
 		print!("[DEBUG] [{}:{}] ", file!(), line!());
 		$(
@@ -94,7 +94,7 @@ macro_rules! debug_print {
 }
 
 #[macro_export]
-macro_rules! debug_println {
+macro_rules! debug_print_vars_ln {
 	($($x:expr),*) => (
 		println!("[DEBUG] [{}:{}] ", file!(), line!());
 		$(

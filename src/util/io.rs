@@ -21,3 +21,11 @@ pub fn read_file_into_string_buf<'a>(file_path: &'a str, buf: &mut String) -> Re
 		Err(e) => Err(format!("Failed to read file `{}`. Error: {}", file_path, e))
 	}
 }
+
+pub fn write_string_into_file<'a>(file_path: &'a str, buf: &'a str) {
+	let mut f = File::create(file_path).unwrap();
+	write!(f, "{}", buf).unwrap();
+	write!(f, "{}", buf).unwrap();
+	write!(f, "{}", buf).unwrap();
+	write!(f, "{}", buf).unwrap();
+}
