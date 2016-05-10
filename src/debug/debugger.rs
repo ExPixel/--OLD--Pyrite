@@ -236,6 +236,18 @@ impl<'a> GbaDebugger<'a> {
 				self.cmd_measure(&arguments);
 			},
 
+			// #TODO remove this temporary command.
+			"play-sound" => {
+				self.gba.device.audio.channels.channel1.on = true;
+				self.gba.device.audio.commit();
+			},
+
+			// #TODO remove this temporary command.
+			"stop-sound" => {
+				self.gba.device.audio.channels.channel1.on = false;
+				self.gba.device.audio.commit();
+			}
+
 			_ => {
 				self.write_error_line(&format!("Unrecognized command '{}'", command_name));
 			}

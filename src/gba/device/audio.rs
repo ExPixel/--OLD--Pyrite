@@ -1,10 +1,10 @@
 use portaudio;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 use std::thread;
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 // use std::f64::consts::PI;
 
-type FloatType = f64;
+type FloatType = f32;
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
@@ -12,76 +12,93 @@ const SAMPLE_RATE: f64 = 44_100.0;
 const PHASE_INC: FloatType = (1.0 / SAMPLE_RATE) as FloatType;
 const PHASE_MAX: FloatType = 1.0;
 const FRAMES_PER_BUFFER: u32 = 256;
-const INTERLEAVED: bool = true;
+// const INTERLEAVED: bool = true;
 
-#[derive(Default)]
-struct GbaSquareWave {
+#[derive(Default, Copy, Clone)]
+pub struct GbaSquareWave {
 	frequency: FloatType, // 64Hz - 131072 Hz (131 KHz)
 	duty_cycle: FloatType,
 	amplitude: FloatType,
-	on: bool
+	pub on: bool
 }
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 struct GbaNoise {
 	on: bool
 }
 
-#[derive(Default)]
-struct GbaChannels {
-	channel1: GbaSquareWave,
+#[derive(Default, Copy, Clone)]
+pub struct GbaChannels {
+	pub channel1: GbaSquareWave,
 	channel2: GbaSquareWave,
 	channel4: GbaNoise
 }
 
 pub struct AudioDevice {
-	running: Arc<AtomicBool>,
-	channels: Arc<Mutex<GbaChannels>>,
+	pub channels: GbaChannels,
+	sender: Option<Sender<GbaChannels>>,
 	output_thread: Option<thread::JoinHandle<()>>
 }
 
 impl AudioDevice {
 	pub fn new() -> AudioDevice {
 		AudioDevice {
-			running: Arc::new(AtomicBool::new(true)),
-			channels: Arc::new(Mutex::new(Default::default())),
+			channels: Default::default(),
+			sender: None,
 			output_thread: None
 		}
 	}
 
 	pub fn start(&mut self) {
-		{
-			let mut channel = self.channels.lock().expect("Failed to aquire channels lock on main thread.");
-			channel.channel1.frequency = 1000.0;
-			channel.channel1.duty_cycle = 0.5;
-			channel.channel1.amplitude = 1.0;
-			channel.channel1.on = true;
-		}
-
-		let _running = self.running.clone();
-		let _channels = self.channels.clone();
+		let (tx, rx) = mpsc::channel();
 
 		let thread = thread::Builder::new().name("Audio".to_string()).spawn(move || {
-			run_port_audio_output_loop(_running, _channels);
+			start_port_audio(rx);
 		}).expect("Failed to start audio thread.");
 		
+		self.sender = Some(tx);
 		self.output_thread = Some(thread);
+
+		self.first_send();
+	}
+
+	fn first_send(&mut self) {
+		self.channels.channel1.frequency = 1000.0;
+		self.channels.channel1.duty_cycle = 0.5;
+		self.channels.channel1.amplitude = 1.0;
+		self.channels.channel1.on = false;
+		self.commit();
+	}
+
+	// Sends its channel data to the audio output thread.
+	pub fn commit(&mut self) {
+		if let Some(sender) = self.sender.as_ref() {
+			match sender.send(self.channels) {
+				Ok(_) => {},
+				Err(e) => {
+					debug_error!("Error while sending data to the audio output thread. Error: {}", e);
+					panic!("Error while sending audio");
+				}
+			}
+		}
 	}
 
 	pub fn stop(&mut self) {
-		self.running.store(false, Ordering::Relaxed);
 		debug_trace!("Waiting for audio output thread to stop...");
 		match self.output_thread.take() {
 			Some(t) => {
+				t.thread().unpark();
+				debug_trace!("Unparked PortAudio thread.");
 				match t.join() {
-					Err(e) => debug_error!("Error while waiting for audio thread."),
+					// #FIXME the type of the error is Any + Send so I can't display it. What do?
+					Err(_) => debug_error!("Error while waiting for audio thread."),
 					_ => {
 						debug_trace!("Audio output thread stopped.");
 					}
 				}
 			},
 			None => {
-				debug_error!("No audio thread to stop.");
+				debug_warn!("No audio thread to stop.");
 			}
 		}
 	}
@@ -102,92 +119,78 @@ fn mix_gba_channels(phase: FloatType, channels: &mut GbaChannels) -> (FloatType,
 		right = s;
 	}
 
+	// if channels.channel2.on {
+	// }
+
 	return (left, right);
 }
 
-fn run_port_audio_output_loop(running: Arc<AtomicBool>, gba_channels: Arc<Mutex<GbaChannels>>) {
+fn start_port_audio(rx: Receiver<GbaChannels>) {
 	// SETUP:
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
-	let output_device = pa.default_output_device().expect("Failed to get default output device.");
-	let output_info = pa.device_info(output_device).expect("Failed to get output device info.");
-	debug_trace!("Default output device info: {:#?}", &output_info);
-	let latency = output_info.default_low_output_latency;
-	let output_params = portaudio::StreamParameters::<f32>::new(output_device, CHANNELS, INTERLEAVED, latency);
-	let settings = portaudio::stream::OutputSettings::new(output_params, SAMPLE_RATE, FRAMES_PER_BUFFER);
-	let mut stream = pa.open_blocking_stream(settings)
-		.expect("Failed to create PortAudio output stream.");
-	debug_info!("Opened GBA audio stream.");
-
-	fn wait_for_stream<F>(f: F) -> u32 where F: Fn() -> Result<portaudio::StreamAvailable, portaudio::error::Error> {
-		'waiting_for_stream: loop {
-			match f() {
-				Ok(available) => match available {
-					portaudio::StreamAvailable::Frames(frames) => return frames as u32,
-					portaudio::StreamAvailable::InputOverflowed => debug_error!("Input stream has overflowed"),
-					portaudio::StreamAvailable::OutputUnderflowed => debug_error!("Output stream has underflowed")
-				},
-				Err(err) => panic!("An error occurred while waiting for the audio write stream: {}", err)
-			}
-		}
-	};
-
-	stream.start().expect("Failed to start PortAudio stream.");
-	debug_info!("Started GBA audio stream.");
-
-	// let mut frames_passed: u32 = 0;
+	let mut settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
+		.expect("Failed to get PortAudio default output stream settings.");
+	settings.flags = portaudio::stream_flags::CLIP_OFF;
 
 	let mut phase = 0.0;
-
-	'audio_loop: while running.load(Ordering::Relaxed) {
-		// debug_trace!("Checking available out frames...");
-		let out_frames = wait_for_stream(|| stream.write_available());
-		// debug_trace!("{} out frames available.", out_frames);
-
-		if out_frames > 0 {
-			let mut channel_lock = match gba_channels.lock() {
-				Ok(lock) => lock,
-				Err(e) => {
-					debug_error!("Failed to acquire channels lock on audio output thread. Error: {}", e);
-					break 'audio_loop
+	let mut channels: GbaChannels = Default::default();
+	let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
+		match rx.try_recv() {
+			Ok(data) => {
+				channels = data;
+			},
+			Err(e) => {
+				match e {
+					mpsc::TryRecvError::Empty => {}
+					mpsc::TryRecvError::Disconnected => {
+						debug_error!("PortAudio receiver was disconnected.");
+						return portaudio::Abort
+					}
 				}
-			};
-
-			let result = stream.write(out_frames, |output| {
-				let mut idx = 0;
-				for _ in 0..out_frames {
-					let (left, right) = mix_gba_channels(phase, &mut channel_lock);
-					output[idx] = left as f32;
-					output[idx + 1] = right as f32;
-					idx += 2;
-
-					phase += PHASE_INC;
-					if phase > PHASE_MAX { phase = 0.0 }
-					// debug_trace!("wrote {} to ({}, {})", s, idx, idx + 1);
-				}
-				// debug_trace!("Wrote {} (>= {})  frames to the output stream.", wrote_fucking_fuck, out_frames);
-			});
-
-			match result {
-				Err(portaudio::Error::OutputUnderflowed) => debug_warn!("Error while writing to PortAudio output stream: {}", portaudio::Error::OutputUnderflowed),
-				Err(e) => panic!("Fatal error while writing to PortAudio output stream: {}", e),
-				_ => {}
 			}
 		}
 
+		let mut idx = 0;
+		for _ in 0..frames {
+			let (left, right) = mix_gba_channels(phase, &mut channels);
+			buffer[idx] = left as f32;
+			buffer[idx + 1] = right as f32;
+			idx += 2;
+			phase += PHASE_INC;
+			if phase > PHASE_MAX { phase = 0.0}
+		}
+		portaudio::Continue
+	};
+
+	let mut stream = pa.open_non_blocking_stream(settings, callback)
+		.expect("Failed to create PortAudio output stream.");
+	debug_info!("Opened PortAudio stream.");
+
+	match stream.start() {
+		Ok(_) => {
+			debug_info!("Started PortAudio output stream");
+		},
+		Err(e) => {
+			debug_error!("Failed to start PortAudio output stream. Error: {}", e);
+			return
+		}
 	}
+
+	debug_trace!("Parked PortAudio thread.");
+	thread::park(); // And now we wait...
 
 	match stream.abort() {
 		Ok(_) => {
-			debug_info!("Stopped GBA audio stream.");
+			debug_info!("Stopped PortAudio stream.");
 		},
 		Err(e) => {
-			debug_warn!("Failed to stop GBA Audio Stream. Error: {}", e);
+			debug_warn!("Failed to stop PortAudio Stream. Error: {}", e);
 		}
 	}
 
 	match stream.close() {
 		Ok(_) => {
-			debug_info!("Closed GBA audio stream.");
+			debug_info!("Closed PortAudio stream.");
 		},
 		Err(e) => {
 			debug_warn!("Failed to close GBA Audio Stream. Error: {}", e);
