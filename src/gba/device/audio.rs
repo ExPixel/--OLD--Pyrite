@@ -4,13 +4,11 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 // use std::f64::consts::PI;
 
-type FloatType = f32;
-
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
 // const SAMPLE_RATE_I: u32 = 44_100;
-const PHASE_INC: FloatType = (1.0 / SAMPLE_RATE) as FloatType;
-const PHASE_MAX: FloatType = 1.0;
+const PHASE_INC: f32 = (1.0 / SAMPLE_RATE) as f32;
+const PHASE_MAX: f32 = 1.0;
 const FRAMES_PER_BUFFER: u32 = 256;
 // const INTERLEAVED: bool = true;
 
@@ -18,26 +16,27 @@ enum GbaAudioEvent {
 	UpdateChannel1(GbaSquareWave),
 	UpdateChannel2(GbaSquareWave),
 	UpdateChannel4(GbaNoise),
+	UpdateVolume(f32)
 }
 
 #[derive(Default, Copy, Clone)]
 pub struct GbaSquareWave {
-	frequency: FloatType, // 64Hz - 131072 Hz (131 KHz)
-	duty_cycle: FloatType,
-	amplitude: FloatType,
+	pub frequency: f32, // 64Hz - 131072 Hz (131 KHz)
+	pub duty_cycle: f32,
+	pub amplitude: f32,
 	pub on: bool
 }
 
 #[derive(Default, Copy, Clone)]
-struct GbaNoise {
-	on: bool
+pub struct GbaNoise {
+	pub on: bool
 }
 
 #[derive(Default, Copy, Clone)]
 pub struct GbaChannels {
 	pub channel1: GbaSquareWave,
-	channel2: GbaSquareWave,
-	channel4: GbaNoise
+	pub channel2: GbaSquareWave,
+	pub channel4: GbaNoise
 }
 
 pub struct AudioDevice {
@@ -65,15 +64,9 @@ impl AudioDevice {
 		self.sender = Some(tx);
 		self.output_thread = Some(thread);
 
-		self.first_send();
-	}
-
-	fn first_send(&mut self) {
-		self.channels.channel1.frequency = 1000.0;
-		self.channels.channel1.duty_cycle = 0.5;
-		self.channels.channel1.amplitude = 1.0;
-		self.channels.channel1.on = false;
-		self.commit_channel1();
+		// #TODO remove this debugging code.
+		// It's here so that I don't lose hearing while testing.
+		self.set_volume(0.1);
 	}
 
 	fn send(&mut self, event: GbaAudioEvent) {
@@ -86,6 +79,10 @@ impl AudioDevice {
 				}
 			}
 		}
+	}
+
+	pub fn set_volume(&mut self, volume: f32) {
+		self.send(GbaAudioEvent::UpdateVolume(volume));
 	}
 
 	pub fn commit_channel1(&mut self) {
@@ -128,7 +125,7 @@ impl AudioDevice {
 	}
 }
 
-fn mix_gba_channels(phase: FloatType, channels: &mut GbaChannels) -> (FloatType, FloatType) {
+fn mix_gba_channels(phase: f32, channels: &mut GbaChannels) -> (f32, f32) {
 	let mut left = 0.0;
 	let mut right = 0.0;
 
@@ -149,6 +146,13 @@ fn mix_gba_channels(phase: FloatType, channels: &mut GbaChannels) -> (FloatType,
 	return (left, right);
 }
 
+
+fn volume_to_signal_multiplier(volume: f32) -> f32 {
+	let level_change = 10.0f32 * volume.log2();
+	let sound_pressure = (10.0f32).powf(level_change / 20.0);
+	return sound_pressure;
+}
+
 fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 	// SETUP:
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
@@ -158,6 +162,8 @@ fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 
 	let mut phase = 0.0;
 	let mut channels: GbaChannels = Default::default();
+	let mut volume_multiplier = 0.0f32;
+
 	let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 		match rx.try_recv() {
 			Ok(data) => {
@@ -165,6 +171,7 @@ fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 					GbaAudioEvent::UpdateChannel1(c) => channels.channel1 = c,
 					GbaAudioEvent::UpdateChannel2(c) => channels.channel2 = c,
 					GbaAudioEvent::UpdateChannel4(c) => channels.channel4 = c,
+					GbaAudioEvent::UpdateVolume(v) => volume_multiplier = volume_to_signal_multiplier(v)
 				}
 			},
 			Err(e) => {
@@ -181,8 +188,8 @@ fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 		let mut idx = 0;
 		for _ in 0..frames {
 			let (left, right) = mix_gba_channels(phase, &mut channels);
-			buffer[idx] = left as f32;
-			buffer[idx + 1] = right as f32;
+			buffer[idx] = left * volume_multiplier;
+			buffer[idx + 1] = right * volume_multiplier;
 			idx += 2;
 			phase += PHASE_INC;
 			if phase > PHASE_MAX { phase = 0.0}

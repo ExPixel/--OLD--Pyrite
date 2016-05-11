@@ -30,7 +30,8 @@ const IMPLEMENTED_COMMANDS: &'static [&'static str] = &[
 	"frame-s",
 	"save-state",
 	"load-state",
-	"measure"
+	"measure",
+	"set-volume"
 ];
 
 pub struct GbaDebugger<'a> {
@@ -235,18 +236,14 @@ impl<'a> GbaDebugger<'a> {
 			"measure" => {
 				self.cmd_measure(&arguments);
 			},
-
-			// #TODO remove this temporary command.
-			"play-sound" => {
-				self.gba.device.audio.channels.channel1.on = true;
-				self.gba.device.audio.commit_channel1();
+			
+			"set-volume" => {
+				if arguments.len() < 1 {
+					self.too_few_args(1, &command_name, &arguments);
+					return;
+				}
+				self.cmd_set_volmue(&arguments);
 			},
-
-			// #TODO remove this temporary command.
-			"stop-sound" => {
-				self.gba.device.audio.channels.channel1.on = false;
-				self.gba.device.audio.commit_channel1();
-			}
 
 			_ => {
 				self.write_error_line(&format!("Unrecognized command '{}'", command_name));
@@ -256,6 +253,16 @@ impl<'a> GbaDebugger<'a> {
 
 	pub fn too_few_args(&self, arg_req: usize, cname: &String, cargs: &[String]) {
 		self.write_error_line(&format!("Command {} requires {} arguments ({} provided)", cname, arg_req, cargs.len()));
+	}
+
+	pub fn cmd_set_volmue(&mut self, args: &[String]) {
+		let volume = match args[0].parse::<f32>() {
+			Ok(v) => v,
+			Err(_) => { self.write_error_line(&format!("{} is not a number.", args[0])); return }
+		};
+		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default,
+			&format!("Volume set to {}", volume));
+		self.gba.device.audio.set_volume(volume);
 	}
 
 	pub fn cmd_measure(&mut self, args: &[String]) {

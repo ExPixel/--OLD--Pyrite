@@ -1,2 +1,2 @@
-pub struct GbaAudio {
+pub struct GbaAudioController {
 }
