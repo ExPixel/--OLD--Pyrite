@@ -63,14 +63,16 @@ pub const MEASURE_CPU_TICKS_TIME: usize = 0;
 pub const MEASURE_DMA_TICKS_TIME: usize = 1;
 pub const MEASURE_TILE_RENDER_TIME: usize = 2;
 pub const MEASURE_OBJ_RENDER_TIME: usize = 3;
-pub const AVAILABLE_MEASURES: usize = 4;
+pub const MEASURE_AUDIO_TICK_TIME: usize = 4;
+pub const AVAILABLE_MEASURES: usize = 5;
 
 #[cfg(feature = "measure")]
 static mut measures: [MeasureInfo; AVAILABLE_MEASURES] = [
 	new_measure!("CPU Cycles"),
 	new_measure!("DMA Cycles"),
 	new_measure!("Render Text Tiles"),
-	new_measure!("Render OBJs")
+	new_measure!("Render OBJs"),
+	new_measure!("Audio Tick")
 ];
 
 #[cfg(feature = "measure")]

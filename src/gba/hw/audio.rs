@@ -1,6 +1,7 @@
 use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
 use super::super::device::audio::AudioDevice;
+use ::util::measure::*;
 
 // One cycle equals approx. 59.59ns (Closer to 45ns with the emulator running on my MacBook Pro) 
 // But I imagine that this eventually evens out with the vsyncs and what not.
@@ -46,7 +47,7 @@ struct GbaChannel1 {
 	frequency: u16,            // 0-10  W    Frequency; 131072/(2048-n)Hz  (0-2047)
 	length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR11 expires)
 	initial: bool,             // 15    W    Initial      (1=Restart Sound)
-	
+
 	dirty: bool
 }
 
@@ -60,6 +61,7 @@ pub struct GbaAudio {
 
 impl GbaAudio {
 	pub fn tick(&mut self, device: &mut AudioDevice, cpu: &mut ArmCpu) {
+		measure_start(MEASURE_AUDIO_TICK_TIME);
 		self.load_channel1(cpu);
 
 		// If we go 4 billion cycles without ever calling tick
@@ -70,6 +72,7 @@ impl GbaAudio {
 
 		// self.tick_channel1(device, cpu, delta);
 		self.last_cpu_cycles = cpu.clock.cycles;
+		measure_end(MEASURE_AUDIO_TICK_TIME);
 	}
 
 	fn load_channel1(&mut self, cpu: &mut ArmCpu) {
@@ -98,7 +101,7 @@ impl GbaAudio {
 	}
 
 	fn tick_channel1(&mut self, device: &mut AudioDevice, cpu: &mut ArmCpu, delta: u32) {
-		// Handling the Sweep Function:
+		// Handling the sweep function:
 		if self.c1.sweep_time > 0 {
 			self.c1.sweep_cycles_acc += delta;
 			let channel_sweep_cycle_delay = 128_000 * (self.c1.sweep_time as u32);
@@ -124,6 +127,17 @@ impl GbaAudio {
 				self.c1.sweep_cycles_acc -= channel_sweep_cycle_delay;
 			}
 		}
+
+		// Handling the envelope function:
+
+
+		// So that the sound isn't restarted every tick.
+		// if self.c1.initial {
+		// 	self.c1.initial = false;
+		// 	let mut sound1cnt_x = cpu.memory.get_reg(ioreg::SOUND1CNT_X);
+		// 	sound1cnt_x &= !0x8000; // clear the initial bit.
+		// 	cpu.memory.set_reg(ioreg::SOUND1CNT_X, sound1cnt_x);
+		// }
 
 		if self.c1.dirty {
 			// let _f = device.channels.channel1.frequency;

@@ -66,7 +66,7 @@ impl AudioDevice {
 
 		// #TODO remove this debugging code.
 		// It's here so that I don't lose hearing while testing.
-		self.set_volume(0.5);
+		self.set_volume(0.2);
 	}
 
 	fn send(&mut self, event: GbaAudioEvent) {
