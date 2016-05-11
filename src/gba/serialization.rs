@@ -31,16 +31,17 @@ pub trait BinarySerialization {
 impl BinarySerialization for Gba {
 	// #TODO remove this temporary code.
 	fn save_to_file<'a>(&self, file_path: &'a str) -> Result<&'static str, String> {
-		let _save_path = Path::new(file_path);
-		let _save_path_parent = _save_path.parent().expect("Getting save file path parent directory");
-		create_dir_all(_save_path_parent).expect("Creating save file path parent directories");
+		return Err("NOPE".to_string());
+		// let _save_path = Path::new(file_path);
+		// let _save_path_parent = _save_path.parent().expect("Getting save file path parent directory");
+		// create_dir_all(_save_path_parent).expect("Creating save file path parent directories");
 
-		let mut f = match File::create(file_path) {
-			Ok(file) => file,
-			Err(_) => return Err(format!("Failed to open {}", file_path))
-		};
-		self.serialize(&mut f);
-		return Ok("ok")
+		// let mut f = match File::create(file_path) {
+		// 	Ok(file) => file,
+		// 	Err(_) => return Err(format!("Failed to open {}", file_path))
+		// };
+		// self.serialize(&mut f);
+		// return Ok("ok")
 	}
 
 	// #TODO remove this temporary code.

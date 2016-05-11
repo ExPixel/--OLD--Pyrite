@@ -241,7 +241,12 @@ pub struct InternalRegisters {
 
 	pub dma_dirty: bool,
 	pub dma_registers: [DMAInternalReg; 4],
-	pub timers: [TimerInternalReg; 4]
+	pub timers: [TimerInternalReg; 4],
+
+	pub sound_channel1_dirty: bool,
+	pub sound_channel2_dirty: bool,
+	pub sound_channel3_dirty: bool,
+	pub sound_channel4_dirty: bool,
 }
 
 impl InternalRegisters {
@@ -327,6 +332,10 @@ impl InternalRegisters {
 			0x00000C6 => { self.update_dma_hi(1, value); },
 			0x00000D2 => { self.update_dma_hi(2, value); },
 			0x00000DE => { self.update_dma_hi(3, value); },
+
+			0x0000060 |
+			0x0000062 |
+			0x0000064 => { self.sound_channel1_dirty = true },
 
 			_ => {}
 		}

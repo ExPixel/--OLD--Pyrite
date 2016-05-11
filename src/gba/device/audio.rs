@@ -66,7 +66,7 @@ impl AudioDevice {
 
 		// #TODO remove this debugging code.
 		// It's here so that I don't lose hearing while testing.
-		self.set_volume(0.1);
+		self.set_volume(0.5);
 	}
 
 	fn send(&mut self, event: GbaAudioEvent) {
@@ -160,29 +160,32 @@ fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
 	let mut settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
 		.expect("Failed to get PortAudio default output stream settings.");
-	settings.flags = portaudio::stream_flags::CLIP_OFF;
+	// settings.flags = portaudio::stream_flags::CLIP_OFF;
 
 	let mut phase = 0.0;
 	let mut channels: GbaChannels = Default::default();
 	let mut volume_multiplier = 0.0f32;
 
 	let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
-		match rx.try_recv() {
-			Ok(data) => {
-				match data {
-					GbaAudioEvent::UpdateChannel1(c) => channels.channel1 = c,
-					GbaAudioEvent::UpdateChannel2(c) => channels.channel2 = c,
-					GbaAudioEvent::UpdateChannel4(c) => channels.channel4 = c,
-					GbaAudioEvent::UpdateVolume(v) => volume_multiplier = volume_to_signal_multiplier(v)
-				}
-			},
-			Err(e) => {
-				match e {
-					mpsc::TryRecvError::Empty => {}
-					mpsc::TryRecvError::Disconnected => {
-						debug_error!("PortAudio receiver was disconnected.");
-						return portaudio::Abort
+		'recv_loop: loop {
+			match rx.try_recv() {
+				Ok(data) => {
+					match data {
+						GbaAudioEvent::UpdateChannel1(c) => channels.channel1 = c,
+						GbaAudioEvent::UpdateChannel2(c) => channels.channel2 = c,
+						GbaAudioEvent::UpdateChannel4(c) => channels.channel4 = c,
+						GbaAudioEvent::UpdateVolume(v) => volume_multiplier = volume_to_signal_multiplier(v)
 					}
+				},
+				Err(e) => {
+					match e {
+						mpsc::TryRecvError::Empty => {}
+						mpsc::TryRecvError::Disconnected => {
+							debug_error!("PortAudio receiver was disconnected.");
+							return portaudio::Abort
+						}
+					};
+					break 'recv_loop;
 				}
 			}
 		}

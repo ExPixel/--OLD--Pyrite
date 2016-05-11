@@ -13,6 +13,7 @@ use self::core::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
+use self::hw::audio::GbaAudio;
 use self::hw::dma::*;
 
 use super::debug::debugger::GbaDebugger;
@@ -27,7 +28,7 @@ const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
 
 /// #TODO remove this debug code.
 /// true if the starting address should be 0 in SVC mode.
-const STARTUP_BIOS: bool = true;
+const STARTUP_BIOS: bool = false;
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;
@@ -80,6 +81,7 @@ impl GbaExtras {
 pub struct Gba {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
+	pub audio: GbaAudio,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
 	pub request_exit: bool,
@@ -94,7 +96,8 @@ impl Gba {
 			device: GbaDevice::new(),
 			joypad: GbaJoypad::new(),
 			request_exit: false,
-			extras: GbaExtras::new()
+			extras: GbaExtras::new(),
+			audio: Default::default()
 		}
 	}
 
@@ -357,6 +360,8 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				}
 			}
 		}
+
+		self.audio.tick(&mut self.device.audio, &mut self.cpu);
 
 		measure_end(MEASURE_CPU_TICKS_TIME);
 		measure_end(MEASURE_DMA_TICKS_TIME);
