@@ -9,6 +9,7 @@ extern crate bincode;
 extern crate rustbox;
 extern crate flate2;
 extern crate portaudio;
+extern crate ansi_term;
 
 #[macro_use] extern crate lazy_static;
 
