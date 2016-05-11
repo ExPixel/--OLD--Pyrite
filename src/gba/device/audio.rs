@@ -146,7 +146,9 @@ fn mix_gba_channels(phase: f32, channels: &mut GbaChannels) -> (f32, f32) {
 	return (left, right);
 }
 
-
+/// Hearing is logarithmic or something or other,
+/// so just multiplying our signal by 1/10 won't translate
+/// exactly to 1/10 of perceived volume.
 fn volume_to_signal_multiplier(volume: f32) -> f32 {
 	let level_change = 10.0f32 * volume.log2();
 	let sound_pressure = (10.0f32).powf(level_change / 20.0);

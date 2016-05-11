@@ -1,6 +1,6 @@
 pub mod ioreg;
 
-// #TODO reduce the calls to transform.
+// #TODO reduce the calls to map.
 // I have yet to see a memory access that reads/writes from more 
 // than one memory area.
 
@@ -42,17 +42,6 @@ pub struct GbaMemory {
 	// #TODO add SRAM.
 }
 
-// trait MemoryBoundCheckable {
-// 	fn within(self, start: u32, end: u32) -> bool;
-// }
-
-// impl MemoryBoundCheckable for u32 {
-// 	#[inline(always)]
-// 	fn within(self, start: u32, end: u32) -> bool {
-// 		self >= start && self <= end
-// 	}
-// }
-
 impl GbaMemory {
 	pub fn new() -> GbaMemory {
 		GbaMemory {
@@ -72,8 +61,8 @@ impl GbaMemory {
 	/// This should never try to slice memory across regions or mirrors. Bad things might happen.
 	/// NOTE: Ranges in this are inclusive!
 	pub fn get_slice(&self, start_address: u32, end_address: u32) -> &[u8] {
-		let (start_index, _) = self.transform(start_address);
-		let (end_index, _) = self.transform(end_address);
+		let (start_index, _) = self.map(start_address);
+		let (end_index, _) = self.map(end_address);
 		&self.internal_data[start_index..(end_index + 1)]
 	}
 
@@ -82,10 +71,10 @@ impl GbaMemory {
 		&self.internal_data[region.local_addr..(region.local_addr+region.size)]
 	}
 
-	/// Transforms a global GBA memory address
-	/// into a local index in our internal data array.
+	/// Maps a global GBA memory address
+	/// to a local index in our internal data array.
 	/// returns address and true if write is allowed.
-	pub fn transform(&self, address32: u32) -> (usize, bool) {
+	pub fn map(&self, address32: u32) -> (usize, bool) {
 		let address = address32 as usize;
 		match address {
 			// System ROM (BIOS):
@@ -241,7 +230,7 @@ impl GbaMemory {
 			0x08000000 ... 0x0Dffffff => self.rom_write8(address, value),
 			0x0E000000 ... 0x0E00FFFF => {}, // #TODO SRAM and shit.
 			_ => {
-				let (local_addr, writeable) = self.transform(address);
+				let (local_addr, writeable) = self.map(address);
 				if writeable {
 					match address {
 						0x4000202 | 0x4000203 => self.internal_data[local_addr] &= !value,
@@ -279,7 +268,7 @@ pub const TM3CNT_H: IORegister16 = IORegister16(0x000010e);
 			0x0400010D => (self.internal_regs.timers[3].counter >> 8) as u8, // Timer 3 Counter High Byte
 
 			_ => {
-				let (local_addr, _) = self.transform(address);
+				let (local_addr, _) = self.map(address);
 				self.internal_data[local_addr]
 			}
 		}
