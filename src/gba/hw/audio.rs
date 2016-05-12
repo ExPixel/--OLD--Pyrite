@@ -48,6 +48,9 @@ struct GbaChannel1 {
 	current_volume: u16,
 	envelope_cycles_acc: u32,
 
+	/// Remaining cycles in sound length.
+	sound_length_cycles_rem: u32,
+
 	// 4000064h - SOUND1CNT_X (NR13, NR14) - Channel 1 Frequency/Control (R/W)
 	frequency: u16,            // 0-10  W    Frequency; 131072/(2048-n)Hz  (0-2047)
 	length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR11 expires)
@@ -109,64 +112,75 @@ impl GbaAudio {
 		// So that the sound isn't restarted every tick.
 		if self.c1.initial {
 			self.c1.current_volume = self.c1.initial_volume;
+
+			if self.c1.length_flag {
+				// 1/256 seconds = 0.00390625 seconds
+				// 0.00390625 seconds = 3906250 nanoseconds
+				// 3906250 nanoseconds = 65552.1060581 cycles
+				self.c1.sound_length_cycles_rem = 65552 * (64 - self.c1.sound_length as u32);
+			}
+
 			self.c1.initial = false;
 			let mut sound1cnt_x = cpu.memory.get_reg(ioreg::SOUND1CNT_X);
 			sound1cnt_x &= !0x8000; // clear the initial bit.
 			cpu.memory.set_reg(ioreg::SOUND1CNT_X, sound1cnt_x);
 		}
 
+		if !self.c1.length_flag || self.c1.sound_length_cycles_rem > 0 {
+			// Handling the sweep function:
+			if self.c1.sweep_time > 0 {
+				self.c1.sweep_cycles_acc += delta;
+				let channel_sweep_cycle_delay = 128_000 * (self.c1.sweep_time as u32);
+				if self.c1.sweep_cycles_acc >= channel_sweep_cycle_delay {
+					let mut freq = self.c1.frequency as i32;
+					if self.c1.sweep_frequency_dec {
+						freq -= ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
+					} else {
+						freq += ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
+					}
 
-		// Handling the sweep function:
-		if self.c1.sweep_time > 0 {
-			self.c1.sweep_cycles_acc += delta;
-			let channel_sweep_cycle_delay = 128_000 * (self.c1.sweep_time as u32);
-			if self.c1.sweep_cycles_acc >= channel_sweep_cycle_delay {
-				let mut freq = self.c1.frequency as i32;
-				if self.c1.sweep_frequency_dec {
-					freq -= ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
-				} else {
-					freq += ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
+					// let sound1cnt_l = cpu.memory.get_reg(ioreg::SOUND1CNT_L);
+					// self.c1.sweep_count += 1;
+
+					// println!("n : {}", self.c1.sweep_shift_number);
+
+					if freq > 0 {
+						freq = min!(2047, freq);
+						self.c1.frequency = freq as u16;
+						self.c1.dirty = true;
+					}
+
+					self.c1.sweep_cycles_acc -= channel_sweep_cycle_delay;
 				}
-
-				// let sound1cnt_l = cpu.memory.get_reg(ioreg::SOUND1CNT_L);
-				// self.c1.sweep_count += 1;
-
-				// println!("n : {}", self.c1.sweep_shift_number);
-
-				if freq > 0 {
-					freq = min!(2047, freq);
-					self.c1.frequency = freq as u16;
-					self.c1.dirty = true;
-				}
-
-				self.c1.sweep_cycles_acc -= channel_sweep_cycle_delay;
 			}
-		}
 
-
-		// // 1/256 seconds = 0.00390625 seconds
-		// // 0.00390625 seconds = 3906250 nanoseconds
-		// // 3906250 nanoseconds = 65552.1060581 cycles
-		// let channel_sound_length_delay = 65552 * (64 - self.c1.sound_length)
-
-		// Handling the envelope function:
-		if self.c1.envelope_step_time > 0 {
-			// 1/64 seconds = 0.015625
-			// 0.015625 seconds = 15625000 nanoseconds
-			// 15625000 nanoseconds = 262208.424232 cycles
-			let channel_envelope_delay = 262208 * (self.c1.envelope_step_time as u32);
-			self.c1.envelope_cycles_acc += delta;
-			if self.c1.envelope_cycles_acc >= channel_envelope_delay {
-				if self.c1.envelope_inc && self.c1.current_volume < 15 {
-					self.c1.current_volume += 1;
-				} else if !self.c1.envelope_inc && self.c1.current_volume > 0 {
-					self.c1.current_volume -= 1;
+			// Handling the envelope function:
+			if self.c1.envelope_step_time > 0 {
+				// 1/64 seconds = 0.015625
+				// 0.015625 seconds = 15625000 nanoseconds
+				// 15625000 nanoseconds = 262208.424232 cycles
+				let channel_envelope_delay = 262208 * (self.c1.envelope_step_time as u32);
+				self.c1.envelope_cycles_acc += delta;
+				if self.c1.envelope_cycles_acc >= channel_envelope_delay {
+					if self.c1.envelope_inc && self.c1.current_volume < 15 {
+						self.c1.current_volume += 1;
+					} else if !self.c1.envelope_inc && self.c1.current_volume > 0 {
+						self.c1.current_volume -= 1;
+					}
+					self.c1.envelope_cycles_acc -= channel_envelope_delay;
 				}
-				self.c1.envelope_cycles_acc -= channel_envelope_delay;
+			} else {
+				// No envelope so we play at full volume.
+				self.c1.current_volume = 15;
 			}
-		} else {
-			// No envelope so we play at full volume.
-			self.c1.current_volume = 15;
+
+			// Handling sound length:
+			if !self.c1.length_flag || self.c1.sound_length_cycles_rem < delta {
+				self.c1.sound_length_cycles_rem = 0;
+			} else {
+				self.c1.sound_length_cycles_rem -= delta;
+				// println!("length remaining: {}", self.c1.sound_length_cycles_rem);
+			}
 		}
 
 		if self.c1.dirty {
@@ -178,8 +192,13 @@ impl GbaAudio {
 			device.channels.channel1.duty_cycle = DUTY_CYCLES[self.c1.wave_pattern_duty as usize];
 			device.channels.channel1.amplitude = (self.c1.current_volume as f32) / 15.0;
 
+			// sound length is either off or it has more to go.
+			let sound_length_continue = !self.c1.length_flag || self.c1.sound_length_cycles_rem > 0;
+
 			// Shut the channel off if it goes any high to save my poor ears D:
-			device.channels.channel1.on = device.channels.channel1.frequency <= 20_000.0;
+			let sound_out_of_range = device.channels.channel1.frequency <= 20_000.0;
+
+			device.channels.channel1.on = sound_length_continue & sound_out_of_range;
 			device.commit_channel1();
 		}
 	}

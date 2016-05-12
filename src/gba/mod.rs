@@ -353,6 +353,10 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					self.cpu.tick();
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
+					if self.cpu.clock.audio_clock > 256 {
+						self.audio.tick(&mut self.device.audio, &mut self.cpu);
+						self.cpu.clock.audio_clock = 0;
+					}
 					self.check_dmas(DMA_TIMING_IMMEDIATE);
 				} else {
 					self.cpu.reg_dump_pretty();
@@ -360,8 +364,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 				}
 			}
 		}
-
-		self.audio.tick(&mut self.device.audio, &mut self.cpu);
 
 		measure_end(MEASURE_CPU_TICKS_TIME);
 		measure_end(MEASURE_DMA_TICKS_TIME);
