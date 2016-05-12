@@ -3,6 +3,7 @@ use super::super::core::memory::*;
 use super::super::device::audio::AudioDevice;
 use ::util::measure::*;
 
+
 // One cycle equals approx. 59.59ns (Closer to 45ns with the emulator running on my MacBook Pro) 
 // But I imagine that this eventually evens out with the vsyncs and what not.
 
@@ -126,6 +127,8 @@ impl GbaAudio {
 			cpu.memory.set_reg(ioreg::SOUND1CNT_X, sound1cnt_x);
 		}
 
+		let mut adderino = 0;
+
 		if !self.c1.length_flag || self.c1.sound_length_cycles_rem > 0 {
 			// Handling the sweep function:
 			if self.c1.sweep_time > 0 {
@@ -135,8 +138,10 @@ impl GbaAudio {
 					let mut freq = self.c1.frequency as i32;
 					if self.c1.sweep_frequency_dec {
 						freq -= ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
+						adderino = (((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32) * -1;
 					} else {
 						freq += ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
+						adderino = ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
 					}
 
 					// let sound1cnt_l = cpu.memory.get_reg(ioreg::SOUND1CNT_L);
@@ -184,11 +189,11 @@ impl GbaAudio {
 		}
 
 		if self.c1.dirty {
-			// let _f = device.channels.channel1.frequency;
+			let _f = device.channels.channel1.frequency;
 			device.channels.channel1.frequency = 131_072.0 / ((2048 - self.c1.frequency) as f32);
-			// if _f != device.channels.channel1.frequency {
-			// 	println!("Playing at frequency: {} ({} = 0x{:04X})", device.channels.channel1.frequency, self.c1.frequency, self.c1.frequency);
-			// }
+			if _f != device.channels.channel1.frequency {
+				println!("Playing at frequency: {} ({} = 0x{:04X}) (+ {})", device.channels.channel1.frequency, self.c1.frequency, self.c1.frequency, adderino);
+			}
 			device.channels.channel1.duty_cycle = DUTY_CYCLES[self.c1.wave_pattern_duty as usize];
 			device.channels.channel1.amplitude = (self.c1.current_volume as f32) / 15.0;
 
@@ -196,9 +201,9 @@ impl GbaAudio {
 			let sound_length_continue = !self.c1.length_flag || self.c1.sound_length_cycles_rem > 0;
 
 			// Shut the channel off if it goes any high to save my poor ears D:
-			let sound_out_of_range = device.channels.channel1.frequency <= 20_000.0;
+			let sound_in_range = device.channels.channel1.frequency <= 20_000.0;
 
-			device.channels.channel1.on = sound_length_continue & sound_out_of_range;
+			device.channels.channel1.on = sound_length_continue & sound_in_range;
 			device.commit_channel1();
 		}
 	}
