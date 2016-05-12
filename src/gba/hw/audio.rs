@@ -43,6 +43,11 @@ struct GbaChannel1 {
 	//   3: 75%   ( ------__------__------__ )
 	// The Length value is used only if Bit 6 in NR14 is set.
 
+	/// This is the volume that's actually chaning through the
+	/// envelope function.
+	current_volume: u16,
+	envelope_cycles_acc: u32,
+
 	// 4000064h - SOUND1CNT_X (NR13, NR14) - Channel 1 Frequency/Control (R/W)
 	frequency: u16,            // 0-10  W    Frequency; 131072/(2048-n)Hz  (0-2047)
 	length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR11 expires)
@@ -101,6 +106,16 @@ impl GbaAudio {
 	}
 
 	fn tick_channel1(&mut self, device: &mut AudioDevice, cpu: &mut ArmCpu, delta: u32) {
+		// So that the sound isn't restarted every tick.
+		if self.c1.initial {
+			self.c1.current_volume = self.c1.initial_volume;
+			self.c1.initial = false;
+			let mut sound1cnt_x = cpu.memory.get_reg(ioreg::SOUND1CNT_X);
+			sound1cnt_x &= !0x8000; // clear the initial bit.
+			cpu.memory.set_reg(ioreg::SOUND1CNT_X, sound1cnt_x);
+		}
+
+
 		// Handling the sweep function:
 		if self.c1.sweep_time > 0 {
 			self.c1.sweep_cycles_acc += delta;
@@ -128,16 +143,31 @@ impl GbaAudio {
 			}
 		}
 
+
+		// // 1/256 seconds = 0.00390625 seconds
+		// // 0.00390625 seconds = 3906250 nanoseconds
+		// // 3906250 nanoseconds = 65552.1060581 cycles
+		// let channel_sound_length_delay = 65552 * (64 - self.c1.sound_length)
+
 		// Handling the envelope function:
-
-
-		// So that the sound isn't restarted every tick.
-		// if self.c1.initial {
-		// 	self.c1.initial = false;
-		// 	let mut sound1cnt_x = cpu.memory.get_reg(ioreg::SOUND1CNT_X);
-		// 	sound1cnt_x &= !0x8000; // clear the initial bit.
-		// 	cpu.memory.set_reg(ioreg::SOUND1CNT_X, sound1cnt_x);
-		// }
+		if self.c1.envelope_step_time > 0 {
+			// 1/64 seconds = 0.015625
+			// 0.015625 seconds = 15625000 nanoseconds
+			// 15625000 nanoseconds = 262208.424232 cycles
+			let channel_envelope_delay = 262208 * (self.c1.envelope_step_time as u32);
+			self.c1.envelope_cycles_acc += delta;
+			if self.c1.envelope_cycles_acc >= channel_envelope_delay {
+				if self.c1.envelope_inc && self.c1.current_volume < 15 {
+					self.c1.current_volume += 1;
+				} else if !self.c1.envelope_inc && self.c1.current_volume > 0 {
+					self.c1.current_volume -= 1;
+				}
+				self.c1.envelope_cycles_acc -= channel_envelope_delay;
+			}
+		} else {
+			// No envelope so we play at full volume.
+			self.c1.current_volume = 15;
+		}
 
 		if self.c1.dirty {
 			// let _f = device.channels.channel1.frequency;
@@ -146,7 +176,7 @@ impl GbaAudio {
 			// 	println!("Playing at frequency: {} ({} = 0x{:04X})", device.channels.channel1.frequency, self.c1.frequency, self.c1.frequency);
 			// }
 			device.channels.channel1.duty_cycle = DUTY_CYCLES[self.c1.wave_pattern_duty as usize];
-			device.channels.channel1.amplitude = 1.0;
+			device.channels.channel1.amplitude = (self.c1.current_volume as f32) / 15.0;
 
 			// Shut the channel off if it goes any high to save my poor ears D:
 			device.channels.channel1.on = device.channels.channel1.frequency <= 20_000.0;
