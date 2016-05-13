@@ -21,7 +21,8 @@ enum GbaAudioEvent {
 
 #[derive(Default, Copy, Clone)]
 pub struct GbaSquareWave {
-	pub frequency: f32, // 64Hz - 131072 Hz (131 KHz)
+	pub frequency: f32,
+	pub real_frequency: f32,
 	pub duty_cycle: f32,
 	pub amplitude: f32,
 	pub on: bool
@@ -197,7 +198,7 @@ fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
 			buffer[idx + 1] = right * volume_multiplier;
 			idx += 2;
 			phase += PHASE_INC;
-			if phase > PHASE_MAX { phase = 0.0}
+			if phase > PHASE_MAX { phase = 0.0 }
 		}
 		portaudio::Continue
 	};

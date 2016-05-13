@@ -178,11 +178,11 @@ impl GbaAudio {
 				if self.c1.sweep_time_acc >= channel_sweep_cycle_delay {
 					let mut freq = self.c1.frequency as i32;
 					if self.c1.sweep_frequency_dec {
-						freq -= ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
-						adderino = (((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32) * -1;
+						freq -= ((self.c1.frequency as u32) / (1 << self.c1.sweep_shift_number as u32)) as i32;
+						adderino = (((self.c1.frequency as u32) / (1 << self.c1.sweep_shift_number as u32)) as i32) * -1;
 					} else {
-						freq += ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
-						adderino = ((self.c1.frequency as u32) >> (self.c1.sweep_shift_number as u32)) as i32;
+						freq += ((self.c1.frequency as u32) / (1 << self.c1.sweep_shift_number as u32)) as i32;
+						adderino = ((self.c1.frequency as u32) / (1 << self.c1.sweep_shift_number as u32)) as i32;
 					}
 
 					// let sound1cnt_l = cpu.memory.get_reg(ioreg::SOUND1CNT_L);
@@ -190,13 +190,14 @@ impl GbaAudio {
 
 					// println!("n : {}", self.c1.sweep_shift_number);
 
-					if freq > 0 {
-						freq = min!(2047, freq);
-						self.c1.frequency = freq as u16;
-						self.c1.dirty = true;
-					}
+					// if freq > 0 {
+					freq = max!(min!(2047, freq), 0);
+					self.c1.frequency = freq as u16;
+					self.c1.dirty = true;
+					// }
 
-					self.c1.sweep_time_acc -= channel_sweep_cycle_delay;
+					// self.c1.sweep_time_acc -= channel_sweep_cycle_delay;
+					self.c1.sweep_time_acc = 0;
 				}
 			}
 
@@ -230,18 +231,18 @@ impl GbaAudio {
 		}
 
 		if self.c1.dirty {
-			// let _f = device.channels.channel1.frequency;
+			let _f = device.channels.channel1.frequency;
 			device.channels.channel1.frequency = 131_072.0 / ((2048 - self.c1.frequency) as f32);
-			// if _f != device.channels.channel1.frequency {
-			// 	println!("Playing at frequency: {} ({} = 0x{:04X}) (+ {}) DELTA: {} ns, {} ms, {} s", 
-			// 		device.channels.channel1.frequency, 
-			// 		self.c1.frequency, 
-			// 		self.c1.frequency, 
-			// 		adderino,
-			// 		delta,
-			// 		delta as f64 / 1000000.0,
-			// 		delta as f64 / 1000000000.0);
-			// }
+			if _f != device.channels.channel1.frequency {
+				println!("Playing at frequency: {} ({} = 0x{:04X}) (+ {}) DELTA: {} ns, {} ms, {} s", 
+					device.channels.channel1.frequency, 
+					self.c1.frequency, 
+					self.c1.frequency, 
+					adderino,
+					delta,
+					delta as f64 / 1000000.0,
+					delta as f64 / 1000000000.0);
+			}
 			device.channels.channel1.duty_cycle = DUTY_CYCLES[self.c1.wave_pattern_duty as usize];
 			device.channels.channel1.amplitude = (self.c1.current_volume as f32) / 15.0;
 

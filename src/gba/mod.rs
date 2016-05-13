@@ -353,7 +353,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					self.cpu.tick();
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
-					if self.cpu.clock.audio_clock > 256 {
+					if self.cpu.clock.audio_clock > 65536 {
 						self.audio.tick(&mut self.device.audio, &mut self.cpu);
 						self.cpu.clock.audio_clock = 0;
 					}
