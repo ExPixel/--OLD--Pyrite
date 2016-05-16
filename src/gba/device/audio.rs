@@ -1,108 +1,52 @@
 use portaudio;
 use std::thread;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
+use ::util::async_ring_buffer::AsyncRingBuffer;
+use std::sync::MutexGuard;
+use std;
+use std::rc::Rc;
 // use std::f64::consts::PI;
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
-// const SAMPLE_RATE_I: u32 = 44_100;
 const PHASE_INC: f32 = (1.0 / SAMPLE_RATE) as f32;
 const PHASE_MAX: f32 = 1.0;
-const FRAMES_PER_BUFFER: u32 = 256;
-// const INTERLEAVED: bool = true;
+const FRAMES_PER_BUFFER: u32 = 256; // Around 8KB for storing our buffers if we assume a compact memory layout.
+const AUDIO_DATA_BUFFER_SIZE: usize = FRAMES_PER_BUFFER as usize;
 
-enum GbaAudioEvent {
-	UpdateChannel1(GbaSquareWave),
-	UpdateChannel2(GbaSquareWave),
-	UpdateChannel4(GbaNoise),
-	UpdateVolume(f32)
-}
-
-#[derive(Default, Copy, Clone)]
-pub struct GbaSquareWave {
-	pub frequency: f32,
-	pub real_frequency: f32,
-	pub duty_cycle: f32,
-	pub amplitude: f32,
-	pub on: bool
-}
-
-#[derive(Default, Copy, Clone)]
-pub struct GbaNoise {
-	pub on: bool
-}
-
-#[derive(Default, Copy, Clone)]
-pub struct GbaChannels {
-	pub channel1: GbaSquareWave,
-	pub channel2: GbaSquareWave,
-	pub channel4: GbaNoise
-}
+pub type AudioBufferType = [(i16, i16); AUDIO_DATA_BUFFER_SIZE as usize];
 
 pub struct AudioDevice {
-	pub channels: GbaChannels,
-	sender: Option<Sender<GbaAudioEvent>>,
-	output_thread: Option<thread::JoinHandle<()>>
+	pub ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>,
+	output_thread: Option<thread::JoinHandle<()>>,
+	pub sample_rate: u32,
+	pub sample_rate_f: f32
 }
 
 impl AudioDevice {
 	pub fn new() -> AudioDevice {
+		let generator_fn = || [(std::i16::MIN, std::i16::MIN); AUDIO_DATA_BUFFER_SIZE as usize];
 		AudioDevice {
-			channels: Default::default(),
-			sender: None,
-			output_thread: None
+			ring_buffer: Arc::new(AsyncRingBuffer::new(8, generator_fn)),
+			output_thread: None,
+			sample_rate: 44_100,
+			sample_rate_f: 44_100.0
 		}
+	}
+
+	#[inline(always)]
+	pub fn millis_to_frames(&self, milliseconds: u32, millisecond_tenths: u32) -> u32 {
+		// 1 / 44_100 s - sample
+		// 1 / 1000 s - milliseconds
+		return milliseconds * 44 + millisecond_tenths * 4;
 	}
 
 	pub fn start(&mut self) {
-		let (tx, rx) = mpsc::channel();
-
+		let ring_buffer = self.ring_buffer.clone();
 		let thread = thread::Builder::new().name("Audio".to_string()).spawn(move || {
-			start_port_audio(rx);
+			start_port_audio(ring_buffer);
 		}).expect("Failed to start audio thread.");
-		
-		self.sender = Some(tx);
 		self.output_thread = Some(thread);
-
-		// #TODO remove this debugging code.
-		// It's here so that I don't lose hearing while testing.
-		self.set_volume(0.2);
-	}
-
-	fn send(&mut self, event: GbaAudioEvent) {
-		if let Some(sender) = self.sender.as_ref() {
-			match sender.send(event) {
-				Ok(_) => {},
-				Err(e) => {
-					debug_error!("Error while sending data to the audio output thread. Error: {}", e);
-					panic!("Error while sending audio");
-				}
-			}
-		}
-	}
-
-	pub fn set_volume(&mut self, volume: f32) {
-		self.send(GbaAudioEvent::UpdateVolume(volume));
-	}
-
-	pub fn commit_channel1(&mut self) {
-		let c = self.channels.channel1;
-		self.send(GbaAudioEvent::UpdateChannel1(c));
-	}
-
-	pub fn commit_channel2(&mut self) {
-		let c = self.channels.channel2;
-		self.send(GbaAudioEvent::UpdateChannel2(c));
-	}
-
-	pub fn commit_channel3(&mut self) {
-		unimplemented!(); // #TODO implement this.
-	}
-
-	pub fn commit_channel4(&mut self) {
-		let c = self.channels.channel4;
-		self.send(GbaAudioEvent::UpdateChannel4(c));
 	}
 
 	pub fn stop(&mut self) {
@@ -126,27 +70,6 @@ impl AudioDevice {
 	}
 }
 
-fn mix_gba_channels(phase: f32, channels: &mut GbaChannels) -> (f32, f32) {
-	let mut left = 0.0;
-	let mut right = 0.0;
-
-	if channels.channel1.on {
-		let period = 1.0 / channels.channel1.frequency;
-		let a = (phase / period) % 1.0;
-		let b = 2.0 * channels.channel1.duty_cycle;
-		let c = a / b;
-		let s = if c > 0.5 { -channels.channel1.amplitude } else { channels.channel1.amplitude };
-
-		left = s;
-		right = s;
-	}
-
-	// if channels.channel2.on {
-	// }
-
-	return (left, right);
-}
-
 /// Hearing is logarithmic or something or other,
 /// so just multiplying our signal by 1/10 won't translate
 /// exactly to 1/10 of perceived volume.
@@ -156,51 +79,65 @@ fn volume_to_signal_multiplier(volume: f32) -> f32 {
 	return sound_pressure;
 }
 
-fn start_port_audio(rx: Receiver<GbaAudioEvent>) {
+fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 	// SETUP:
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
 	let mut settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
 		.expect("Failed to get PortAudio default output stream settings.");
 	// settings.flags = portaudio::stream_flags::CLIP_OFF;
+	// let mut volume_multiplier = volume_to_signal_multiplier(0.2);
+	let mut remaining_audio_data_index = 0;
 
-	let mut phase = 0.0;
-	let mut channels: GbaChannels = Default::default();
-	let mut volume_multiplier = 0.0f32;
+	let mut last_left = std::i16::MIN;
+	let mut last_right = std::i16::MIN;
 
 	let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
-		'recv_loop: loop {
-			match rx.try_recv() {
-				Ok(data) => {
-					match data {
-						GbaAudioEvent::UpdateChannel1(c) => channels.channel1 = c,
-						GbaAudioEvent::UpdateChannel2(c) => channels.channel2 = c,
-						GbaAudioEvent::UpdateChannel4(c) => channels.channel4 = c,
-						GbaAudioEvent::UpdateVolume(v) => volume_multiplier = volume_to_signal_multiplier(v)
-					}
-				},
-				Err(e) => {
-					match e {
-						mpsc::TryRecvError::Empty => {}
-						mpsc::TryRecvError::Disconnected => {
-							debug_error!("PortAudio receiver was disconnected.");
-							return portaudio::Abort
+		let mut idx = 0;
+		let buffer_len = frames * 2;
+
+
+		let mut continue_reading = true;
+		while continue_reading {
+			let read_status = ring_buffer.try_read(|audio_data| {
+				while remaining_audio_data_index < AUDIO_DATA_BUFFER_SIZE {
+					let (left, right) = audio_data[remaining_audio_data_index];
+
+					last_left = left;
+					last_right = right;
+
+					buffer[idx] = left;
+					buffer[idx + 1] = right;
+
+					idx += 2;
+					remaining_audio_data_index += 1;
+
+					if idx >= buffer_len {
+						continue_reading = false;
+						if remaining_audio_data_index < AUDIO_DATA_BUFFER_SIZE {
+							// Didn't finish reading this buffer but the device
+							// doesn't require anymore frames at the moment.
+							return false;
+						} else {
+							remaining_audio_data_index = 0;
+							// Finished reading this buffer and the device doesn't
+							// require anymore frames.
+							return true;
 						}
-					};
-					break 'recv_loop;
+					}
 				}
-			}
+				remaining_audio_data_index = 0;
+				return true;
+			});
+			continue_reading &= read_status;
 		}
 
-		let mut idx = 0;
-		for _ in 0..frames {
-			let (left, right) = mix_gba_channels(phase, &mut channels);
-			buffer[idx] = left * volume_multiplier;
-			buffer[idx + 1] = right * volume_multiplier;
+		while idx < buffer_len {
+			buffer[idx] = last_left;
+			buffer[idx + 1] = last_right;
 			idx += 2;
-			phase += PHASE_INC;
-			if phase > PHASE_MAX { phase = 0.0 }
 		}
-		portaudio::Continue
+
+		return portaudio::Continue;
 	};
 
 	let mut stream = pa.open_non_blocking_stream(settings, callback)

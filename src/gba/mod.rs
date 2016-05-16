@@ -13,8 +13,8 @@ use self::core::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
-use self::hw::audio::GbaAudio;
 use self::hw::dma::*;
+use self::hw::audio::*;
 
 use super::debug::debugger::GbaDebugger;
 
@@ -81,7 +81,6 @@ impl GbaExtras {
 pub struct Gba {
 	pub cpu: ArmCpu,
 	pub lcd: GbaLcd,
-	pub audio: GbaAudio,
 	pub device: GbaDevice,
 	pub joypad: GbaJoypad,
 	pub request_exit: bool,
@@ -97,7 +96,6 @@ impl Gba {
 			joypad: GbaJoypad::new(),
 			request_exit: false,
 			extras: GbaExtras::new(),
-			audio: Default::default()
 		}
 	}
 
@@ -228,6 +226,21 @@ impl Gba {
 		self.cpu.memory.internal_regs.on_frame_end(
 			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
 		);
+
+		pyrite_debugging!({
+			use std::sync::atomic::Ordering;
+			let _write_misses = self.device.audio.ring_buffer._stat_write_misses.load(Ordering::Relaxed);
+			let _read_misses = self.device.audio.ring_buffer._stat_read_misses.load(Ordering::Relaxed);
+
+			let _wd = _write_misses as u64 - pyrite_counter_get!(4);
+			let _rd = _read_misses as u64 - pyrite_counter_get!(5);
+
+			pyrite_counter_set!(4, _write_misses);
+			pyrite_counter_set!(5, _read_misses);
+
+			println!("Audio Write Misses: {} (+{})", _write_misses, _wd);
+			println!("Audio Read Misses: {} (+{})", _read_misses, _rd);
+		});
 	}
 
 	/// Attempts to fire an vblank interrupt
@@ -354,7 +367,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 					if self.cpu.clock.audio_clock > 65536 {
-						self.audio.tick(&mut self.device.audio, &mut self.cpu);
+						self.cpu.audio_tick(&mut self.device.audio);
 						self.cpu.clock.audio_clock = 0;
 					}
 					self.check_dmas(DMA_TIMING_IMMEDIATE);

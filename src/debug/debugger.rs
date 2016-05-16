@@ -41,7 +41,10 @@ pub struct GbaDebugger<'a> {
 	command_buffer: String,
 
 	command_history_index: isize,
-	command_history: Vec<String>
+	command_history: Vec<String>,
+
+	print_column: usize,
+	print_row: usize
 }
 
 impl<'a> GbaDebugger<'a> {
@@ -57,7 +60,10 @@ impl<'a> GbaDebugger<'a> {
 			running: true,
 			command_buffer: String::new(),
 			command_history_index: -1,
-			command_history: Vec::new()
+			command_history: Vec::new(),
+
+			print_column: 1,
+			print_row: DSTART
 		}
 	}
 
@@ -99,7 +105,10 @@ impl<'a> GbaDebugger<'a> {
 		self.display_command();
 	}
 
-	pub fn clear_display_area(&self) {
+	pub fn clear_display_area(&mut self) {
+		self.print_row = DSTART;
+		self.print_column = 1;
+
 		if self.rustbox.height() > DSTART {
 			for y in 3..self.rustbox.height() {
 				self.clear_row(y);
@@ -251,6 +260,17 @@ impl<'a> GbaDebugger<'a> {
 		}
 	}
 
+	pub fn print<'t>(&mut self, style: Style, fg: Color, bg: Color, text: &'t str) {
+		self.rustbox.print(self.print_column, self.print_row, style, fg, bg, text);
+		self.print_column += text.len();
+	}
+
+	pub fn println<'t>(&mut self, style: Style, fg: Color, bg: Color, text: &'t str) {
+		self.rustbox.print(self.print_column, self.print_row, style, fg, bg, text);
+		self.print_column = 1;
+		self.print_row += 1;
+	}
+
 	pub fn too_few_args(&self, arg_req: usize, cname: &String, cargs: &[String]) {
 		self.write_error_line(&format!("Command {} requires {} arguments ({} provided)", cname, arg_req, cargs.len()));
 	}
@@ -260,9 +280,26 @@ impl<'a> GbaDebugger<'a> {
 			Ok(v) => v,
 			Err(_) => { self.write_error_line(&format!("{} is not a number.", args[0])); return }
 		};
-		self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default,
-			&format!("Volume set to {}", volume));
-		self.gba.device.audio.set_volume(volume);
+		// self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Default,
+		// 	&format!("Volume set to {}", volume));
+		// self.rustbox.print(1, DSTART, rustbox::RB_BOLD, Color::Default, Color::Red,
+		// 	&format!("Volume functionality isn't implemented for the new system yet."));
+
+		self.println(rustbox::RB_NORMAL, Color::Default, Color::Default,
+			"Volume functionality isn't implemented for the new system yet.");
+
+		use std::sync::atomic::Ordering;
+		let _write_misses = self.gba.device.audio.ring_buffer._stat_write_misses.load(Ordering::Relaxed);
+		let _read_misses = self.gba.device.audio.ring_buffer._stat_read_misses.load(Ordering::Relaxed);
+
+		self.println(rustbox::RB_NORMAL, Color::Default, Color::Default,
+			&format!("Audio Write Misses: {}", _write_misses));
+
+		self.println(rustbox::RB_NORMAL, Color::Default, Color::Default,
+			&format!("Audio Read Misses: {}", _read_misses));
+
+		// #TODO complete the volume function.
+		// self.gba.device.audio.set_volume(volume);
 	}
 
 	pub fn cmd_measure(&mut self, args: &[String]) {

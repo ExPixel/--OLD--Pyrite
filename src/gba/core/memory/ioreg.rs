@@ -228,6 +228,53 @@ pub struct TimerInternalReg {
 	pub reload: u32
 }
 
+#[derive(Default, RustcEncodable, RustcDecodable)]
+pub struct GbaChannel1 {
+	pub sweep_time_acc: u32,
+
+	// 4000060h - SOUND1CNT_L (NR10) - Channel 1 Sweep register (R/W)
+	pub sweep_shift_number: u16,   // 0-2   R/W  Number of sweep shift      (n=0-7)
+	pub sweep_frequency_dec: bool, // 3     R/W  Sweep Frequency Direction  (0=Increase, 1=Decrease)
+	pub sweep_time: u16,           // 4-6   R/W  Sweep Time; units of 7.8ms (0-7, min=7.8ms, max=54.7ms)
+	// Sweep is disabled by setting Sweep Time to zero, if so, the direction bit should be set.
+	// The change of frequency (NR13,NR14) at each shift is calculated by the following formula 
+	// where X(0) is initial freq & X(t-1) is last freq:
+	//  X(t) = X(t-1) +/- X(t-1)/2^n
+	// ---- NOTE ----
+	// The documentation is lying, it's not really the frequency but the rate which is 
+	// that denominator under 131072 in register SOUND1CNT_X.
+	// n is also refers to the sweep shift number above.
+
+	// 4000062h - SOUND1CNT_H (NR11, NR12) - Channel 1 Duty/Len/Envelope (R/W)
+	pub sound_length: u16,        // 0-5   W    Sound length; units of (64-n)/256s  (0-63)
+	pub wave_pattern_duty: u16,   // 6-7   R/W  Wave Pattern Duty                   (0-3, see below)
+	pub envelope_step_time: u16,  // 8-10  R/W  Envelope Step-Time; units of n/64s  (1-7, 0=No Envelope)
+	pub envelope_inc: bool,       // 11    R/W  Envelope Direction                  (0=Decrease, 1=Increase)
+	pub initial_volume: u16,      // 12-15 R/W  Initial Volume of envelope          (1-15, 0=No Sound)
+	// Wave Duty:
+	//   0: 12.5% ( -_______-_______-_______ )
+	//   1: 25%   ( --______--______--______ )
+	//   2: 50%   ( ----____----____----____ ) (normal)
+	//   3: 75%   ( ------__------__------__ )
+	// The Length value is used only if Bit 6 in NR14 is set.
+
+	/// This is the volume that's actually chaning through the
+	/// envelope function.
+	pub current_volume: u16,
+	pub envelope_time_acc: u32,
+
+	pub sound_length_time_acc: u32,
+
+	// 4000064h - SOUND1CNT_X (NR13, NR14) - Channel 1 Frequency/Control (R/W)
+	pub frequency: u16,            // 0-10  W    Frequency; 131072/(2048-n)Hz  (0-2047)
+	pub length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR11 expires)
+	pub initial: bool,             // 15    W    Initial      (1=Restart Sound)
+
+
+	pub frequency_f: f32,
+	pub frequency_step: f32
+}
+
 // Internal IO registers.
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct InternalRegisters {
@@ -243,10 +290,7 @@ pub struct InternalRegisters {
 	pub dma_registers: [DMAInternalReg; 4],
 	pub timers: [TimerInternalReg; 4],
 
-	pub sound_channel1_dirty: bool,
-	pub sound_channel2_dirty: bool,
-	pub sound_channel3_dirty: bool,
-	pub sound_channel4_dirty: bool,
+	pub audio_channel1: GbaChannel1,
 }
 
 impl InternalRegisters {
@@ -333,9 +377,25 @@ impl InternalRegisters {
 			0x00000D2 => { self.update_dma_hi(2, value); },
 			0x00000DE => { self.update_dma_hi(3, value); },
 
-			0x0000060 |
-			0x0000062 |
-			0x0000064 => { self.sound_channel1_dirty = true },
+			// Audio Channel 1:
+			0x0000060 => {
+				self.audio_channel1.sweep_shift_number = value & 0x7;
+				self.audio_channel1.sweep_frequency_dec = (value & 0x8) != 0;
+				self.audio_channel1.sweep_time = (value >> 4) & 0x3;
+			},
+			0x0000062 => {
+				self.audio_channel1.sound_length = value & 0x1f;
+				self.audio_channel1.wave_pattern_duty = (value >> 6) & 0x3;
+				self.audio_channel1.envelope_step_time = (value >> 8) & 0x7;
+				self.audio_channel1.envelope_inc = (value & 0x800) != 0;
+				self.audio_channel1.initial_volume = (value >> 12) & 0xf;
+			},
+			0x0000064 => {
+				self.audio_channel1.frequency = value & 0x7ff;
+				self.audio_channel1.frequency_f = 131072.0 / (2048.0 - self.audio_channel1.frequency as f32);
+				self.audio_channel1.length_flag = (value & 0x4000) != 0;
+				self.audio_channel1.initial = (value & 0x8000) != 0;
+			},
 
 			_ => {}
 		}
