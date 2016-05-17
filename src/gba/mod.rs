@@ -14,7 +14,7 @@ use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
 use self::hw::dma::*;
-use self::hw::audio::*;
+use self::hw::audio;
 
 use super::debug::debugger::GbaDebugger;
 
@@ -367,7 +367,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 					if self.cpu.clock.audio_clock > 65536 {
-						self.cpu.audio_tick(&mut self.device.audio);
+						audio::tick(&mut self.cpu, &mut self.device.audio);
 						self.cpu.clock.audio_clock = 0;
 					}
 					self.check_dmas(DMA_TIMING_IMMEDIATE);

@@ -1,6 +1,5 @@
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
-use std::marker::Sync;
 use std::mem;
 
 /// A ring buffer that allows a single producer

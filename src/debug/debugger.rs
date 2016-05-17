@@ -286,7 +286,7 @@ impl<'a> GbaDebugger<'a> {
 		// 	&format!("Volume functionality isn't implemented for the new system yet."));
 
 		self.println(rustbox::RB_NORMAL, Color::Default, Color::Default,
-			"Volume functionality isn't implemented for the new system yet.");
+			&format!("Volume functionality isn't implemented for the new system yet. vol: {}", volume));
 
 		use std::sync::atomic::Ordering;
 		let _write_misses = self.gba.device.audio.ring_buffer._stat_write_misses.load(Ordering::Relaxed);

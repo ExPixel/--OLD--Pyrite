@@ -17,7 +17,7 @@ use flate2::read::DeflateDecoder;
 const PYRITE_HEADER: [u8; 8] = [0x70, 0x79, 0x72, 0x69, 0x74, 0x65, 0x39, 0x36];
 
 /// The version of the current format.
-const VERSION: u8 = 1;
+const VERSION: u8 = 2;
 
 pub trait BinarySerialization {
 	fn serialize(&self, writer: &mut Write);
@@ -31,17 +31,16 @@ pub trait BinarySerialization {
 impl BinarySerialization for Gba {
 	// #TODO remove this temporary code.
 	fn save_to_file<'a>(&self, file_path: &'a str) -> Result<&'static str, String> {
-		return Err("NOPE".to_string());
-		// let _save_path = Path::new(file_path);
-		// let _save_path_parent = _save_path.parent().expect("Getting save file path parent directory");
-		// create_dir_all(_save_path_parent).expect("Creating save file path parent directories");
+		let _save_path = Path::new(file_path);
+		let _save_path_parent = _save_path.parent().expect("Getting save file path parent directory");
+		create_dir_all(_save_path_parent).expect("Creating save file path parent directories");
 
-		// let mut f = match File::create(file_path) {
-		// 	Ok(file) => file,
-		// 	Err(_) => return Err(format!("Failed to open {}", file_path))
-		// };
-		// self.serialize(&mut f);
-		// return Ok("ok")
+		let mut f = match File::create(file_path) {
+			Ok(file) => file,
+			Err(_) => return Err(format!("Failed to open {}", file_path))
+		};
+		self.serialize(&mut f);
+		return Ok("ok")
 	}
 
 	// #TODO remove this temporary code.

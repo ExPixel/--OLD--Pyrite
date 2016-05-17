@@ -2,15 +2,11 @@ use portaudio;
 use std::thread;
 use std::sync::Arc;
 use ::util::async_ring_buffer::AsyncRingBuffer;
-use std::sync::MutexGuard;
 use std;
-use std::rc::Rc;
 // use std::f64::consts::PI;
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
-const PHASE_INC: f32 = (1.0 / SAMPLE_RATE) as f32;
-const PHASE_MAX: f32 = 1.0;
 const FRAMES_PER_BUFFER: u32 = 256; // Around 8KB for storing our buffers if we assume a compact memory layout.
 const AUDIO_DATA_BUFFER_SIZE: usize = FRAMES_PER_BUFFER as usize;
 
@@ -27,7 +23,7 @@ impl AudioDevice {
 	pub fn new() -> AudioDevice {
 		let generator_fn = || [(std::i16::MIN, std::i16::MIN); AUDIO_DATA_BUFFER_SIZE as usize];
 		AudioDevice {
-			ring_buffer: Arc::new(AsyncRingBuffer::new(8, generator_fn)),
+			ring_buffer: Arc::new(AsyncRingBuffer::new(4, generator_fn)),
 			output_thread: None,
 			sample_rate: 44_100,
 			sample_rate_f: 44_100.0
@@ -73,7 +69,7 @@ impl AudioDevice {
 /// Hearing is logarithmic or something or other,
 /// so just multiplying our signal by 1/10 won't translate
 /// exactly to 1/10 of perceived volume.
-fn volume_to_signal_multiplier(volume: f32) -> f32 {
+pub fn volume_to_signal_multiplier(volume: f32) -> f32 {
 	let level_change = 10.0f32 * volume.log2();
 	let sound_pressure = (10.0f32).powf(level_change / 20.0);
 	return sound_pressure;
@@ -82,7 +78,7 @@ fn volume_to_signal_multiplier(volume: f32) -> f32 {
 fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 	// SETUP:
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
-	let mut settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
+	let settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
 		.expect("Failed to get PortAudio default output stream settings.");
 	// settings.flags = portaudio::stream_flags::CLIP_OFF;
 	// let mut volume_multiplier = volume_to_signal_multiplier(0.2);

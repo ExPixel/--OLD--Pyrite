@@ -1,7 +1,6 @@
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::Relaxed;
-use std::mem;
 
 // #TODO memory orderings and stuff.
 
@@ -97,8 +96,8 @@ impl<T> BipBuffer<T> {
 	}
 
 	pub fn get_block<'a>(&'a mut self) -> Option<&'a mut [T]> {
-		let mut region_a_start = self.region_a_start.load(Relaxed);
-		let mut region_a_end = self.region_a_end.load(Relaxed);
+		let region_a_start = self.region_a_start.load(Relaxed);
+		let region_a_end = self.region_a_end.load(Relaxed);
 		if region_a_start < region_a_end {
 			Some(&mut self.buffer[region_a_start..region_a_end])
 		} else {
@@ -114,8 +113,8 @@ impl<T> BipBuffer<T> {
 		region_a_start += len;
 
 		if region_a_start >= region_a_end {
-			let mut region_b_start = self.region_b_start.load(Relaxed);
-			let mut region_b_end = self.region_b_end.load(Relaxed);
+			let region_b_start = self.region_b_start.load(Relaxed);
+			let region_b_end = self.region_b_end.load(Relaxed);
 
 			region_a_start = region_b_start;
 			region_a_end = region_b_end;

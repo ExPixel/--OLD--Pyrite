@@ -258,7 +258,7 @@ pub struct GbaChannel1 {
 	//   3: 75%   ( ------__------__------__ )
 	// The Length value is used only if Bit 6 in NR14 is set.
 
-	/// This is the volume that's actually chaning through the
+	/// This is the volume that's actually changing through the
 	/// envelope function.
 	pub current_volume: u16,
 	pub envelope_time_acc: u32,
@@ -270,9 +270,43 @@ pub struct GbaChannel1 {
 	pub length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR11 expires)
 	pub initial: bool,             // 15    W    Initial      (1=Restart Sound)
 
+	pub frequency_f: f32,
+	pub frequency_step: f32,
+
+	pub playing: bool
+}
+
+#[derive(Default, RustcEncodable, RustcDecodable)]
+pub struct GbaChannel2 {
+	// 4000062h - SOUND1CNT_H (NR11, NR12) - Channel 1 Duty/Len/Envelope (R/W)
+	pub sound_length: u16,        // 0-5   W    Sound length; units of (64-n)/256s  (0-63)
+	pub wave_pattern_duty: u16,   // 6-7   R/W  Wave Pattern Duty                   (0-3, see below)
+	pub envelope_step_time: u16,  // 8-10  R/W  Envelope Step-Time; units of n/64s  (1-7, 0=No Envelope)
+	pub envelope_inc: bool,       // 11    R/W  Envelope Direction                  (0=Decrease, 1=Increase)
+	pub initial_volume: u16,      // 12-15 R/W  Initial Volume of envelope          (1-15, 0=No Sound)
+	// Wave Duty:
+	//   0: 12.5% ( -_______-_______-_______ )
+	//   1: 25%   ( --______--______--______ )
+	//   2: 50%   ( ----____----____----____ ) (normal)
+	//   3: 75%   ( ------__------__------__ )
+	// The Length value is used only if Bit 6 in NR14 is set.
+
+	/// This is the volume that's actually changing through the
+	/// envelope function.
+	pub current_volume: u16,
+	pub envelope_time_acc: u32,
+
+	pub sound_length_time_acc: u32,
+
+	// 4000064h - SOUND1CNT_X (NR13, NR14) - Channel 1 Frequency/Control (R/W)
+	pub frequency: u16,            // 0-10  W    Frequency; 131072/(2048-n)Hz  (0-2047)
+	pub length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR11 expires)
+	pub initial: bool,             // 15    W    Initial      (1=Restart Sound)
 
 	pub frequency_f: f32,
-	pub frequency_step: f32
+	pub frequency_step: f32,
+
+	pub playing: bool
 }
 
 // Internal IO registers.
@@ -291,6 +325,7 @@ pub struct InternalRegisters {
 	pub timers: [TimerInternalReg; 4],
 
 	pub audio_channel1: GbaChannel1,
+	pub audio_channel2: GbaChannel2,
 }
 
 impl InternalRegisters {
@@ -384,7 +419,7 @@ impl InternalRegisters {
 				self.audio_channel1.sweep_time = (value >> 4) & 0x3;
 			},
 			0x0000062 => {
-				self.audio_channel1.sound_length = value & 0x1f;
+				self.audio_channel1.sound_length = value & 0x3f;
 				self.audio_channel1.wave_pattern_duty = (value >> 6) & 0x3;
 				self.audio_channel1.envelope_step_time = (value >> 8) & 0x7;
 				self.audio_channel1.envelope_inc = (value & 0x800) != 0;
