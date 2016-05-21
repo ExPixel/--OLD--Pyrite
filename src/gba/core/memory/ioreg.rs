@@ -416,7 +416,7 @@ impl InternalRegisters {
 			0x0000060 => {
 				self.audio_channel1.sweep_shift_number = value & 0x7;
 				self.audio_channel1.sweep_frequency_dec = (value & 0x8) != 0;
-				self.audio_channel1.sweep_time = (value >> 4) & 0x3;
+				self.audio_channel1.sweep_time = (value >> 4) & 0x7;
 			},
 			0x0000062 => {
 				self.audio_channel1.sound_length = value & 0x3f;

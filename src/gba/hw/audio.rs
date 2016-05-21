@@ -1,8 +1,10 @@
 use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
 use super::super::core::memory::ioreg::GbaChannel1;
+use super::super::core::memory::ioreg::GbaChannel2;
 use super::super::device::audio::AudioDevice;
 use ::util::measure::*;
+use std;
 
 // There is a lot of stuff I don't want to be calculating
 // over and over because a lot of division is involved,
@@ -50,7 +52,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 		let mut state: AudioState = Default::default();
 
 		init_channel1(cpu, device, &mut state);
-		init_channel2(cpu, device, &mut state);
+		// init_channel2(cpu, device, &mut state);
 
 		for idx in 0..frames.len() {
 			let mut sig_left = 0;
@@ -71,20 +73,20 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 				}
 			}
 
-			// Sound 2:
-			if cpu.memory.internal_regs.audio_channel2.playing {
-				let (mut left, mut right) = tick_channel2(cpu, device, &mut state);
+			// // Sound 2:
+			// if cpu.memory.internal_regs.audio_channel2.playing {
+			// 	let (mut left, mut right) = tick_channel2(cpu, device, &mut state);
 
-				if (sound_1_4_enable_left & 2) != 0 { // Sound 2 Left Enable
-					left >>= sound_1_4_vol as i16;
-					sig_left += apply_volume(left, sound_1_4_left_vol) >> 2;
-				}
+			// 	if (sound_1_4_enable_left & 2) != 0 { // Sound 2 Left Enable
+			// 		left >>= sound_1_4_vol as i16;
+			// 		sig_left += apply_volume(left, sound_1_4_left_vol) >> 2;
+			// 	}
 
-				if (sound_1_4_enable_right & 2) != 0 { // Sound 2 Right Enable
-					right >>= sound_1_4_vol as i16;
-					sig_right += apply_volume(right, sound_1_4_right_vol) >> 2;
-				}
-			}
+			// 	if (sound_1_4_enable_right & 2) != 0 { // Sound 2 Right Enable
+			// 		right >>= sound_1_4_vol as i16;
+			// 		sig_right += apply_volume(right, sound_1_4_right_vol) >> 2;
+			// 	}
+			// }
 
 			frames[idx] = (sig_left, sig_right);
 		}
@@ -99,6 +101,11 @@ fn apply_volume(sample: i16, volume: f32) -> i16 {
 	((sample as f32) * volume) as i16
 }
 
+fn apply_volume_stereo(sample: i16, volume: f32) -> (i16, i16) {
+	let r = ((sample as f32) * volume) as i16;
+	return (r, r)
+}
+
 fn get_freq_len_duty(flen: f32, duty: u16) -> f32 {
 	match duty {
 		0 => flen / 8.0,
@@ -110,157 +117,118 @@ fn get_freq_len_duty(flen: f32, duty: u16) -> f32 {
 }
 
 fn init_channel1(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
-	// let channel = get_audio_channel1(cpu);
+	let channel: &mut GbaChannel1 = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel1 as *mut GbaChannel1) };
 
-	if cpu.memory.internal_regs.audio_channel1.initial {
-		cpu.memory.internal_regs.audio_channel1.current_volume = cpu.memory.internal_regs.audio_channel1.initial_volume;
-		cpu.memory.internal_regs.audio_channel1.sound_length_time_acc = device.millis_to_frames(3, 9) * (64 - cpu.memory.internal_regs.audio_channel1.sound_length as u32);
-		state.c1_volume_multiplier = (cpu.memory.internal_regs.audio_channel1.current_volume as f32) / 15.0;
-		cpu.memory.internal_regs.audio_channel1.initial = false;
+	if channel.initial {
+		channel.sweep_time_acc = 0;
+		channel.current_volume = channel.initial_volume;
+		channel.sound_length_time_acc = device.millis_to_frames(3, 9) * (64 - channel.sound_length as u32);
+		state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
+		channel.initial = false;
 	}
 
-	state.c1_freq_len = device.sample_rate_f / max!(cpu.memory.internal_regs.audio_channel1.frequency_f, 1.0);
-	state.c1_freq_len_duty = get_freq_len_duty(state.c1_freq_len, cpu.memory.internal_regs.audio_channel1.wave_pattern_duty);
-	state.c1_volume_multiplier = (cpu.memory.internal_regs.audio_channel1.current_volume as f32) / 15.0;
+	state.c1_freq_len = device.sample_rate_f / max!(channel.frequency_f, 1.0);
+	state.c1_freq_len_duty = get_freq_len_duty(state.c1_freq_len, channel.wave_pattern_duty);
+	state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
 
-	cpu.memory.internal_regs.audio_channel1.playing = !cpu.memory.internal_regs.audio_channel1.length_flag || cpu.memory.internal_regs.audio_channel1.sound_length_time_acc > 0;
-}
-
-fn init_channel2(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
-	// let channel = get_audio_channel2(cpu);
-
-	if cpu.memory.internal_regs.audio_channel2.initial {
-		cpu.memory.internal_regs.audio_channel2.current_volume = cpu.memory.internal_regs.audio_channel2.initial_volume;
-		cpu.memory.internal_regs.audio_channel2.sound_length_time_acc = device.millis_to_frames(3, 9) * (64 - cpu.memory.internal_regs.audio_channel2.sound_length as u32);
-		state.c2_volume_multiplier = (cpu.memory.internal_regs.audio_channel2.current_volume as f32) / 15.0;
-		cpu.memory.internal_regs.audio_channel2.initial = false;
-	}
-
-	state.c2_freq_len = device.sample_rate_f / max!(cpu.memory.internal_regs.audio_channel2.frequency_f, 1.0);
-	state.c2_freq_len_duty = get_freq_len_duty(state.c2_freq_len, cpu.memory.internal_regs.audio_channel2.wave_pattern_duty);
-	state.c2_volume_multiplier = (cpu.memory.internal_regs.audio_channel2.current_volume as f32) / 15.0;
-
-	cpu.memory.internal_regs.audio_channel2.playing = !cpu.memory.internal_regs.audio_channel2.length_flag || cpu.memory.internal_regs.audio_channel2.sound_length_time_acc > 0;
+	channel.playing = !channel.length_flag || channel.sound_length_time_acc > 0;
 }
 
 fn tick_channel1(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
-	use std;
-
-	// let channel = get_audio_channel1(cpu);
-	if !cpu.memory.internal_regs.audio_channel1.length_flag || cpu.memory.internal_regs.audio_channel1.sound_length_time_acc > 0 {
+	let channel: &mut GbaChannel1 = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel1 as *mut GbaChannel1) };
+	if !channel.length_flag || channel.sound_length_time_acc > 0 {
 		// Sweeps:
-		if cpu.memory.internal_regs.audio_channel1.sweep_time > 0 {
-			cpu.memory.internal_regs.audio_channel1.sweep_time_acc += 1;
-			let sweep_time_frames = device.millis_to_frames(7, 8) * (cpu.memory.internal_regs.audio_channel1.sweep_time as u32);
-			if cpu.memory.internal_regs.audio_channel1.sweep_time_acc >= sweep_time_frames {
+		if channel.sweep_time > 0 {
+			channel.sweep_time_acc += 1;
+			let sweep_time_frames = device.millis_to_frames(7, 8) * (channel.sweep_time as u32);
+			if channel.sweep_time_acc >= sweep_time_frames {
 
-				let mut f = cpu.memory.internal_regs.audio_channel1.frequency;
+				
+				let mut __freq_status = 0;
+				
+				let mut f = channel.frequency;
+				let _s = f;
 
-				if cpu.memory.internal_regs.audio_channel1.sweep_frequency_dec {
-					if (cpu.memory.internal_regs.audio_channel1.frequency >> cpu.memory.internal_regs.audio_channel1.sweep_shift_number) < f {
+				if channel.sweep_frequency_dec {
+					if (channel.frequency >> channel.sweep_shift_number) <= f {
 						// ^ we stop this from becoming 0 or "lower"
-						f -= cpu.memory.internal_regs.audio_channel1.frequency >> cpu.memory.internal_regs.audio_channel1.sweep_shift_number;
+						f -= channel.frequency >> channel.sweep_shift_number;
+					} else {
+						__freq_status = 1;
 					}
 				} else {
-					f += cpu.memory.internal_regs.audio_channel1.frequency >> cpu.memory.internal_regs.audio_channel1.sweep_shift_number;
+					f += channel.frequency >> channel.sweep_shift_number;
+					if f > 2047 {
+						f = 2047;
+						let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
+						cpu.memory.set_reg(ioreg::SOUNDCNT_X, soundcnt_x & !1); // turn the sound off.
+						__freq_status = 2;
+					}
 				}
 
-				cpu.memory.internal_regs.audio_channel1.frequency = min!(2047, f);
-				cpu.memory.internal_regs.audio_channel1.frequency_f = 131072.0 / (2048.0 - cpu.memory.internal_regs.audio_channel1.frequency as f32);
+				if f as u64 != pyrite_counter_get!(7) {
+					let _f = min!(2047, f);
+					println!("sweep sub [{} -= {} >> {}] (- {}) [{}]",
+						_s, _s, channel.sweep_shift_number,
+						channel.frequency >> channel.sweep_shift_number,
+						__freq_status);
+					println!("[rate: {}, freq: {} ({})] -> [rate: {}, freq: {} ({})]",
+						_s, 131072.0 / (2048.0 - _s as f32),
+						131072 / (2048 - _s as u32),
 
-				state.c1_freq_len = device.sample_rate_f / cpu.memory.internal_regs.audio_channel1.frequency_f;
-				state.c1_freq_len_duty = get_freq_len_duty(state.c1_freq_len, cpu.memory.internal_regs.audio_channel1.wave_pattern_duty);
-				cpu.memory.internal_regs.audio_channel1.sweep_time_acc = 0;
+						_f, 131072.0 / (2048.0 - _f as f32),
+						131072 / (2048 - _f as u32));
+					println!("");
+					pyrite_counter_set!(7, _f);
+				}
+
+				channel.frequency = f;
+				channel.frequency_f = 131072.0 / (2048.0 - channel.frequency as f32);
+
+				state.c1_freq_len = device.sample_rate_f / channel.frequency_f;
+				state.c1_freq_len_duty = get_freq_len_duty(state.c1_freq_len, channel.wave_pattern_duty);
+				channel.sweep_time_acc = 0;
 			}
 		}
 
 		// Envelope Function:
-		if cpu.memory.internal_regs.audio_channel1.envelope_step_time > 0 {
-			cpu.memory.internal_regs.audio_channel1.envelope_time_acc += 1;
-			let envelope_time_frames = device.millis_to_frames(15, 6) * (cpu.memory.internal_regs.audio_channel1.envelope_step_time as u32);
-			if cpu.memory.internal_regs.audio_channel1.envelope_time_acc >= envelope_time_frames {
-				if cpu.memory.internal_regs.audio_channel1.envelope_inc && cpu.memory.internal_regs.audio_channel1.current_volume < 15 {
-					cpu.memory.internal_regs.audio_channel1.current_volume += 1;
-					state.c1_volume_multiplier = (cpu.memory.internal_regs.audio_channel1.current_volume as f32) / 15.0;
-				} else if (!cpu.memory.internal_regs.audio_channel1.envelope_inc) && cpu.memory.internal_regs.audio_channel1.current_volume > 0 {
-					cpu.memory.internal_regs.audio_channel1.current_volume -= 1;
-					state.c1_volume_multiplier = (cpu.memory.internal_regs.audio_channel1.current_volume as f32) / 15.0;
+		if channel.envelope_step_time > 0 {
+			channel.envelope_time_acc += 1;
+			let envelope_time_frames = device.millis_to_frames(15, 6) * (channel.envelope_step_time as u32);
+			if channel.envelope_time_acc >= envelope_time_frames {
+				if channel.envelope_inc && channel.current_volume < 15 {
+					channel.current_volume += 1;
+					state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
+				} else if (!channel.envelope_inc) && channel.current_volume > 0 {
+					channel.current_volume -= 1;
+					state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
 				}
-				cpu.memory.internal_regs.audio_channel1.envelope_time_acc = 0;
+				channel.envelope_time_acc = 0;
 			}
 		}
 
-		cpu.memory.internal_regs.audio_channel1.frequency_step += 1.0;
-		if cpu.memory.internal_regs.audio_channel1.frequency_step > state.c1_freq_len {
-			cpu.memory.internal_regs.audio_channel1.frequency_step = 0.0;
+		channel.frequency_step += 1.0; // 0.74303854875, 1.34582519531
+		if channel.frequency_step > state.c1_freq_len {
+			channel.frequency_step = 0.0;
 		}
 
-		if cpu.memory.internal_regs.audio_channel1.length_flag {
-			cpu.memory.internal_regs.audio_channel1.sound_length_time_acc -= 1;
-			if cpu.memory.internal_regs.audio_channel1.sound_length_time_acc == 0 {
+		if channel.length_flag {
+			channel.sound_length_time_acc -= 1;
+			if channel.sound_length_time_acc == 0 {
 				let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
 				cpu.memory.set_reg(ioreg::SOUNDCNT_X, soundcnt_x & !1); // turn the sound off.
 			}
 		}
 
-		return if cpu.memory.internal_regs.audio_channel1.frequency_step < state.c1_freq_len_duty {
+		return if channel.frequency_step < state.c1_freq_len_duty {
 			// Does the multiplication on a u16 and then converts back to i16
 			// so that we can get a value in the range of -32,767 to 32,767
 			// subtracts 1 because the highest number that can come out of the other end is actually
 			// 32768 which we don't want.
-			let s = apply_volume(std::i16::MAX, state.c1_volume_multiplier);
-			(s, s)
+			apply_volume_stereo(std::i16::MAX, state.c1_volume_multiplier)
 		} else {
-			(0, 0)
+			apply_volume_stereo(std::i16::MIN, state.c1_volume_multiplier)
 		}
 	}
-	return (0, 0); // Produce no sound because the channel is off.
-}
-
-fn tick_channel2(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
-	use std;
-
-	// let channel = get_audio_channel2(cpu);
-	if !cpu.memory.internal_regs.audio_channel2.length_flag || cpu.memory.internal_regs.audio_channel2.sound_length_time_acc > 0 {
-		// Envelope Function:
-		if cpu.memory.internal_regs.audio_channel2.envelope_step_time > 0 {
-			cpu.memory.internal_regs.audio_channel2.envelope_time_acc += 1;
-			let envelope_time_frames = device.millis_to_frames(15, 6) * (cpu.memory.internal_regs.audio_channel2.envelope_step_time as u32);
-			if cpu.memory.internal_regs.audio_channel2.envelope_time_acc >= envelope_time_frames {
-				if cpu.memory.internal_regs.audio_channel2.envelope_inc && cpu.memory.internal_regs.audio_channel2.current_volume < 15 {
-					cpu.memory.internal_regs.audio_channel2.current_volume += 1;
-					state.c2_volume_multiplier = (cpu.memory.internal_regs.audio_channel2.current_volume as f32) / 15.0;
-				} else if (!cpu.memory.internal_regs.audio_channel2.envelope_inc) && cpu.memory.internal_regs.audio_channel2.current_volume > 0 {
-					cpu.memory.internal_regs.audio_channel2.current_volume -= 1;
-					state.c2_volume_multiplier = (cpu.memory.internal_regs.audio_channel2.current_volume as f32) / 15.0;
-				}
-				cpu.memory.internal_regs.audio_channel2.envelope_time_acc = 0;
-			}
-		}
-
-		cpu.memory.internal_regs.audio_channel2.frequency_step += 1.0;
-		if cpu.memory.internal_regs.audio_channel2.frequency_step > state.c2_freq_len {
-			cpu.memory.internal_regs.audio_channel2.frequency_step = 0.0;
-		}
-
-		if cpu.memory.internal_regs.audio_channel2.length_flag {
-			cpu.memory.internal_regs.audio_channel2.sound_length_time_acc -= 1;
-			if cpu.memory.internal_regs.audio_channel2.sound_length_time_acc == 0 {
-				let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
-				cpu.memory.set_reg(ioreg::SOUNDCNT_X, soundcnt_x & !1); // turn the sound off.
-			}
-		}
-
-		return if cpu.memory.internal_regs.audio_channel2.frequency_step < state.c2_freq_len_duty {
-			// Does the multiplication on a u16 and then converts back to i16
-			// so that we can get a value in the range of -32,767 to 32,767
-			// subtracts 1 because the highest number that can come out of the other end is actually
-			// 32768 which we don't want.
-			let s = apply_volume(std::i16::MAX, state.c2_volume_multiplier);
-			(s, s)
-		} else {
-			(0, 0)
-		}
-	}
-	return (0, 0); // Produce no sound because the channel is off.
+	return apply_volume_stereo(std::i16::MIN, state.c1_volume_multiplier); // Produce no sound because the channel is off.
 }
