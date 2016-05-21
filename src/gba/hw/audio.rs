@@ -142,19 +142,12 @@ fn tick_channel1(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState)
 			channel.sweep_time_acc += 1;
 			let sweep_time_frames = device.millis_to_frames(7, 8) * (channel.sweep_time as u32);
 			if channel.sweep_time_acc >= sweep_time_frames {
-
-				
-				let mut __freq_status = 0;
-				
 				let mut f = channel.frequency;
-				let _s = f;
 
 				if channel.sweep_frequency_dec {
 					if (channel.frequency >> channel.sweep_shift_number) <= f {
 						// ^ we stop this from becoming 0 or "lower"
 						f -= channel.frequency >> channel.sweep_shift_number;
-					} else {
-						__freq_status = 1;
 					}
 				} else {
 					f += channel.frequency >> channel.sweep_shift_number;
@@ -162,26 +155,9 @@ fn tick_channel1(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState)
 						f = 2047;
 						let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
 						cpu.memory.set_reg(ioreg::SOUNDCNT_X, soundcnt_x & !1); // turn the sound off.
-						__freq_status = 2;
 					}
 				}
-
-				if f as u64 != pyrite_counter_get!(7) {
-					let _f = min!(2047, f);
-					println!("sweep sub [{} -= {} >> {}] (- {}) [{}]",
-						_s, _s, channel.sweep_shift_number,
-						channel.frequency >> channel.sweep_shift_number,
-						__freq_status);
-					println!("[rate: {}, freq: {} ({})] -> [rate: {}, freq: {} ({})]",
-						_s, 131072.0 / (2048.0 - _s as f32),
-						131072 / (2048 - _s as u32),
-
-						_f, 131072.0 / (2048.0 - _f as f32),
-						131072 / (2048 - _f as u32));
-					println!("");
-					pyrite_counter_set!(7, _f);
-				}
-
+				
 				channel.frequency = f;
 				channel.frequency_f = 131072.0 / (2048.0 - channel.frequency as f32);
 
