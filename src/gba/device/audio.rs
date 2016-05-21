@@ -7,8 +7,12 @@ use std;
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
-const FRAMES_PER_BUFFER: u32 = 512; // Around 8KB for storing our buffers if we assume a compact memory layout.
+const FRAMES_PER_BUFFER: u32 = 256;
 const AUDIO_DATA_BUFFER_SIZE: usize = FRAMES_PER_BUFFER as usize;
+const AUDIO_DATA_BUFFER_COUNT: usize = 8;
+
+// Size of audio data buffer in bytes is around:
+// AUDIO_DATA_BUFFER_SIZE * AUDIO_DATA_BUFFER_COUNT * 8
 
 pub type AudioBufferType = [(i16, i16); AUDIO_DATA_BUFFER_SIZE as usize];
 
@@ -23,7 +27,7 @@ impl AudioDevice {
 	pub fn new() -> AudioDevice {
 		let generator_fn = || [(std::i16::MIN, std::i16::MIN); AUDIO_DATA_BUFFER_SIZE as usize];
 		AudioDevice {
-			ring_buffer: Arc::new(AsyncRingBuffer::new(8, generator_fn)),
+			ring_buffer: Arc::new(AsyncRingBuffer::new(AUDIO_DATA_BUFFER_COUNT, generator_fn)),
 			output_thread: None,
 			sample_rate: 44_100,
 			sample_rate_f: 44_100.0
