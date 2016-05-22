@@ -77,155 +77,140 @@ const CHANNELS: [DmaChannel; 4] = [
 	}
 ];
 
-pub trait DmaHandler {
-	fn dma_ongoing(&mut self) -> bool;
-	fn dma_tick(&mut self);
-	fn dma_tick_channel(&mut self, channel_index: usize);
-	fn dma_check_started(&mut self, timing: u16, channel_index: usize);
-	fn dma_start(&mut self, channel_index: usize);
-
-	/// Returns an interrupt mask for the DMA register that is completed if
-	/// IRQ interrupts are enabled for the given DMA channel.
-	fn dma_completed(&mut self, channel_index: usize);
-}
-
 macro_rules! dma_reg {
     ($container:expr, $channel_index:expr) => (
     	$container.memory.internal_regs.dma_registers[$channel_index];
     )
 }
 
-impl DmaHandler for ArmCpu {
-	fn dma_ongoing(&mut self) -> bool {
-		(dma_reg!(self, 0).units_remaining != 0 && dma_reg!(self, 0).enabled) |
-		(dma_reg!(self, 1).units_remaining != 0 && dma_reg!(self, 1).enabled) |
-		(dma_reg!(self, 2).units_remaining != 0 && dma_reg!(self, 2).enabled) |
-		(dma_reg!(self, 3).units_remaining != 0 && dma_reg!(self, 3).enabled)
+pub fn ongoing(cpu: &ArmCpu) -> bool {
+	(dma_reg!(cpu, 0).units_remaining != 0 && dma_reg!(cpu, 0).enabled) |
+	(dma_reg!(cpu, 1).units_remaining != 0 && dma_reg!(cpu, 1).enabled) |
+	(dma_reg!(cpu, 2).units_remaining != 0 && dma_reg!(cpu, 2).enabled) |
+	(dma_reg!(cpu, 3).units_remaining != 0 && dma_reg!(cpu, 3).enabled)
+}
+
+pub fn tick(cpu: &mut ArmCpu) {
+	if dma_reg!(cpu, 0).units_remaining > 0 && dma_reg!(cpu, 0).enabled {
+		tick_channel(cpu, 0)
+	} else if dma_reg!(cpu, 1).units_remaining > 0 && dma_reg!(cpu, 1).enabled {
+		tick_channel(cpu, 1)
+	} else if dma_reg!(cpu, 2).units_remaining > 0 && dma_reg!(cpu, 2).enabled {
+		tick_channel(cpu, 2)
+	} else if dma_reg!(cpu, 3).units_remaining > 0 && dma_reg!(cpu, 3).enabled {
+		tick_channel(cpu, 3)
 	}
+}
 
-	fn dma_tick(&mut self) {
-		if dma_reg!(self, 0).units_remaining > 0 && dma_reg!(self, 0).enabled {
-			self.dma_tick_channel(0)
-		} else if dma_reg!(self, 1).units_remaining > 0 && dma_reg!(self, 1).enabled {
-			self.dma_tick_channel(1)
-		} else if dma_reg!(self, 2).units_remaining > 0 && dma_reg!(self, 2).enabled {
-			self.dma_tick_channel(2)
-		} else if dma_reg!(self, 3).units_remaining > 0 && dma_reg!(self, 3).enabled {
-			self.dma_tick_channel(3)
-		}
-	}
+fn tick_channel(cpu: &mut ArmCpu, channel_index: usize) {
+	let src = dma_reg!(cpu, channel_index).source_addr;
+	let dest = dma_reg!(cpu, channel_index).destination_addr;
+	if dma_reg!(cpu, channel_index).transfer_word {
+		dma_reg!(cpu, channel_index).units_remaining -= 1;
+		let data = cpu.memory.read32(src);
+		cpu.memory.write32(dest, data);
 
-	fn dma_tick_channel(&mut self, channel_index: usize) {
-		let src = dma_reg!(self, channel_index).source_addr;
-		let dest = dma_reg!(self, channel_index).destination_addr;
-		if dma_reg!(self, channel_index).transfer_word {
-			dma_reg!(self, channel_index).units_remaining -= 1;
-			let data = self.memory.read32(src);
-			self.memory.write32(dest, data);
+		if dma_reg!(cpu, channel_index).first_transfer {
+			dma_reg!(cpu, channel_index).first_transfer = false;
+			cpu.clock.data_access32_nonseq(src);
+			cpu.clock.data_access32_nonseq(dest);
 
-			if dma_reg!(self, channel_index).first_transfer {
-				dma_reg!(self, channel_index).first_transfer = false;
-				self.clock.data_access32_nonseq(src);
-				self.clock.data_access32_nonseq(dest);
-
-				// Internal time for DMA processing is 2I (normally), or 4I (if both source and destination are in gamepak memory area).
-				let src_area = (src >> 24) & 0xFF;
-				let dest_area = (dest >> 24) & 0xFF;
-				if src_area > 0x07 && dest_area > 0x07 {
-					self.clock.internal(4);
-				} else {
-					self.clock.internal(2);
-				}
+			// Internal time for DMA processing is 2I (normally), or 4I (if both source and destination are in gamepak memory area).
+			let src_area = (src >> 24) & 0xFF;
+			let dest_area = (dest >> 24) & 0xFF;
+			if src_area > 0x07 && dest_area > 0x07 {
+				cpu.clock.internal(4);
 			} else {
-				self.clock.data_access32_seq(src);
-				self.clock.data_access32_seq(dest);
+				cpu.clock.internal(2);
 			}
-
-			dma_reg!(self, channel_index).destination_addr += dma_reg!(self, channel_index).dest_addr_inc;
-			dma_reg!(self, channel_index).source_addr += dma_reg!(self, channel_index).source_addr_inc;
 		} else {
-			dma_reg!(self, channel_index).units_remaining -= 1;
-			let data = self.memory.read16(src);
-			self.memory.write16(dest, data);
+			cpu.clock.data_access32_seq(src);
+			cpu.clock.data_access32_seq(dest);
+		}
 
-			if dma_reg!(self, channel_index).first_transfer {
-				dma_reg!(self, channel_index).first_transfer = false;
-				self.clock.data_access16_nonseq(src);
-				self.clock.data_access16_nonseq(dest);
+		dma_reg!(cpu, channel_index).destination_addr += dma_reg!(cpu, channel_index).dest_addr_inc;
+		dma_reg!(cpu, channel_index).source_addr += dma_reg!(cpu, channel_index).source_addr_inc;
+	} else {
+		dma_reg!(cpu, channel_index).units_remaining -= 1;
+		let data = cpu.memory.read16(src);
+		cpu.memory.write16(dest, data);
 
-				// Internal time for DMA processing is 2I (normally), or 4I (if both source and destination are in gamepak memory area).
-				let src_area = (src >> 24) & 0xFF;
-				let dest_area = (dest >> 24) & 0xFF;
-				if src_area > 0x07 && dest_area > 0x07 {
-					self.clock.internal(4);
-				} else {
-					self.clock.internal(2);
-				}
+		if dma_reg!(cpu, channel_index).first_transfer {
+			dma_reg!(cpu, channel_index).first_transfer = false;
+			cpu.clock.data_access16_nonseq(src);
+			cpu.clock.data_access16_nonseq(dest);
+
+			// Internal time for DMA processing is 2I (normally), or 4I (if both source and destination are in gamepak memory area).
+			let src_area = (src >> 24) & 0xFF;
+			let dest_area = (dest >> 24) & 0xFF;
+			if src_area > 0x07 && dest_area > 0x07 {
+				cpu.clock.internal(4);
 			} else {
-				self.clock.data_access16_seq(src);
-				self.clock.data_access16_seq(dest);
+				cpu.clock.internal(2);
 			}
-
-			dma_reg!(self, channel_index).destination_addr += dma_reg!(self, channel_index).dest_addr_inc;
-			dma_reg!(self, channel_index).source_addr += dma_reg!(self, channel_index).source_addr_inc;
-		}
-
-		return if dma_reg!(self, channel_index).units_remaining == 0 {
-			// The DMA is completed:
-			self.dma_completed(channel_index)
-		}
-	}
-
-
-	fn dma_check_started(&mut self, timing: u16, channel_index: usize) {
-		// #FIXME can a DMA interrupt itself if it has taken too long (let's say an Hblank DMA?)
-
-		// DMA is not ongoing, is enabled and the timing is correct
-		if dma_reg!(self, channel_index).units_remaining == 0
-			&& dma_reg!(self, channel_index).enabled
-			&& dma_reg!(self, channel_index).start_timing == timing {
-				self.dma_start(channel_index);
-		}
-	}
-
-	fn dma_start(&mut self, channel_index: usize) {
-		let channel_info = &CHANNELS[channel_index];
-
-		let _dest = self.memory.get_reg(channel_info.reg_dad);
-		let _source = self.memory.get_reg(channel_info.reg_sad);
-		let _units = self.memory.get_reg(channel_info.reg_cnt_l) as u32;
-
-		if !dma_reg!(self, channel_index).is_repeat {
-			dma_reg!(self, channel_index).destination_addr = _dest & channel_info.dest_mask;
-			dma_reg!(self, channel_index).original_destination_addr = dma_reg!(self, channel_index).destination_addr;
-			dma_reg!(self, channel_index).source_addr = _source & channel_info.src_mask;
-		}
-		dma_reg!(self, channel_index).units = if _units == 0 { channel_info.max_units } else { _units };
-		dma_reg!(self, channel_index).units_remaining = dma_reg!(self, channel_index).units;
-		dma_reg!(self, channel_index).first_transfer = true;
-	}
-
-	/// Returns an interrupt mask for the DMA register that is completed if
-	/// IRQ interrupts are enabled for the given DMA channel.
-	fn dma_completed(&mut self, channel_index: usize) {
-		if !dma_reg!(self, channel_index).repeat {
-			// We clear the enable bit if the DMA is not repeating.
-			dma_reg!(self, channel_index).enabled = false;
-			let dma_cnt_h = self.memory.get_reg(CHANNELS[channel_index].reg_cnt_h);
-			self.memory.set_reg(CHANNELS[channel_index].reg_cnt_h, dma_cnt_h & 0x7fff);
 		} else {
-			dma_reg!(self, channel_index).is_repeat = true;
-			if dma_reg!(self, channel_index).reload {
-				let _end  =dma_reg!(self, channel_index).destination_addr;
-				dma_reg!(self, channel_index).destination_addr = dma_reg!(self, channel_index).original_destination_addr;
-			}
+			cpu.clock.data_access16_seq(src);
+			cpu.clock.data_access16_seq(dest);
 		}
 
-		dma_reg!(self, channel_index).units_remaining = 0; // Make sure the units are 0
-		dma_reg!(self, channel_index).first_transfer = true;
+		dma_reg!(cpu, channel_index).destination_addr += dma_reg!(cpu, channel_index).dest_addr_inc;
+		dma_reg!(cpu, channel_index).source_addr += dma_reg!(cpu, channel_index).source_addr_inc;
+	}
 
-		if dma_reg!(self, channel_index).irq {
-			self.hardware_interrupt(INT_DMA0 << (channel_index as u16));
+	return if dma_reg!(cpu, channel_index).units_remaining == 0 {
+		// The DMA is completed:
+		completed(cpu, channel_index)
+	}
+}
+
+pub fn check_started(cpu: &mut ArmCpu, timing: u16, channel_index: usize) {
+	// #FIXME can a DMA interrupt itcpu if it has taken too long (let's say an Hblank DMA?)
+
+	// DMA is not ongoing, is enabled and the timing is correct
+	if dma_reg!(cpu, channel_index).units_remaining == 0
+		&& dma_reg!(cpu, channel_index).enabled
+		&& dma_reg!(cpu, channel_index).start_timing == timing {
+			start(cpu, channel_index);
+	}
+}
+
+fn start(cpu: &mut ArmCpu, channel_index: usize) {
+	let channel_info = &CHANNELS[channel_index];
+
+	let _dest = cpu.memory.get_reg(channel_info.reg_dad);
+	let _source = cpu.memory.get_reg(channel_info.reg_sad);
+	let _units = cpu.memory.get_reg(channel_info.reg_cnt_l) as u32;
+
+	if !dma_reg!(cpu, channel_index).is_repeat {
+		dma_reg!(cpu, channel_index).destination_addr = _dest & channel_info.dest_mask;
+		dma_reg!(cpu, channel_index).original_destination_addr = dma_reg!(cpu, channel_index).destination_addr;
+		dma_reg!(cpu, channel_index).source_addr = _source & channel_info.src_mask;
+	}
+	dma_reg!(cpu, channel_index).units = if _units == 0 { channel_info.max_units } else { _units };
+	dma_reg!(cpu, channel_index).units_remaining = dma_reg!(cpu, channel_index).units;
+	dma_reg!(cpu, channel_index).first_transfer = true;
+}
+
+/// Returns an interrupt mask for the DMA register that is completed if
+/// IRQ interrupts are enabled for the given DMA channel.
+fn completed(cpu: &mut ArmCpu, channel_index: usize) {
+	if !dma_reg!(cpu, channel_index).repeat {
+		// We clear the enable bit if the DMA is not repeating.
+		dma_reg!(cpu, channel_index).enabled = false;
+		let dma_cnt_h = cpu.memory.get_reg(CHANNELS[channel_index].reg_cnt_h);
+		cpu.memory.set_reg(CHANNELS[channel_index].reg_cnt_h, dma_cnt_h & 0x7fff);
+	} else {
+		dma_reg!(cpu, channel_index).is_repeat = true;
+		if dma_reg!(cpu, channel_index).reload {
+			let _end  =dma_reg!(cpu, channel_index).destination_addr;
+			dma_reg!(cpu, channel_index).destination_addr = dma_reg!(cpu, channel_index).original_destination_addr;
 		}
+	}
+
+	dma_reg!(cpu, channel_index).units_remaining = 0; // Make sure the units are 0
+	dma_reg!(cpu, channel_index).first_transfer = true;
+
+	if dma_reg!(cpu, channel_index).irq {
+		cpu.hardware_interrupt(INT_DMA0 << (channel_index as u16));
 	}
 }

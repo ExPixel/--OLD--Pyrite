@@ -13,7 +13,7 @@ use self::core::cpu::ArmCpu;
 use self::device::GbaDevice;
 use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
-use self::hw::dma::*;
+use self::hw::dma;
 use self::hw::audio;
 
 use super::debug::debugger::GbaDebugger;
@@ -210,7 +210,7 @@ impl Gba {
 		self.cpu.memory.set_reg(ioreg::VCOUNT, 160);
 		self.check_line_coincidence(160);
 		self.try_fire_vblank_int();
-		self.check_dmas(DMA_TIMING_VBLANK);
+		self.check_dmas(dma::DMA_TIMING_VBLANK);
 		self.do_vblank_line();
 
 		for vcount in 161..228 {
@@ -266,11 +266,11 @@ impl Gba {
 	fn check_dmas(&mut self, timing: u16) {
 		// We only check if the DMA registers are dirty if the timing is immediate
 		// otherwise we try to start the DMA anyway.
-		if timing != DMA_TIMING_IMMEDIATE || self.cpu.memory.internal_regs.dma_dirty {
-			self.cpu.dma_check_started(timing, 0);
-			self.cpu.dma_check_started(timing, 1);
-			self.cpu.dma_check_started(timing, 2);
-			self.cpu.dma_check_started(timing, 3);
+		if timing != dma::DMA_TIMING_IMMEDIATE || self.cpu.memory.internal_regs.dma_dirty {
+			dma::check_started(&mut self.cpu, timing, 0);
+			dma::check_started(&mut self.cpu, timing, 1);
+			dma::check_started(&mut self.cpu, timing, 2);
+			dma::check_started(&mut self.cpu, timing, 3);
 			
 			self.cpu.memory.internal_regs.dma_dirty = false;	
 		}
@@ -343,7 +343,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		dispstat |= 0x2;
 		self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 		self.try_fire_hblank_int();
-		self.check_dmas(DMA_TIMING_HBLANK);
+		self.check_dmas(dma::DMA_TIMING_HBLANK);
 		self.run_cpu_cycles(272);
 	}
 
@@ -357,9 +357,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		measure_start(MEASURE_DMA_TICKS_TIME);
 
 		'cpu_loop: while self.cpu.clock.cycles < target {
-			if self.cpu.dma_ongoing() {
+			if dma::ongoing(&self.cpu) {
 				measure_iteration(MEASURE_DMA_TICKS_TIME);
-				self.cpu.dma_tick();
+				dma::tick(&mut self.cpu);
 			} else {
 				if self.cpu.executable() {
 					measure_iteration(MEASURE_CPU_TICKS_TIME);
@@ -370,7 +370,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 						audio::tick(&mut self.cpu, &mut self.device.audio);
 						self.cpu.clock.audio_clock = 0;
 					}
-					self.check_dmas(DMA_TIMING_IMMEDIATE);
+					self.check_dmas(dma::DMA_TIMING_IMMEDIATE);
 				} else {
 					self.cpu.reg_dump_pretty();
 					panic!("Attempting to execute at unexecutable address 0x{:08x}!", self.cpu.get_exec_address());
