@@ -88,8 +88,8 @@ fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 	// let mut volume_multiplier = volume_to_signal_multiplier(0.2);
 	let mut remaining_audio_data_index = 0;
 
-	let mut last_left = std::i16::MIN;
-	let mut last_right = std::i16::MIN;
+	let mut last_left = 0;
+	let mut last_right = 0;
 
 	let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 		let mut idx = 0;
