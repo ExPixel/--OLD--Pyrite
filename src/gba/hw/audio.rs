@@ -36,19 +36,6 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 		let sound_1_4_enable_left = soundcnt_l >> 8;
 		let sound_1_4_enable_right = soundcnt_l >> 12;
 
-		pyrite_debugging!({
-			debug_print_vars_ln!(
-				soundcnt_l,
-				soundcnt_h,
-				soundcnt_x,
-				sound_1_4_vol,
-				sound_1_4_left_vol,
-				sound_1_4_right_vol,
-				sound_1_4_enable_left,
-				sound_1_4_enable_right
-			);
-		});
-
 		let mut state: AudioState = Default::default();
 
 		init_channel1(cpu, device, &mut state);
