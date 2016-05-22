@@ -386,50 +386,65 @@ impl InternalRegisters {
 
 	pub fn on_reg_write(&mut self, register: u32, value: u16) {
 		match register {
-			0x0000028 => { self.bg2x = (((put_lo16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
-			0x000002A => { self.bg2x = (((put_hi16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x00000028 => { self.bg2x = (((put_lo16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x0000002A => { self.bg2x = (((put_hi16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
-			0x000002C => { self.bg2y = (((put_lo16!(self.bg2y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
-			0x000002E => { self.bg2y = (((put_hi16!(self.bg2y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x0000002C => { self.bg2y = (((put_lo16!(self.bg2y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x0000002E => { self.bg2y = (((put_hi16!(self.bg2y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
-			0x0000038 => { self.bg3x = (((put_lo16!(self.bg3x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
-			0x000003A => { self.bg3x = (((put_hi16!(self.bg3x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x00000038 => { self.bg3x = (((put_lo16!(self.bg3x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x0000003A => { self.bg3x = (((put_hi16!(self.bg3x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
-			0x000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
-			0x000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x0000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
+			0x0000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
-			0x0000100 => { self.update_timer_lo(0, value) },
-			0x0000102 => { self.update_timer_hi(0, value) },
-			0x0000104 => { self.update_timer_lo(1, value) },
-			0x0000105 => { self.update_timer_hi(1, value) },
-			0x0000108 => { self.update_timer_lo(2, value) },
-			0x000010A => { self.update_timer_hi(2, value) },
-			0x000010C => { self.update_timer_lo(3, value) },
-			0x000010E => { self.update_timer_hi(3, value) },
+			0x00000100 => { self.update_timer_lo(0, value) },
+			0x00000102 => { self.update_timer_hi(0, value) },
+			0x00000104 => { self.update_timer_lo(1, value) },
+			0x00000105 => { self.update_timer_hi(1, value) },
+			0x00000108 => { self.update_timer_lo(2, value) },
+			0x0000010A => { self.update_timer_hi(2, value) },
+			0x0000010C => { self.update_timer_lo(3, value) },
+			0x0000010E => { self.update_timer_hi(3, value) },
 
-			0x00000BA => { self.update_dma_hi(0, value); },
-			0x00000C6 => { self.update_dma_hi(1, value); },
-			0x00000D2 => { self.update_dma_hi(2, value); },
-			0x00000DE => { self.update_dma_hi(3, value); },
+			0x000000BA => { self.update_dma_hi(0, value); },
+			0x000000C6 => { self.update_dma_hi(1, value); },
+			0x000000D2 => { self.update_dma_hi(2, value); },
+			0x000000DE => { self.update_dma_hi(3, value); },
 
 			// Audio Channel 1:
-			0x0000060 => {
+			0x00000060 => {
 				self.audio_channel1.sweep_shift_number = value & 0x7;
 				self.audio_channel1.sweep_frequency_dec = (value & 0x8) != 0;
 				self.audio_channel1.sweep_time = (value >> 4) & 0x7;
 			},
-			0x0000062 => {
+			0x00000062 => {
 				self.audio_channel1.sound_length = value & 0x3f;
 				self.audio_channel1.wave_pattern_duty = (value >> 6) & 0x3;
 				self.audio_channel1.envelope_step_time = (value >> 8) & 0x7;
 				self.audio_channel1.envelope_inc = (value & 0x800) != 0;
 				self.audio_channel1.initial_volume = (value >> 12) & 0xf;
 			},
-			0x0000064 => {
+			0x00000064 => {
 				self.audio_channel1.frequency = value & 0x7ff;
 				self.audio_channel1.frequency_f = 131072.0 / (2048.0 - self.audio_channel1.frequency as f32);
 				self.audio_channel1.length_flag = (value & 0x4000) != 0;
 				self.audio_channel1.initial = (value & 0x8000) != 0;
+			},
+
+			// Audio Channel 2:
+			0x0000068 => {
+				self.audio_channel2.sound_length = value & 0x3f;
+				self.audio_channel2.wave_pattern_duty = (value >> 6) & 0x3;
+				self.audio_channel2.envelope_step_time = (value >> 8) & 0x7;
+				self.audio_channel2.envelope_inc = (value & 0x800) != 0;
+				self.audio_channel2.initial_volume = (value >> 12) & 0xf;
+			},
+			0x000006C => {
+				self.audio_channel2.frequency = value & 0x7ff;
+				self.audio_channel2.frequency_f = 131072.0 / (2048.0 - self.audio_channel2.frequency as f32);
+				self.audio_channel2.length_flag = (value & 0x4000) != 0;
+				self.audio_channel2.initial = (value & 0x8000) != 0;
 			},
 
 			_ => {}
