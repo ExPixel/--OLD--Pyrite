@@ -108,6 +108,7 @@ fn init_channel1(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState)
 
 	if channel.initial {
 		channel.sweep_time_acc = 0;
+		channel.envelope_time_acc = 0;
 		channel.current_volume = channel.initial_volume;
 		channel.sound_length_time_acc = device.millis_to_frames(3, 9) * (64 - channel.sound_length as u32);
 		state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
