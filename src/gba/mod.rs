@@ -23,6 +23,11 @@ use super::debug::debugger::GbaDebugger;
 // I don't limit the FPS, this is bad to leave false though :P
 const LIMIT_FPS: bool = false;
 
+/// The number of CPU ticks per audio tick.
+/// The higher this value is, the better the audio will sound for some games
+/// that frequenty change the value in the sound registers (e.g. Fire Emblem).
+const AUDIO_TICK_RATE: u32 = 6144;
+
 /// delay for a 60fps frame in nanoseconds.
 const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
 
@@ -366,7 +371,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					self.cpu.tick();
 					self.increment_timers();
 					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
-					if self.cpu.clock.audio_clock > 65536 {
+					if self.cpu.clock.audio_clock > AUDIO_TICK_RATE {
 						audio::tick(&mut self.cpu, &mut self.device.audio);
 						self.cpu.clock.audio_clock = 0;
 					}
