@@ -25,6 +25,7 @@ pub struct AudioState {
 
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 	measure_start(MEASURE_AUDIO_TICK_TIME);
+	measure_iteration(MEASURE_AUDIO_TICK_TIME);
 
 	device.ring_buffer.try_write(|frames| {
 		let soundcnt_l = cpu.memory.get_reg(ioreg::SOUNDCNT_L);
