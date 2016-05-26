@@ -11,6 +11,7 @@ default = ["emulate-swi"]
 # TODO I don't actually do this.
 emulate-swi = []
 measure = []
+instr-match = []
 
 [profile.dev]
 # Ideally I would just like to turn overflow checking off
