@@ -204,6 +204,18 @@ macro_rules! pyrite_counter_get {
 	)
 }
 
+// Use this to track changing values and only do stuff when they change.
+macro_rules! pyrite_counter_diff {
+	($counter:expr, $value:expr) => ({
+		if pyrite_counter_get!($counter) != $value as u64 {
+			pyrite_counter_set!($counter, $value);
+			true
+		} else {
+			false
+		}
+	})
+}
+
 
 /// GRAPHICS DEBUG STUFF:
 

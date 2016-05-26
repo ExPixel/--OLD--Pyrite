@@ -1,5 +1,6 @@
 mod channel1;
 mod channel2;
+mod channel3;
 
 use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
@@ -10,6 +11,7 @@ use ::util::measure::*;
 // over and over because a lot of division is involved,
 // so I cache the results in this struct and just pass this
 // around instead.
+// #TODO these can be moved to their respective channels.
 #[derive(Default)]
 pub struct AudioState {
 	// Channel 1:
@@ -21,6 +23,9 @@ pub struct AudioState {
 	c2_freq_len: f32,
 	c2_freq_len_duty: f32,
 	c2_volume_multiplier: f32,
+
+	// Channel 3:
+	c3_volume_multiplier: f32
 }
 
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
@@ -41,13 +46,14 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 
 		channel1::init(cpu, device, &mut state);
 		channel2::init(cpu, device, &mut state);
+		channel3::init(cpu, device, &mut state);
 
 		for idx in 0..frames.len() {
 			let mut sig_left = 0;
 			let mut sig_right = 0;
 
 			// Sound 1:
-			if cpu.memory.internal_regs.audio_channel1.playing {
+			if cpu.memory.internal_regs.audio_channel1.playing && true {
 				let (mut left, mut right) = channel1::tick(cpu, device, &mut state);
 
 				if (sound_1_4_enable_left & 1) != 0 { // Sound 1 Left Enable
@@ -62,7 +68,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 			}
 
 			// Sound 2:
-			if cpu.memory.internal_regs.audio_channel2.playing {
+			if cpu.memory.internal_regs.audio_channel2.playing && true {
 				let (mut left, mut right) = channel2::tick(cpu, device, &mut state);
 
 				if (sound_1_4_enable_left & 2) != 0 { // Sound 2 Left Enable
@@ -71,6 +77,21 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 				}
 
 				if (sound_1_4_enable_right & 2) != 0 { // Sound 2 Right Enable
+					right >>= sound_1_4_vol as i16;
+					sig_right += apply_volume(right, sound_1_4_right_vol) >> 2;
+				}
+			}
+
+			// Sound 3:
+			if cpu.memory.internal_regs.audio_channel3.playing && false {
+				let (mut left, mut right) = channel3::tick(cpu, device, &mut state);
+
+				if(sound_1_4_enable_left & 4) != 0 {
+					left >>= sound_1_4_vol as i16;
+					sig_left += apply_volume(left, sound_1_4_left_vol) >> 2;
+				}
+
+				if (sound_1_4_enable_right & 4) != 0 { // Sound 2 Right Enable
 					right >>= sound_1_4_vol as i16;
 					sig_right += apply_volume(right, sound_1_4_right_vol) >> 2;
 				}

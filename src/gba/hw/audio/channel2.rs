@@ -21,6 +21,13 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	state.c2_volume_multiplier = (channel.current_volume as f32) / 15.0;
 
 	channel.playing = !channel.length_flag || channel.sound_length_time_acc > 0;
+	if !channel.playing {
+		let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
+		cpu.memory.set_reg(ioreg::SOUNDCNT_X, soundcnt_x & !2);
+	} else {
+		let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
+		cpu.memory.set_reg(ioreg::SOUNDCNT_X, soundcnt_x | 2);
+	}
 }
 
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {

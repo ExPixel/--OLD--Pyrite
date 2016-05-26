@@ -232,20 +232,20 @@ impl Gba {
 			&self.cpu.memory.internal_data[MEM_IOREG.local_addr..(MEM_IOREG.local_addr+MEM_IOREG.size)]
 		);
 
-		pyrite_debugging!({
-			use std::sync::atomic::Ordering;
-			let _write_misses = self.device.audio.ring_buffer._stat_write_misses.load(Ordering::Relaxed);
-			let _read_misses = self.device.audio.ring_buffer._stat_read_misses.load(Ordering::Relaxed);
+		// pyrite_debugging!({
+		// 	use std::sync::atomic::Ordering;
+		// 	let _write_misses = self.device.audio.ring_buffer._stat_write_misses.load(Ordering::Relaxed);
+		// 	let _read_misses = self.device.audio.ring_buffer._stat_read_misses.load(Ordering::Relaxed);
 
-			let _wd = _write_misses as u64 - pyrite_counter_get!(4);
-			let _rd = _read_misses as u64 - pyrite_counter_get!(5);
+		// 	let _wd = _write_misses as u64 - pyrite_counter_get!(4);
+		// 	let _rd = _read_misses as u64 - pyrite_counter_get!(5);
 
-			pyrite_counter_set!(4, _write_misses);
-			pyrite_counter_set!(5, _read_misses);
+		// 	pyrite_counter_set!(4, _write_misses);
+		// 	pyrite_counter_set!(5, _read_misses);
 
-			println!("Audio Write Misses: {} (+{})", _write_misses, _wd);
-			println!("Audio Read Misses: {} (+{})", _read_misses, _rd);
-		});
+		// 	println!("Audio Write Misses: {} (+{})", _write_misses, _wd);
+		// 	println!("Audio Read Misses: {} (+{})", _read_misses, _rd);
+		// });
 	}
 
 	/// Attempts to fire an vblank interrupt

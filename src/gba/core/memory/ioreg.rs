@@ -309,6 +309,45 @@ pub struct GbaChannel2 {
 	pub playing: bool
 }
 
+#[derive(Default, RustcEncodable, RustcDecodable)]
+pub struct GbaChannel3 {
+	// 4000070h - SOUND3CNT_L (NR30) - Channel 3 Stop/Wave RAM select (R/W)
+	pub wav_ram_banked: bool, // 5     R/W  Wave RAM Dimension   (0=One bank/32 digits, 1=Two banks/64 digits)
+	pub wav_ram_bank: u16,    // 6     R/W  Wave RAM Bank Number (0-1, see below)
+	pub channel_on: bool,     // 7     R/W  Sound Channel 3 Off  (0=Stop, 1=Playback)
+	// The currently selected Bank Number (Bit 6) will be played back, while reading/writing to/from wave RAM 
+	// will address the other (not selected) bank.
+	// When dimension is set to two banks, output will start by replaying the currently selected bank.
+
+	// 4000072h - SOUND3CNT_H (NR31, NR32) - Channel 3 Length/Volume (R/W)
+	pub sound_length: u16,    // 0-7   W    Sound length; units of (256-n)/256s  (0-255)
+	pub sound_volume: u16,    // 13-14 R/W  Sound Volume  (0=Mute/Zero, 1=100%, 2=50%, 3=25%)
+	pub force_volume: bool,   // 15    R/W  Force Volume  (0=Use above, 1=Force 75% regardless of above)
+	// The Length value is used only if Bit 6 in NR34 is set.
+
+	// 4000074h - SOUND3CNT_X (NR33, NR34) - Channel 3 Frequency/Control (R/W)
+	pub sample_rate: u16,     // 0-10  W    Sample Rate; 2097152/(2048-n) Hz   (0-2047)
+	pub length_flag: bool,    // 14    R/W  Length Flag  (1=Stop output when length in NR31 expires)
+	pub initial: bool,        // 15    W    Initial      (1=Restart Sound)
+	// The above sample rate specifies the number of wave RAM digits per second, the actual tone frequency depends on the wave RAM content, for example:
+	//   Wave RAM, single bank 32 digits   Tone Frequency
+	//   FFFFFFFFFFFFFFFF0000000000000000  65536/(2048-n) Hz
+	//   FFFFFFFF00000000FFFFFFFF00000000  131072/(2048-n) Hz
+	//   FFFF0000FFFF0000FFFF0000FFFF0000  262144/(2048-n) Hz
+	//   FF00FF00FF00FF00FF00FF00FF00FF00  524288/(2048-n) Hz
+	//   F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0  1048576/(2048-n) Hz
+
+	pub wav_ram: [[u16; 8]; 2],
+	pub sound_length_time_acc: u32,
+	pub current_wav_index: usize,
+
+	pub ticks_per_inc: u32,
+	pub inc_wav_index_by: u32,
+	pub ticks_acc: u32,
+
+	pub playing: bool
+}
+
 // Internal IO registers.
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct InternalRegisters {
@@ -326,6 +365,7 @@ pub struct InternalRegisters {
 
 	pub audio_channel1: GbaChannel1,
 	pub audio_channel2: GbaChannel2,
+	pub audio_channel3: GbaChannel3
 }
 
 impl InternalRegisters {
@@ -445,6 +485,35 @@ impl InternalRegisters {
 				self.audio_channel2.frequency_f = 131072.0 / (2048.0 - self.audio_channel2.frequency as f32);
 				self.audio_channel2.length_flag = (value & 0x4000) != 0;
 				self.audio_channel2.initial = (value & 0x8000) != 0;
+			},
+
+			// Audio Channel 3:
+			0x00000070 => {
+				self.audio_channel3.wav_ram_banked = (value & 0x20) != 0;
+				self.audio_channel3.wav_ram_bank = (value >> 6) & 1;
+				self.audio_channel3.channel_on = (value & 0x80) != 0;
+			},
+			0x00000072 => {
+				self.audio_channel3.sound_length = value & 0xff;
+				self.audio_channel3.sound_volume = (value >> 13) & 0x3;
+				self.audio_channel3.force_volume = (value & 0x8000) != 0;
+
+				// println!("WRITE(72): {:04X} -> [LENGTH: {}]", value, self.audio_channel3.sound_length);
+			},
+			0x00000074 => {
+				self.audio_channel3.sample_rate = value & 0x7ff;
+				self.audio_channel3.length_flag = (value & 0x4000) != 0;
+				self.audio_channel3.initial = (value & 0x8000) != 0;
+
+				// println!("WRITE(74): {:04X} -> [SAMPLE RATE: {}] [LENGTH FLAG: {}] [INITIAL: {}]",
+				// 	value,
+				// 	self.audio_channel3.sample_rate,
+				// 	self.audio_channel3.length_flag,
+				// 	self.audio_channel3.initial);
+			},		
+			0x00000090 ... 0x0000009E => { // Writing to Wave RAM
+				let bank = if self.audio_channel3.wav_ram_bank == 0 { 1usize } else { 0usize };
+				self.audio_channel3.wav_ram[bank][((register - 0x00000090) >> 1) as usize] = value;
 			},
 
 			_ => {}
