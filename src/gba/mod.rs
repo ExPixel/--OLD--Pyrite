@@ -361,7 +361,7 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 		measure_start(MEASURE_CPU_TICKS_TIME);
 		measure_start(MEASURE_DMA_TICKS_TIME);
 
-		'cpu_loop: while self.cpu.clock.cycles < target {
+		'cpu_loop: while self.cpu.clock.cycles < target  && !(self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped) {
 			if dma::ongoing(&self.cpu) {
 				measure_iteration(MEASURE_DMA_TICKS_TIME);
 				dma::tick(&mut self.cpu);
@@ -370,7 +370,6 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 					measure_iteration(MEASURE_CPU_TICKS_TIME);
 					self.cpu.tick();
 					self.increment_timers();
-					if self.cpu.memory.internal_regs.halted || self.cpu.memory.internal_regs.stopped { return }
 					if self.cpu.clock.audio_clock > AUDIO_TICK_RATE {
 						audio::tick(&mut self.cpu, &mut self.device.audio);
 						self.cpu.clock.audio_clock = 0;

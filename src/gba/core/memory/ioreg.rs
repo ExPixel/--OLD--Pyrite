@@ -341,9 +341,8 @@ pub struct GbaChannel3 {
 	pub sound_length_time_acc: u32,
 	pub current_wav_index: usize,
 
-	pub ticks_per_inc: u32,
-	pub inc_wav_index_by: u32,
-	pub ticks_acc: u32,
+	pub freq_inc: f32,
+	pub freq_acc: f32,
 
 	pub playing: bool
 }
@@ -512,7 +511,7 @@ impl InternalRegisters {
 				// 	self.audio_channel3.initial);
 			},		
 			0x00000090 ... 0x0000009E => { // Writing to Wave RAM
-				let bank = if self.audio_channel3.wav_ram_bank == 0 { 1usize } else { 0usize };
+				let bank = (self.audio_channel3.wav_ram_bank ^ 1) as usize;
 				self.audio_channel3.wav_ram[bank][((register - 0x00000090) >> 1) as usize] = value;
 			},
 

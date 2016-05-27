@@ -53,7 +53,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 			let mut sig_right = 0;
 
 			// Sound 1:
-			if cpu.memory.internal_regs.audio_channel1.playing && true {
+			if cpu.memory.internal_regs.audio_channel1.playing && false {
 				let (mut left, mut right) = channel1::tick(cpu, device, &mut state);
 
 				if (sound_1_4_enable_left & 1) != 0 { // Sound 1 Left Enable
@@ -68,7 +68,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 			}
 
 			// Sound 2:
-			if cpu.memory.internal_regs.audio_channel2.playing && true {
+			if cpu.memory.internal_regs.audio_channel2.playing && false {
 				let (mut left, mut right) = channel2::tick(cpu, device, &mut state);
 
 				if (sound_1_4_enable_left & 2) != 0 { // Sound 2 Left Enable
@@ -83,7 +83,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 			}
 
 			// Sound 3:
-			if cpu.memory.internal_regs.audio_channel3.playing && false {
+			if cpu.memory.internal_regs.audio_channel3.playing && true {
 				let (mut left, mut right) = channel3::tick(cpu, device, &mut state);
 
 				if(sound_1_4_enable_left & 4) != 0 {
