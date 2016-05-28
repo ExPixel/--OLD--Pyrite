@@ -555,9 +555,9 @@ impl InternalRegisters {
 			0x00000078 => {
 				// println!("MODIFIED CHANNEL 4(78): {:04X}", value);
 				self.audio_channel4.sound_length = value & 0x3f;
-				self.audio_channel4.envelope_step_time = (value >> 8) & 0x3;
+				self.audio_channel4.envelope_step_time = (value >> 8) & 0x7;
 				self.audio_channel4.envelope_inc = (value & 0x800) != 0;
-				self.audio_channel4.initial_volume = (value >> 12) & 0x3;
+				self.audio_channel4.initial_volume = (value >> 12) & 0xf;
 			},
 			0x0000007C => {
 				// println!("MODIFIED CHANNEL 4(7C): {:04X}", value);

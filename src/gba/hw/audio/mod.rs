@@ -26,7 +26,10 @@ pub struct AudioState {
 	c2_volume_multiplier: f32,
 
 	// Channel 3:
-	c3_volume_multiplier: f32
+	c3_volume_multiplier: f32,
+
+	//Channel 4:
+	c4_volume_multiplier: f32
 }
 
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
