@@ -39,11 +39,11 @@ pub fn load_bios(memory: &mut GbaMemory) {
 
 	let mut bios_buffer = &mut memory.internal_data[0..0x40000]; // a slice exactly as large as the bios
 	match f.read(bios_buffer) {
-		Ok(bytes) => println!("Read {} bytes into BIOS region.", bytes),
+		Ok(bytes) => debug_trace!("Read {} bytes into BIOS region.", bytes),
 		Err(error) => panic!("Error while reading from file '{}': {}", BIOS_PATH, error)
 	}
 
-	println!("Loaded BIOS at {}.", BIOS_PATH);
+	debug_info!("Loaded BIOS at {}.", BIOS_PATH);
 }
 
 pub fn load_rom(gba: &mut Gba, rom_path: String) {
@@ -59,7 +59,7 @@ pub fn load_rom(gba: &mut Gba, rom_path: String) {
 		Err(error) => panic!("Error while reading file `{}`: {}", filepath, error)
 	}
 	gba.load_cartridge(buffer);
-	println!("Loaded ROM {}.", filepath);
+	debug_info!("Loaded ROM {}.", filepath);
 }
 
 pub fn load_memory(rom_path: String) -> GbaMemory {
@@ -143,7 +143,7 @@ fn main() {
 	}
 
 	if let Some(rom_file) = args.arg_rom {
-		println!("Emulating ROM: {}", rom_file);
+		debug_info!("Emulating ROM: {}", rom_file);
 		if args.flag_disasm {
 			let mut memory = load_memory(rom_file);
 			// load_bios(&mut memory);
@@ -152,7 +152,7 @@ fn main() {
 			let mut gba = Box::new(Gba::new());
 			load_bios(&mut gba.cpu.memory);
 			load_rom(&mut gba, rom_file);
-			println!("Press H to open up the debugger.");
+			debug_info!("Press H to open up the debugger.");
 			run_gba(&mut gba);
 		}
 	} else {

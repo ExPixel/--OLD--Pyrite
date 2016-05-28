@@ -152,7 +152,7 @@ impl Gba {
 		// beyond our comprehension.
 		self.device.close();
 
-		println!("-- Shutdown successfully.");
+		debug_info!("-- Shutdown successfully.");
 	}
 
 	pub fn tick(&mut self, frame: u64) {

@@ -347,6 +347,41 @@ pub struct GbaChannel3 {
 	pub playing: bool
 }
 
+#[derive(Default, RustcEncodable, RustcDecodable)]
+pub struct GbaChannel4 {
+	// 4000078h - SOUND4CNT_L (NR41, NR42) - Channel 4 Length/Envelope (R/W)
+	pub sound_length: u16,         // 0-5   W    Sound length; units of (64-n)/256s  (0-63)
+	pub envelope_step_time: u16,   // 8-10  R/W  Envelope Step-Time; units of n/64s  (1-7, 0=No Envelope)
+	pub envelope_inc: bool,        // 11    R/W  Envelope Direction                  (0=Decrease, 1=Increase)
+	pub initial_volume: u16,       // 12-15 R/W  Initial Volume of envelope          (1-15, 0=No Sound)
+
+	// 400007Ch - SOUND4CNT_H (NR43, NR44) - Channel 4 Frequency/Control (R/W)
+	pub dividing_ratio: u16,       // 0-2   R/W  Dividing Ratio of Frequencies (r)
+	pub counter_width_7: bool,     // 3     R/W  Counter Step/Width (0=15 bits, 1=7 bits)
+	pub shift_clock_freq: u16,     // 4-7   R/W  Shift Clock Frequency (s)
+	pub length_flag: bool,         // 14    R/W  Length Flag  (1=Stop output when length in NR41 expires)
+	pub initial: bool,             // 15    W    Initial      (1=Restart Sound)
+
+	pub current_volume: u16,
+	pub envelope_time_acc: u32,
+	pub sound_length_time_acc: u32,
+
+	// Noise Random Generator (aka Polynomial Counter)
+	// Noise randomly switches between HIGH and LOW levels, the output levels are calculated by a shift register (X), at the selected frequency, as such:
+	//   7bit:  X=X SHR 1, IF carry THEN Out=HIGH, X=X XOR 60h ELSE Out=LOW
+	//   15bit: X=X SHR 1, IF carry THEN Out=HIGH, X=X XOR 6000h ELSE Out=LOW
+	// The initial value when (re-)starting the sound is X=40h (7bit) or X=4000h (15bit). The data stream repeats after 7Fh (7bit) or 7FFFh (15bit) steps.
+	pub lfsr: u16,
+	pub lfsr_mask: u16,
+	pub lfsr_xor: u16,
+
+	pub freq_inc: f32,
+	pub freq_acc: f32,
+	pub intermediate_freq: f32,
+
+	pub playing: bool,
+}
+
 // Internal IO registers.
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct InternalRegisters {
@@ -364,7 +399,8 @@ pub struct InternalRegisters {
 
 	pub audio_channel1: GbaChannel1,
 	pub audio_channel2: GbaChannel2,
-	pub audio_channel3: GbaChannel3
+	pub audio_channel3: GbaChannel3,
+	pub audio_channel4: GbaChannel4,
 }
 
 impl InternalRegisters {
@@ -514,6 +550,23 @@ impl InternalRegisters {
 				let bank = (self.audio_channel3.wav_ram_bank ^ 1) as usize;
 				self.audio_channel3.wav_ram[bank][((register - 0x00000090) >> 1) as usize] = value;
 			},
+
+			// Audio Channel 4:
+			0x00000078 => {
+				// println!("MODIFIED CHANNEL 4(78): {:04X}", value);
+				self.audio_channel4.sound_length = value & 0x3f;
+				self.audio_channel4.envelope_step_time = (value >> 8) & 0x3;
+				self.audio_channel4.envelope_inc = (value & 0x800) != 0;
+				self.audio_channel4.initial_volume = (value >> 12) & 0x3;
+			},
+			0x0000007C => {
+				// println!("MODIFIED CHANNEL 4(7C): {:04X}", value);
+				self.audio_channel4.dividing_ratio = value & 0x7;
+				self.audio_channel4.counter_width_7 = (value & 0x8) != 0;
+				self.audio_channel4.shift_clock_freq = (value >> 4) & 0xf;
+				self.audio_channel4.length_flag = (value & 0x4000) != 0;
+				self.audio_channel4.initial = (value & 0x8000) != 0;
+			}			
 
 			_ => {}
 		}

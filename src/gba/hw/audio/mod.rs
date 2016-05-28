@@ -1,6 +1,7 @@
 mod channel1;
 mod channel2;
 mod channel3;
+mod channel4;
 
 use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
@@ -47,6 +48,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 		channel1::init(cpu, device, &mut state);
 		channel2::init(cpu, device, &mut state);
 		channel3::init(cpu, device, &mut state);
+		channel4::init(cpu, device, &mut state);
 
 		for idx in 0..frames.len() {
 			let mut sig_left = 0;
@@ -92,6 +94,21 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 				}
 
 				if (sound_1_4_enable_right & 4) != 0 { // Sound 2 Right Enable
+					right >>= sound_1_4_vol as i16;
+					sig_right += apply_volume(right, sound_1_4_right_vol) >> 2;
+				}
+			}
+
+			// Sound 4:
+			if cpu.memory.internal_regs.audio_channel4.playing {
+				let (mut left, mut right) = channel4::tick(cpu, device, &mut state);
+
+				if(sound_1_4_enable_left & 8) != 0 {
+					left >>= sound_1_4_vol as i16;
+					sig_left += apply_volume(left, sound_1_4_left_vol) >> 2;
+				}
+
+				if (sound_1_4_enable_right & 8) != 0 { // Sound 2 Right Enable
 					right >>= sound_1_4_vol as i16;
 					sig_right += apply_volume(right, sound_1_4_right_vol) >> 2;
 				}

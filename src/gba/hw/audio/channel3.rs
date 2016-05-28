@@ -5,11 +5,10 @@ use super::super::super::core::memory::ioreg::GbaChannel3;
 use super::{AudioState, apply_volume_stereo};
 use std;
 
-const SAMPLES: [i16; 16] = [-32768, -28672, -24576, -20480, -16384, -12288, -8192, -4096, 0, 4096, 8192, 12288, 16384, 20480, 24576, 32767];
-
 pub fn convert_sample(sample4: u16) -> i16 {
 	// return (sample4 << 12) as i16;
 	// return ((sample4 << 12) | 0xfff) as i16;
+	const SAMPLES: [i16; 16] = [-32768, -28672, -24576, -20480, -16384, -12288, -8192, -4096, 0, 4096, 8192, 12288, 16384, 20480, 24576, 32767];
 	return SAMPLES[(sample4 as usize) & 0xf];
 }
 
