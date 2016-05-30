@@ -1,6 +1,7 @@
 # Pyrite 
-![[Travis](https://travis-ci.org/ExPixel/pyrite)](https://travis-ci.org/ExPixel/pyrite.svg?branch=master) 
-![[AppVeyor](https://ci.appveyor.com/project/ExPixel/pyrite)](https://ci.appveyor.com/api/projects/status/b77f7lieol52ghjm?svg=true)
+[![Travis](https://travis-ci.org/ExPixel/pyrite.svg?branch=master) ](https://travis-ci.org/ExPixel/pyrite)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/b77f7lieol52ghjm?svg=true)](https://ci.appveyor.com/project/ExPixel/pyrite)
+
 
 If compilation doesn't work due to a conflict with `libc`. Use `cargo update -p libc:0.2.2` or just 'cargo update -p libc'
 first to see what specs are available for you to use. Not sure about any other ways to fix this
