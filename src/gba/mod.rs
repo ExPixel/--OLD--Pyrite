@@ -15,6 +15,7 @@ use self::hw::lcd::GbaLcd;
 use self::hw::joypad::GbaJoypad;
 use self::hw::dma;
 use self::hw::audio;
+use self::hw::timers;
 
 use super::debug::debugger::GbaDebugger;
 
@@ -389,10 +390,11 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 	fn increment_timers(&mut self) {
 		let timer_inc = self.cpu.clock.timer_cycles;
 		self.cpu.clock.timer_cycles = 0;
-		let overflow_int_mask = self.cpu.memory.internal_regs.increment_timers(timer_inc);
-		if overflow_int_mask != 0 {
-			self.hardware_interrupt(overflow_int_mask);
-		}
+		timers::increment(&mut self.cpu, timer_inc);
+		// let overflow_int_mask = self.cpu.memory.internal_regs.increment_timers(timer_inc);
+		// if overflow_int_mask != 0 {
+		// 	self.hardware_interrupt(overflow_int_mask);
+		// }
 	}
 }
 

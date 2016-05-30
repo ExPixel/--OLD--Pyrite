@@ -5,3 +5,4 @@ pub mod lcd;
 pub mod joypad;
 pub mod dma;
 pub mod audio;
+pub mod timers;

@@ -633,38 +633,38 @@ impl InternalRegisters {
 		timer.unscaled_counter = 0;
 	}
 
-	pub fn increment_timers(&mut self, amt: u32) -> u16 {
-		let mut overflow_int_mask = 0;
-		let mut last_timer_overflowed = false;
-		for t_idx in 0..4 {
-			let timer = &mut self.timers[t_idx];
-			last_timer_overflowed = Self::increment_single_timer(timer, amt, last_timer_overflowed);
-			if last_timer_overflowed && timer.irq_enabled {
-				overflow_int_mask |= 0x08 << t_idx;
-			}
-		}
-		return overflow_int_mask;
-	}
+	// pub fn increment_timers(&mut self, amt: u32) -> u16 {
+	// 	let mut overflow_int_mask = 0;
+	// 	let mut last_timer_overflowed = false;
+	// 	for t_idx in 0..4 {
+	// 		let timer = &mut self.timers[t_idx];
+	// 		last_timer_overflowed = Self::increment_single_timer(timer, amt, last_timer_overflowed);
+	// 		if last_timer_overflowed && timer.irq_enabled {
+	// 			overflow_int_mask |= 0x08 << t_idx;
+	// 		}
+	// 	}
+	// 	return overflow_int_mask;
+	// }
 
-	fn increment_single_timer(timer: &mut TimerInternalReg, amt: u32, previous_overflowed: bool) -> bool {
-		if timer.operate {
-			if timer.count_up {
-				if previous_overflowed {
-					timer.counter += 1;
-				}
-			} else {
-				timer.unscaled_counter += amt;
-				let scaled = timer.unscaled_counter >> timer.prescaler;
-				timer.counter += scaled;
-				timer.unscaled_counter -= scaled << timer.prescaler;
-			}
+	// fn increment_single_timer(timer: &mut TimerInternalReg, amt: u32, previous_overflowed: bool) -> bool {
+	// 	if timer.operate {
+	// 		if timer.count_up {
+	// 			if previous_overflowed {
+	// 				timer.counter += 1;
+	// 			}
+	// 		} else {
+	// 			timer.unscaled_counter += amt;
+	// 			let scaled = timer.unscaled_counter >> timer.prescaler;
+	// 			timer.counter += scaled;
+	// 			timer.unscaled_counter -= scaled << timer.prescaler;
+	// 		}
 
-			if timer.counter > 0xffff { // Ther timer has overflowed
-				timer.counter = timer.reload;
-				timer.unscaled_counter = 0;
-				return true
-			}
-		}
-		return false
-	}
+	// 		if timer.counter > 0xffff { // Ther timer has overflowed
+	// 			timer.counter = timer.reload;
+	// 			timer.unscaled_counter = 0;
+	// 			return true
+	// 		}
+	// 	}
+	// 	return false
+	// }
 }
