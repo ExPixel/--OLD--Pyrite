@@ -263,7 +263,6 @@ fn copy_tile_line4bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel],
 
 	let tile_number = tile_info & 0x3ff;
 
-	// #TODO implement these
 	let horizontal_flip = ((tile_info >> 10) & 1) == 1;
 	let vertical_flip = ((tile_info >> 11) & 1) == 1;
 	let palette_number = (tile_info >> 12) & 0xf;
@@ -349,7 +348,6 @@ fn copy_tile_line8bpp(palette: &[u8], char_data: &[u8], output: &mut [GbaPixel],
 
 	let tile_number = tile_info & 0x3ff;
 
-	// #TODO implement these
 	let horizontal_flip = ((tile_info >> 10) & 1) == 1;
 	let vertical_flip = ((tile_info >> 11) & 1) == 1;
 

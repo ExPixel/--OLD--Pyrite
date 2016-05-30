@@ -382,6 +382,13 @@ pub struct GbaChannel4 {
 	pub playing: bool,
 }
 
+#[derive(Default, RustcEncodable, RustcDecodable)]
+pub struct GbaChannelFIFO {
+	pub data: [i8; 32],
+	pub write_cursor: usize,
+	pub read_cursor: usize
+}
+
 // Internal IO registers.
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct InternalRegisters {
@@ -401,6 +408,8 @@ pub struct InternalRegisters {
 	pub audio_channel2: GbaChannel2,
 	pub audio_channel3: GbaChannel3,
 	pub audio_channel4: GbaChannel4,
+	pub audio_fifo_a: GbaChannelFIFO,
+	pub audio_fifo_b: GbaChannelFIFO,
 }
 
 impl InternalRegisters {
@@ -545,7 +554,7 @@ impl InternalRegisters {
 				// 	self.audio_channel3.sample_rate,
 				// 	self.audio_channel3.length_flag,
 				// 	self.audio_channel3.initial);
-			},		
+			},
 			0x00000090 ... 0x0000009E => { // Writing to Wave RAM
 				let bank = (self.audio_channel3.wav_ram_bank ^ 1) as usize;
 				self.audio_channel3.wav_ram[bank][((register - 0x00000090) >> 1) as usize] = value;
@@ -566,7 +575,7 @@ impl InternalRegisters {
 				self.audio_channel4.shift_clock_freq = (value >> 4) & 0xf;
 				self.audio_channel4.length_flag = (value & 0x4000) != 0;
 				self.audio_channel4.initial = (value & 0x8000) != 0;
-			}			
+			}
 
 			_ => {}
 		}

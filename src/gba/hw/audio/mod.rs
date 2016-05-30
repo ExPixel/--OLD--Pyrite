@@ -1,7 +1,11 @@
+// #TODO this entire module can use some serious optimization.
+//       moving expensive divisions everywhere to LUT and the like.
+
 mod channel1;
 mod channel2;
 mod channel3;
 mod channel4;
+mod channel_ab;
 
 use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
