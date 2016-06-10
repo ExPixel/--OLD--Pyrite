@@ -6,6 +6,7 @@ notifications:
   email:
     - adolphc@outlook.com
 before_script:
+  - export PORTAUDIO_ONLY_STATIC=true
   - rustc --version
   - cargo --version
 branches:
