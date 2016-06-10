@@ -1,3 +1,7 @@
 [submodule "rust_imgui"]
 	path = cimgui
 	url = https://github.com/ExPixel/rust-imgui.git
+
+[submodule "suite"]
+	path = roms/suite
+	url = https://github.com/mgba-emu/suite.git
