@@ -7,6 +7,8 @@ notifications:
   email:
     - adolphc@outlook.com
 before_script:
+  - git submodule update --init --recursive
+script:
   - rustc --version
   - cargo --version
 branches:
