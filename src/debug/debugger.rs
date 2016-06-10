@@ -1,5 +1,6 @@
 use rust_imgui as imgui;
 use ::gba::Gba;
+use ::gba::core::memory::*;
 use std::cell::UnsafeCell;
 
 pub struct DebugDataRuleBreaker {
@@ -29,6 +30,7 @@ pub struct DebugData {
 	pub frame_render_time: f64,
 	pub full_frame_time: f64,
 	pub emulator_performance_opened: bool,
+	pub emulator_delay_plot: DataPlot<f32>,
 
 	// SOUND:
 	pub sound_info_window: bool,
@@ -39,6 +41,8 @@ pub struct DebugData {
 	pub sound_channel_a_plot: DataPlot<f32>,
 	pub sound_channel_b_plot: DataPlot<f32>,
 	pub sound_plot: DataPlot<f32>,
+
+	ioreg_window: bool,
 }
 
 impl DebugData {
@@ -48,6 +52,7 @@ impl DebugData {
 			frame_render_time: 0.0,
 			full_frame_time: 0.0,
 			emulator_performance_opened: false,
+			emulator_delay_plot: DataPlot::new(64, 0.0, 100.0),
 
 			sound_info_window: false,
 			sound_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
@@ -57,11 +62,13 @@ impl DebugData {
 			sound_channel_4_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 			sound_channel_a_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 			sound_channel_b_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
+
+			ioreg_window: false
 		}
 	}
 }
 
-pub fn render_debugger(_: &mut Gba) {
+pub fn render_debugger(gba: &mut Gba) {
 	let debugger = get_debugger();
 
 	if imgui::get_io().mouse_clicked[1] != 0 {
@@ -78,6 +85,10 @@ pub fn render_debugger(_: &mut Gba) {
 			debugger.sound_info_window = true;
 		}
 
+		if imgui::menu_item(imstr!("IO Registers")) {
+			debugger.ioreg_window = true;
+		}
+
 		imgui::end_popup();
 	}
 
@@ -86,19 +97,32 @@ pub fn render_debugger(_: &mut Gba) {
 		imgui::text(imstr!("Frame Build Time: {:.2}ms", debugger.frame_build_time));
 		imgui::text(imstr!("Frame Render Time: {:.2}ms", debugger.frame_render_time));
 		imgui::text(imstr!("Frame Time: {:.2}ms", debugger.full_frame_time));
+		
+		imgui::plot_histogram(
+			imstr!("Frame Delay"),
+			&debugger.emulator_delay_plot.data,
+			debugger.emulator_delay_plot.len(), debugger.emulator_delay_plot.offset(), 
+			imstr!("Delay"), 
+			debugger.emulator_delay_plot.plot_min, debugger.emulator_delay_plot.plot_max,
+			imgui::vec2(256.0, 128.0), 4
+		);
 
-		// imgui::plot_lines(imstr!("plot test"),
-		// 	&data, 8, 4, imstr!("pline"), 1.0, 8.0, imgui::vec2(256.0, 128.0), 4);
+		if !imgui::is_item_hovered() {
+			debugger.emulator_delay_plot.plot(debugger.frame_build_time as f32);	
+		}
 
-		// let _c = debugger.random_plot.write_cursor as f32;
-		// debugger.random_plot.plot(_c);
-		// imgui::plot_lines(imstr!("random plot"),
-		// 	&data, 
-		// 	debugger.random_plot.len(), debugger.random_plot.offset(), 
-		// 	imstr!("random plot"), 
-		// 	0.0, 32.0,
-		// 	imgui::vec2(256.0, 128.0), 4);
+		imgui::end();
+	}
 
+	if debugger.ioreg_window {
+		imgui::begin(imstr!("IO Registers"), &mut debugger.ioreg_window, imgui::ImGuiWindowFlags_None);
+		if imgui::collapsing_header(imstr!("DMA"), imstr!("dma_ioreg_clpshr"), true, false) {
+			render_dma_registers(gba, 0, ioreg::DMA0CNT_L, ioreg::DMA0CNT_H);
+			render_dma_registers(gba, 1, ioreg::DMA1CNT_L, ioreg::DMA1CNT_H);
+			render_dma_registers(gba, 2, ioreg::DMA2CNT_L, ioreg::DMA2CNT_H);
+			render_dma_registers(gba, 3, ioreg::DMA3CNT_L, ioreg::DMA3CNT_H);
+			imgui::columns(1, imstr!("dma_columns_end"), false);
+		}
 		imgui::end();
 	}
 
@@ -167,6 +191,87 @@ pub fn render_debugger(_: &mut Gba) {
 		imgui::end();
 	}
 }
+
+pub fn render_dma_registers(gba: &mut Gba, channel_index: usize, low: ioreg::IORegister16, high: ioreg::IORegister16) {
+	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
+
+	if imgui::tree_node(imstr!("DMA{}", channel_index)) {
+		imgui::columns(2, imstr!("dma_{}_table", channel_index), true);
+		imgui::selectable_fl(imstr!("DMA{}CNT_L", channel_index), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("DMA{}CNT_H", channel_index), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Reload"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Repeat"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Transfer Len"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Gamepak DRQ"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Timing"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("IRQ"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Enabled"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Dest Inc"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Source Inc"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Repeat"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Units"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Dest Addr"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Source Addr"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Units Remaining"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::next_column();
+		imgui::text(imstr!("{:04X}", gba.cpu.memory.get_reg(low)));
+		imgui::text(imstr!("{:04X}", gba.cpu.memory.get_reg(high)));
+		{
+			let dma_internal_reg = &gba.cpu.memory.internal_regs.dma_registers[channel_index];
+			imgui::text(imstr!("{}", dma_internal_reg.reload));
+			imgui::text(imstr!("{}", dma_internal_reg.repeat));
+			if dma_internal_reg.transfer_word {
+				imgui::text(imstr!("32bit"));
+			} else {
+				imgui::text(imstr!("16bit"));
+			}
+			imgui::text(imstr!("{}", dma_internal_reg.gamepak_drq));
+			match dma_internal_reg.start_timing {
+				0 => imgui::text(imstr!("Immediate")),
+				1 => imgui::text(imstr!("VBlank")),
+				2 => imgui::text(imstr!("HBlank")),
+				3 => imgui::text(imstr!("Special")),
+				_ => imgui::text(imstr!("??? ({:04X})", dma_internal_reg.start_timing)),
+			}
+			imgui::text(imstr!("{}", dma_internal_reg.irq));
+			imgui::text(imstr!("{}", dma_internal_reg.enabled));
+			imgui::text(imstr!("{:+}", dma_internal_reg.dest_addr_inc as i32));
+			imgui::text(imstr!("{:+}", dma_internal_reg.source_addr_inc as i32));
+			imgui::text(imstr!("{}", dma_internal_reg.is_repeat));
+			imgui::text(imstr!("{} ({:04X})", dma_internal_reg.units, dma_internal_reg.units));
+			imgui::text(imstr!("{:08X}", dma_internal_reg.destination_addr));
+			imgui::text(imstr!("{:08X}", dma_internal_reg.source_addr));
+			imgui::text(imstr!("{} ({:04X})", dma_internal_reg.units_remaining, dma_internal_reg.units_remaining));
+		}
+		imgui::separator();
+		imgui::columns(1, imstr!("dma_{}_table_end", channel_index), false);
+		imgui::tree_pop();
+	}
+}
+
+/*
+pub struct DMAInternalReg {
+	pub reload: bool,
+	pub repeat: bool,
+	pub transfer_word: bool, // transfers halfwords if false
+	pub gamepak_drq: bool,  // #TODO I'm not even sure what this is.
+	pub start_timing: u16, // (0=Immediately, 1=VBlank, 2=HBlank, 3=Special)
+	pub irq: bool,
+	pub enabled: bool,
+
+	pub dest_addr_inc: u32,
+	pub source_addr_inc: u32,
+
+	// Everything below here is set and controlled by dma.rs:
+	pub is_repeat: bool,
+	pub units: u32,
+	pub original_destination_addr: u32,
+	pub destination_addr: u32,
+	pub source_addr: u32,
+	pub units_remaining: u32,
+	pub first_transfer: bool
+}
+*/
 
 pub struct DataPlot<T: Clone> {
 	data: Vec<T>,

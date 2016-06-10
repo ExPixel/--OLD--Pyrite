@@ -165,9 +165,10 @@ impl ImGuiInputTextFlags {
 
 bitflags! {
 	pub flags ImGuiSelectableFlags: ImGuiSelectableFlags_::Type {
-		const DontClosePopups = ImGuiSelectableFlags_::DontClosePopups,
-		const SpanAllColumns = ImGuiSelectableFlags_::SpanAllColumns,
-		const AllowDoubleClick = ImGuiSelectableFlags_::AllowDoubleClick,
+		const ImGuiSelectableFlags_None = 0,
+		const ImGuiSelectableFlags_DontClosePopups = ImGuiSelectableFlags_::DontClosePopups,
+		const ImGuiSelectableFlags_SpanAllColumns = ImGuiSelectableFlags_::SpanAllColumns,
+		const ImGuiSelectableFlags_AllowDoubleClick = ImGuiSelectableFlags_::AllowDoubleClick,
 	}
 }
 
