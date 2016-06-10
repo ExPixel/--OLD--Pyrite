@@ -8,6 +8,7 @@ install:
   - rust-nightly-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
   - SET PATH=%PATH%;C:\MinGW\bin
+  - git submodule update --init --recursive
   - rustc -V
   - cargo -V
 

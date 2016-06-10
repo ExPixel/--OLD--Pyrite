@@ -467,6 +467,8 @@ impl GbaChannelFIFO {
 	//       that's needed so I can just change that to only write in 2's.
 	/// Pushes a single signed 8bit sample into the FIFO queue.
 	pub fn push(&mut self, sample: i8) {
+		let debugger = ::debug::debugger::get_debugger();
+		debugger.fifo_a_in.plot(sample as f32);
 		self.data[self.write_cursor] = sample;
 		self.write_cursor = (self.write_cursor + 1) & 0x1f;
 		self.size = min!(self.size + 1, 32);
@@ -484,14 +486,17 @@ impl GbaChannelFIFO {
 
 	/// Pops an 8 bit sample from the FIFO queue. 
 	pub fn pop(&mut self) -> i8 {
+		let debugger = ::debug::debugger::get_debugger();
 		if self.remaining() > 0 {
 			let sample = self.data[self.read_cursor];
 			self.read_cursor = (self.read_cursor + 1) & 0x1f;
 			self.size -= 1;
 			// println!("BUF -> {}", sample);
+			debugger.fifo_a_out.plot(sample as f32);
 			return sample;
 		} else {
 			// println!("BUF -> NULL [{}]", self.size);
+			debugger.fifo_a_out.plot(0.0);
 			return 0;
 		}
 	}
