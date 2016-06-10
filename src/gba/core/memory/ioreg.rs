@@ -1,3 +1,4 @@
+use super::compat::*;
 pub use super::*;
 
 #[derive(Copy, Clone)]
@@ -384,9 +385,121 @@ pub struct GbaChannel4 {
 
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct GbaChannelFIFO {
-	pub data: [i8; 32],
-	pub write_cursor: usize,
-	pub read_cursor: usize
+	pub timer: u16,
+	pub enable_right: bool,
+	pub enable_left: bool,
+
+	pub sample: i8,
+
+	pub frequency: f32,
+	pub freq_acc: f32,
+	pub freq_inc: f32,
+
+	// #TODO do I really want to store this on save?
+	out_data: FifoOutArray,
+	out_write_cursor: usize,
+	out_read_cursor: usize,
+	out_size: usize,
+
+	data: [i8; 32],
+	write_cursor: usize,
+	read_cursor: usize,
+
+	size: usize
+}
+
+impl GbaChannelFIFO {
+	pub fn reset(&mut self) {
+		// println!("RESET");
+		self.out_write_cursor = 0;
+		self.out_read_cursor = 0;
+		self.out_size = 0;
+		self.write_cursor = 0;
+		self.read_cursor = 0;
+		self.size = 0;
+		self.freq_acc = 0.0;
+	}
+
+	pub fn out_push(&mut self, sample: i8) {
+		// if sample != 0 {
+		// println!("OUT <- {} [idx: {}]", sample, self.out_write_cursor);
+		// }
+		self.out_data.data[self.out_write_cursor] = sample;
+		self.out_write_cursor = (self.out_write_cursor + 1) & FIFO_OUT_BUFFER_MASK;
+		self.out_size = min!(self.out_size + 1, FIFO_OUT_BUFFER_SIZE);
+		if self.out_write_cursor == self.out_read_cursor {
+			// If the write cursor "laps" the read cursor, just move the read
+			// cursor forward so that it will then be at the new 0 position.
+			self.out_read_cursor = (self.out_write_cursor + 1) & FIFO_OUT_BUFFER_MASK;
+		}
+	}
+
+	pub fn out_pop(&mut self) -> i8 {
+		if self.out_remaining() > 0 {
+			let sample = self.out_data.data[self.out_read_cursor];
+			// println!("OUT -> {} [idx: {}]", sample, self.out_read_cursor);
+			self.out_read_cursor = (self.out_read_cursor + 1) & FIFO_OUT_BUFFER_MASK;
+			self.out_size -= 1;
+			return sample;
+		} else {
+			// println!("OUT -> NULL [{}]", self.size);
+			return 0;
+		}
+	}
+
+	pub fn next_sample(&mut self) {
+		let sample = self.out_pop();
+		self.sample = sample;
+	}
+
+	pub fn out_remaining(&self) -> usize {
+		return self.out_size
+	}
+
+	/// Pushes two signed 8 bit samples into the FIFO queue.
+	pub fn push16(&mut self, sample2: u16) {
+		self.push((sample2 & 0xff) as i8);
+		self.push(((sample2 >> 8) & 0xff) as i8);
+	}
+
+	// #TODO there is no need for this push function only to have it
+	//       only ever be called twice in push16, push16 is the only one
+	//       that's needed so I can just change that to only write in 2's.
+	/// Pushes a single signed 8bit sample into the FIFO queue.
+	pub fn push(&mut self, sample: i8) {
+		self.data[self.write_cursor] = sample;
+		self.write_cursor = (self.write_cursor + 1) & 0x1f;
+		self.size = min!(self.size + 1, 32);
+
+		// if sample != 0 {
+		// println!("BUF <- {} [{}]", sample, self.size);
+		// }
+
+		if self.write_cursor == self.read_cursor {
+			// If the write cursor "laps" the read cursor, just move the read
+			// cursor forward so that it will then be at the new 0 position.
+			self.read_cursor = (self.write_cursor + 1) & 0x1f;
+		}
+	}
+
+	/// Pops an 8 bit sample from the FIFO queue. 
+	pub fn pop(&mut self) -> i8 {
+		if self.remaining() > 0 {
+			let sample = self.data[self.read_cursor];
+			self.read_cursor = (self.read_cursor + 1) & 0x1f;
+			self.size -= 1;
+			// println!("BUF -> {}", sample);
+			return sample;
+		} else {
+			// println!("BUF -> NULL [{}]", self.size);
+			return 0;
+		}
+	}
+
+	/// Returns the number of samples remaining in the queue.
+	pub fn remaining(&self) -> usize {
+		return self.size
+	}
 }
 
 // Internal IO registers.
@@ -567,7 +680,7 @@ impl InternalRegisters {
 				self.audio_channel4.envelope_step_time = (value >> 8) & 0x7;
 				self.audio_channel4.envelope_inc = (value & 0x800) != 0;
 				self.audio_channel4.initial_volume = (value >> 12) & 0xf;
-			},
+			}
 			0x0000007C => {
 				// println!("MODIFIED CHANNEL 4(7C): {:04X}", value);
 				self.audio_channel4.dividing_ratio = value & 0x7;
@@ -575,7 +688,45 @@ impl InternalRegisters {
 				self.audio_channel4.shift_clock_freq = (value >> 4) & 0xf;
 				self.audio_channel4.length_flag = (value & 0x4000) != 0;
 				self.audio_channel4.initial = (value & 0x8000) != 0;
-			}
+			},
+
+			// FIFO A:
+			0x000000A0 | 0x000000A2 => {
+				self.audio_fifo_a.push16(value);
+				// if value != 0 {
+				// 	println!("FIFO A PUSH[{:08X}h] = 0x{:04X} ({}, {})", register, value,
+				// 		(value & 0xff) as i8, ((value >> 8) & 0xff) as i8);
+				// }
+			},
+
+			// FIFO B:
+			0x000000A4 | 0x000000A6 => {
+				// self.audio_fifo_b.push16(value);
+			},
+
+			// SOUNDCNT_H - DMA Sound Control/Mixing (R/W)
+			0x00000082 => {
+				self.audio_fifo_a.enable_right = (value & 0x100) != 0;
+				self.audio_fifo_a.enable_left = (value & 0x200) != 0;
+				self.audio_fifo_a.timer = (value >> 10) & 1;
+				if (value & 0x800) != 0 {
+					self.audio_fifo_a.reset();	
+				}
+				self.update_fifo_a_frequency(((value >> 10) & 1) as usize);
+
+				self.audio_fifo_a.enable_right = (value & 0x1000) != 0;
+				self.audio_fifo_a.enable_left = (value & 0x2000) != 0;
+				self.audio_fifo_a.timer = (value >> 14) & 1;
+				if (value & 0x8000) != 0 {
+					self.audio_fifo_a.reset();	
+				}
+				self.update_fifo_b_frequency(((value >> 14) & 1) as usize);
+			},
+
+			// #TODO when bit 7 of 4000084h - SOUNDCNT_X (NR52) is cleared,
+			// all of the sound registers are supposed to be reset to 0.
+			// I haven't been doing this and it might cause some issues
+			// down the road. Something to keep in mind.
 
 			_ => {}
 		}
@@ -623,23 +774,45 @@ impl InternalRegisters {
 	}
 
 	fn update_timer_hi(&mut self, t_idx: usize, hi_data: u16) {
-		let timer = &mut self.timers[t_idx];
-		timer.prescaler = match hi_data & 0x3 {
-			0 => 0,  // 1
-			1 => 6,  // 64
-			2 => 8,  // 256
-			3 => 10, // 1024
-			_ => unreachable!()
-		};
+		{
+			let timer = &mut self.timers[t_idx];
+			timer.prescaler = match hi_data & 0x3 {
+				0 => 0,  // 1
+				1 => 6,  // 64
+				2 => 8,  // 256
+				3 => 10, // 1024
+				_ => unreachable!()
+			};
 
-		timer.count_up = ((hi_data >> 2) & 1) == 1;
-		timer.irq_enabled = ((hi_data >> 6) & 1) == 1;
-		timer.operate = ((hi_data >> 7) & 1) == 1;
+			timer.count_up = ((hi_data >> 2) & 1) == 1;
+			timer.irq_enabled = ((hi_data >> 6) & 1) == 1;
+			timer.operate = ((hi_data >> 7) & 1) == 1;
 
-		// #FIXME not sure if this is suppose to happen if we enable
-		//        an already enabled timer.
-		timer.counter = timer.reload;
-		timer.unscaled_counter = 0;
+			// #FIXME not sure if this is suppose to happen if we enable
+			//        an already enabled timer.
+			timer.counter = timer.reload;
+			timer.unscaled_counter = 0;
+		}
+
+		if t_idx == self.audio_fifo_a.timer as usize {
+			self.update_fifo_a_frequency(t_idx);
+		}
+
+		if t_idx == self.audio_fifo_b.timer as usize {
+			self.update_fifo_b_frequency(t_idx);
+		}
+	}
+
+	fn update_fifo_a_frequency(&mut self, timer: usize) {
+		self.audio_fifo_a.frequency = self.get_timer_frequency(timer);
+	}
+
+	fn update_fifo_b_frequency(&mut self, timer: usize) {
+		self.audio_fifo_b.frequency = self.get_timer_frequency(timer);
+	}
+
+	fn get_timer_frequency(&mut self, timer: usize) -> f32 {
+		((16777216 >> self.timers[timer].prescaler) as f32) / max!(1.0, 65535.0 - self.timers[timer].reload as f32)
 	}
 
 	// pub fn increment_timers(&mut self, amt: u32) -> u16 {

@@ -1,0 +1,17 @@
+[package]
+name = "rust-imgui"
+version = "0.1.0"
+authors = ["Adolph C. <adolph.celestin@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+libc = "0.2"
+bitflags = "0.7.0"
+
+[build-dependencies]
+gcc = "0.3"
+
+[dev-dependencies]
+gl = "0.6.0"
+glutin = "0.5.2"
+time = "0.1.35"

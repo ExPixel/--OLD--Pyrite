@@ -7,7 +7,7 @@ use super::super::core::memory::*;
 pub const DMA_TIMING_IMMEDIATE: u16 = 0;
 pub const DMA_TIMING_VBLANK: u16 = 1;
 pub const DMA_TIMING_HBLANK: u16 = 2;
-pub const DMA_TIMING_SPECIAL: u16 = 3; // #TODO where the fuck?
+pub const DMA_TIMING_SPECIAL: u16 = 3;
 
 /// DMA 0 Interrupt
 pub const INT_DMA0: u16 = 0x100;
@@ -174,6 +174,10 @@ pub fn check_started(cpu: &mut ArmCpu, timing: u16, channel_index: usize) {
 	}
 }
 
+fn is_fifo_dest(dest: u32) -> bool {
+	return dest == 0x040000A0 || dest == 0x040000A4;
+}
+
 fn start(cpu: &mut ArmCpu, channel_index: usize) {
 	let channel_info = &CHANNELS[channel_index];
 
@@ -186,7 +190,23 @@ fn start(cpu: &mut ArmCpu, channel_index: usize) {
 		dma_reg!(cpu, channel_index).original_destination_addr = dma_reg!(cpu, channel_index).destination_addr;
 		dma_reg!(cpu, channel_index).source_addr = _source & channel_info.src_mask;
 	}
-	dma_reg!(cpu, channel_index).units = if _units == 0 { channel_info.max_units } else { _units };
+
+	if (channel_index == 1 || channel_index == 2) &&
+		dma_reg!(cpu, channel_index).start_timing == DMA_TIMING_SPECIAL && 
+		is_fifo_dest(dma_reg!(cpu, channel_index).destination_addr) {
+		// #TODO should I check the repeat bit as well? It's supposed to be set.
+		dma_reg!(cpu, channel_index).dest_addr_inc = 0;
+		dma_reg!(cpu, channel_index).units = 4;
+		dma_reg!(cpu, channel_index).transfer_word = true;
+
+		// if channel_index == 1 {
+		// 	println!("DMA FROM [{:08X}h] to [{:08X}h]", 
+		// 		dma_reg!(cpu, channel_index).source_addr,
+		// 		dma_reg!(cpu, channel_index).destination_addr);
+		// }
+	} else {
+		dma_reg!(cpu, channel_index).units = if _units == 0 { channel_info.max_units } else { _units };
+	}
 	dma_reg!(cpu, channel_index).units_remaining = dma_reg!(cpu, channel_index).units;
 	dma_reg!(cpu, channel_index).first_transfer = true;
 }

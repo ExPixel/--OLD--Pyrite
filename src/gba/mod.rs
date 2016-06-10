@@ -17,7 +17,8 @@ use self::hw::dma;
 use self::hw::audio;
 use self::hw::timers;
 
-use super::debug::debugger::GbaDebugger;
+use super::debug::debugger;
+// use super::debug::debugger::GbaDebugger;
 
 // #TODO remove this debug code.
 // I'm using vsync now and because my monitor's refresh rate is 60Hz
@@ -71,7 +72,6 @@ pub const INT_GAMEPAK: u16 = 0x2000;
 pub struct GbaExtras {
 	paused: bool,
 	request_pause: bool,
-	pub request_debugger: bool,
 }
 
 impl GbaExtras {
@@ -79,7 +79,6 @@ impl GbaExtras {
 		GbaExtras {
 			paused: false,
 			request_pause: false,
-			request_debugger: false
 		}
 	}
 }
@@ -163,30 +162,25 @@ impl Gba {
 		} else {
 			self.poll_device_events();
 		}
+
+		// IMGUI:
+		self.device.video.prepare_imgui();
+
 		let render_start_time = time::precise_time_ns();
+		debugger::render_debugger(self);
 		self.device.video.render(&self.lcd.screen_buffer);
-		let end_time = time::precise_time_ns();
-		self.update_window_title(frame, frame_start_time as f64, render_start_time as f64, end_time as f64);
-		
+		let render_end_time = time::precise_time_ns();
+
+		let mut debugger = debugger::get_debugger();
+		debugger.frame_build_time = (render_start_time - frame_start_time) as f64 / 1000000.0;
+		debugger.frame_render_time = (render_end_time - render_start_time) as f64 / 1000000.0;
+		debugger.full_frame_time = (render_end_time - frame_start_time) as f64 / 1000000.0;
 
 		if self.extras.paused != self.extras.request_pause {
 			self.extras.paused = self.extras.request_pause;
 			if self.extras.paused { println!("Paused."); }
 			else { println!("Unpaused"); }
 		}
-
-		if self.extras.request_debugger {
-			self.extras.request_debugger = false;
-			GbaDebugger::new(self).start();
-		}
-	}
-
-	fn update_window_title(&mut self, _: u64, frame_start_time: f64, render_start_time: f64, end_time: f64) {
-		let frame_build_time = (render_start_time - frame_start_time) / 1000000.0;
-		let render_to_screen_time = (end_time - render_start_time) / 1000000.0;
-		let frame_build_and_render_time = (end_time - frame_start_time) / 1000000.0;
-		let window = self.device.video.display.get_window().expect("Failed to get device window.");
-		window.set_title(&format!("Pyrite - {:.1}ms [f: {:.1}ms, r: {:.1}ms]", frame_build_and_render_time, frame_build_time, render_to_screen_time));
 	}
 
 	fn frame(&mut self) {

@@ -25,7 +25,7 @@ const MASK_SBD: u16 = 0x20; // Screen backdrop.
 
 pub type GbaPixel = u16;
 pub type OutputPixel = (u8, u8, u8);
-pub type GbaLcdLine = Vec<OutputPixel>;
+pub type GbaLcdLine = [OutputPixel; 240];
 pub type GbaBGLine = [GbaPixel; 240];
 
 pub struct ObjLineInfo {
@@ -76,7 +76,7 @@ impl ObjLineInfo {
 
 // No point in having a secondary screen buffer
 // since the GBA renders in scan lines anyway.
-pub type GbaLcdScreenBuffer = Vec<GbaLcdLine>;
+pub type GbaLcdScreenBuffer = [GbaLcdLine; 160];
 
 // Add a way for modes themselves to turn these off
 // mode 3 for instance only uses bg2, no need for the others.
@@ -103,7 +103,7 @@ pub struct GbaLcd {
 impl GbaLcd {
 	pub fn new() -> GbaLcd {
 		GbaLcd {
-			screen_buffer: vec![vec![(0u8, 0u8, 0u8); 240]; 160],
+			screen_buffer: [[(0u8, 0u8, 0u8); 240]; 160],
 			lines: GbaDisplayLines {
 				bg0: [0; 240],
 				bg1: [0; 240],

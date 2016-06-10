@@ -1,6 +1,6 @@
 use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
-use glium::glutin::VirtualKeyCode;
+use glutin::VirtualKeyCode;
 
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct GbaJoypad {

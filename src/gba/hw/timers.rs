@@ -1,6 +1,5 @@
 use super::super::core::cpu::ArmCpu;
-use super::super::core::memory::*;
-use super::super::core::memory::ioreg::TimerInternalReg;
+use super::super::hw::audio::channel_ab;
 
 macro_rules! timer {
 	($cpu:expr, $timer:expr) => (
@@ -27,6 +26,8 @@ pub fn increment(cpu: &mut ArmCpu, amount: u32) {
 				timer!(cpu, t).counter = timer!(cpu, t).reload;
 				timer!(cpu, t).unscaled_counter = 0;
 				last_timer_overflowed = true;
+
+				channel_ab::timer_overflow(cpu, t as u16);
 
 				if timer!(cpu, t).irq_enabled {
 					cpu.hardware_interrupt(0x08 << t);

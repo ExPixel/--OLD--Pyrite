@@ -4,6 +4,7 @@
 pub mod video;
 pub mod audio;
 pub mod events;
+pub mod imgui_support;
 
 use self::video::*;
 use self::audio::*;

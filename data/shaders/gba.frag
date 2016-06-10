@@ -8,12 +8,12 @@
 #define GAMMA_B 1.4
 
 in vec2 v_tex_coords;
-out vec4 color;
-
 uniform sampler2D tex;
+out vec4 out_color;
 
 void main() {
 	vec4 tcolor = texture(tex, v_tex_coords);
 	tcolor.rgb = vec3(pow(tcolor.r, GAMMA_R), pow(tcolor.g, GAMMA_G), pow(tcolor.b, GAMMA_B));
-    color = tcolor;
+	tcolor.a = 1.0;
+    out_color = tcolor;
 }

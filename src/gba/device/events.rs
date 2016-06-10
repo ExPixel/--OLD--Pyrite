@@ -1,11 +1,13 @@
-use glium::glutin::{Event, ElementState, VirtualKeyCode};
+use glutin::{Event, ElementState, VirtualKeyCode};
 use super::super::Gba;
 use super::super::GbaEventPoll;
 use super::super::INT_KEYPAD;
+use super::imgui_support;
 
 impl GbaEventPoll for Gba {
 	fn poll_device_events(&mut self) {
 		for event in self.device.video.display.poll_events() {
+			imgui_support::imgui_check_event(&mut self.device.video.im_support, &event);
 			match event {
 				Event::Closed => self.request_exit = true,
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Escape)) => {
@@ -25,11 +27,6 @@ impl GbaEventPoll for Gba {
 
 				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::P)) => {
 					self.extras.request_pause = !self.extras.paused;
-				},
-				
-				Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::H)) => { // The '>' key for me.
-					self.extras.request_debugger = true;
-					println!("Request Debugger...");
 				},
 
 			// DEBUGGING LAYERS IN GRAPHICS:

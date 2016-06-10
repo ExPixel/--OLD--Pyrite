@@ -3,15 +3,15 @@
 pub mod gba;
 
 extern crate time;
-#[macro_use] extern crate glium;
+extern crate glutin;
+extern crate gl;
 extern crate rustc_serialize;
 extern crate bincode;
-extern crate rustbox;
 extern crate flate2;
 extern crate portaudio;
 extern crate ansi_term;
-
 #[macro_use] extern crate lazy_static;
+#[macro_use] extern crate rust_imgui;
 
 use std::io::prelude::*;
 use std::env;

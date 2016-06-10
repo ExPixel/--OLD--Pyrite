@@ -1,3 +1,4 @@
+mod compat;
 pub mod ioreg;
 
 // #TODO reduce the calls to map.

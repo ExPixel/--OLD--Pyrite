@@ -1,0 +1,567 @@
+0 CGLChoosePixelFormat(attribs = {kCGLPFADoubleBuffer, kCGLPFAClosestPolicy, kCGLPFAColorSize, 32, kCGLPFAAlphaSize, 8, kCGLPFADepthSize, 24, kCGLPFAStencilSize, 8, kCGLPFAOpenGLProfile, kCGLOGLPVersion_GL4_Core, 0}, pix = &0x7fee59c3c890, npix = &2) = kCGLNoError
+1 CGLRetainPixelFormat(pix = 0x7fee59c3c890) = 0x7fee59c3c890
+2 CGLReleasePixelFormat(pix = 0x7fee59c3c890)
+3 CGLCreateContext(pix = 0x7fee59c3c890, share = NULL, ctx = &0x7fee5a044800) = kCGLNoError
+4 CGLRetainContext(ctx = 0x7fee5a044800) = 0x7fee5a044800
+5 CGLReleaseContext(ctx = 0x7fee5a044800)
+6 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+7 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAAccelerated, value = &1) = kCGLNoError
+8 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+9 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAColorSize, value = &32) = kCGLNoError
+10 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+11 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAAlphaSize, value = &8) = kCGLNoError
+12 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+13 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAAlphaSize, value = &8) = kCGLNoError
+14 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+15 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFADepthSize, value = &24) = kCGLNoError
+16 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+17 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAStencilSize, value = &8) = kCGLNoError
+18 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+19 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAStereo, value = &0) = kCGLNoError
+20 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+21 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFADoubleBuffer, value = &1) = kCGLNoError
+22 CGLGetVirtualScreen(ctx = 0x7fee5a044800, screen = &0) = kCGLNoError
+23 CGLDescribePixelFormat(pix = 0x7fee59c3c890, pix_num = 0, attrib = kCGLPFAMultisample, value = &0) = kCGLNoError
+24 CGLSetSurface(ctx = 0x7fee5a044800, cid = 0x320cb, wid = 233881, sid = 1063928406) = kCGLNoError
+25 CGLSetParameter(ctx = 0x7fee5a044800, pname = kCGLCPSwapInterval, params = &1) = kCGLNoError
+26 CGLEnable(ctx = 0x7fee5a044800, pname = kCGLCECrashOnRemovedFunctions) = kCGLNoError
+27 CGLReleasePixelFormat(pix = 0x7fee59c3c890)
+28 CGLUpdateContext(ctx = 0x7fee5a044800) = kCGLNoError
+29 CGLGetCurrentContext() = NULL
+30 CGLSetCurrentContext(ctx = 0x7fee5a044800) = kCGLNoError
+31 glViewport(x = 0, y = 0, width = 1600, height = 1200)
+32 glScissor(x = 0, y = 0, width = 1600, height = 1200)
+33 CGLLockContext(ctx = 0x7fee5a044800) = kCGLNoError
+34 glGetIntegerv(pname = GL_DRAW_FRAMEBUFFER_BINDING, params = &0)
+35 CGLLockContext(ctx = 0x7fee5a044800) = kCGLNoError
+36 CGLGetParameter(ctx = 0x7fee5a044800, pname = kCGLCPHasDrawable, params = &1) = kCGLNoError
+37 CGLGetPBuffer(ctx = 0x7fee5a044800, pbuffer = &NULL, face = &GL_ZERO, level = &0, screen = &0) = kCGLNoError
+38 CGLGetSurface(ctx = 0x7fee5a044800, cid = &0x45444148000320cb, wid = &233881, sid = &1063928406) = kCGLNoError
+39 CGLUnlockContext(ctx = 0x7fee5a044800) = kCGLNoError
+40 glViewport(x = 0, y = 0, width = 1600, height = 1200)
+41 CGLUnlockContext(ctx = 0x7fee5a044800) = kCGLNoError
+42 CGLSetCurrentContext(ctx = NULL) = kCGLNoError
+43 CGLSetCurrentContext(ctx = 0x7fee5a044800) = kCGLNoError
+44 glCreateShader(type = GL_VERTEX_SHADER) = 1
+45 glShaderSource(shader = 1, count = 1, string = &"#version 140
+
+in vec2 position;
+in vec2 tex_coords;
+out vec2 v_tex_coords;
+
+void main() {
+    v_tex_coords = tex_coords;
+    gl_Position = vec4(position, 0.0, 1.0);
+}", length = &166)
+46 glCompileShader(shader = 1)
+47 glGetShaderiv(shader = 1, pname = GL_COMPILE_STATUS, params = &1)
+48 glCreateShader(type = GL_FRAGMENT_SHADER) = 2
+49 glShaderSource(shader = 2, count = 1, string = &"#version 150
+
+// The Gamma of the GBA screen.
+// Got these values from:
+// http://codewitchgamedev.blogspot.com/2015/08/emulating-gbas-display-with-gamma.html
+#define GAMMA_R 4.0
+#define GAMMA_G 3.0
+#define GAMMA_B 1.4
+
+in vec2 v_tex_coords;
+uniform sampler2D tex;
+out vec4 out_color;
+
+void main() {
+	vec4 tcolor = texture(tex, v_tex_coords);
+	tcolor.rgb = vec3(pow(tcolor.r, GAMMA_R), pow(tcolor.g, GAMMA_G), pow(tcolor.b, GAMMA_B));
+	tcolor.a = 1.0;
+    out_color = vec4(1.0, 1.0, 1.0, 1.0);
+}", length = &495)
+50 glCompileShader(shader = 2)
+51 glGetShaderiv(shader = 2, pname = GL_COMPILE_STATUS, params = &1)
+52 glCreateProgram() = 3
+53 glAttachShader(program = 3, shader = 1)
+54 glAttachShader(program = 3, shader = 2)
+55 glBindAttribLocation(program = 3, index = 0, name = "tex_coords")
+56 glBindAttribLocation(program = 3, index = 1, name = "position")
+57 glLinkProgram(program = 3)
+58 glGetProgramiv(program = 3, pname = GL_LINK_STATUS, params = &1)
+59 glGetError() = GL_NO_ERROR
+60 glUseProgram(program = 3)
+61 glGetUniformLocation(program = 3, name = "tex") = 0
+62 glGetAttribLocation(program = 3, name = "position") = 1
+63 glGetAttribLocation(program = 3, name = "tex_coords") = 0
+64 glGenBuffers(n = 1, buffers = &1)
+65 glGenBuffers(n = 1, buffers = &2)
+66 glGenVertexArrays(n = 1, arrays = &1)
+67 glBindVertexArray(array = 1)
+68 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+69 glBufferData(target = GL_ARRAY_BUFFER, size = 128, data = blob(128), usage = GL_STATIC_DRAW)
+70 glEnableVertexAttribArray(index = 1)
+71 glEnableVertexAttribArray(index = 0)
+72 glVertexAttribPointer(index = 1, size = 2, type = GL_FLOAT, normalized = GL_FALSE, stride = 16, pointer = NULL)
+73 glVertexAttribPointer(index = 0, size = 2, type = GL_FLOAT, normalized = GL_FALSE, stride = 16, pointer = 0x8)
+74 glGetError() = GL_NO_ERROR
+75 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+76 glBufferData(target = GL_ELEMENT_ARRAY_BUFFER, size = 24, data = blob(24), usage = GL_STATIC_DRAW)
+77 glGetError() = GL_NO_ERROR
+78 glGetError() = GL_NO_ERROR
+79 glGenTextures(n = 1, textures = &1)
+80 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+81 glTexParameteri(target = GL_TEXTURE_2D, pname = GL_TEXTURE_WRAP_S, param = GL_CLAMP_TO_BORDER)
+82 glTexParameteri(target = GL_TEXTURE_2D, pname = GL_TEXTURE_WRAP_T, param = GL_CLAMP_TO_BORDER)
+83 glTexParameterfv(target = GL_TEXTURE_2D, pname = GL_TEXTURE_BORDER_COLOR, params = {0.5, 0.5, 0.5, 1})
+84 glTexParameteri(target = GL_TEXTURE_2D, pname = GL_TEXTURE_MIN_FILTER, param = GL_LINEAR)
+85 glTexParameteri(target = GL_TEXTURE_2D, pname = GL_TEXTURE_MAG_FILTER, param = GL_LINEAR)
+86 glTexImage2D(target = GL_TEXTURE_2D, level = 0, internalformat = GL_RGB, width = 240, height = 160, border = 0, format = GL_RGB, type = GL_FLOAT, pixels = blob(460800))
+87 glGetError() = GL_NO_ERROR
+88 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+89 glClear(mask = GL_COLOR_BUFFER_BIT)
+90 glViewport(x = 0, y = 0, width = 800, height = 600)
+91 glUseProgram(program = 3)
+92 glActiveTexture(texture = GL_TEXTURE0)
+93 glUniform1i(location = 0, v0 = 0)
+94 glBindVertexArray(array = 1)
+95 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+96 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+97 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+98 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+99 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+100 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+101 glClear(mask = GL_COLOR_BUFFER_BIT)
+102 glViewport(x = 0, y = 0, width = 800, height = 600)
+103 glUseProgram(program = 3)
+104 glActiveTexture(texture = GL_TEXTURE0)
+105 glUniform1i(location = 0, v0 = 0)
+106 glBindVertexArray(array = 1)
+107 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+108 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+109 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+110 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+111 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+112 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+113 glClear(mask = GL_COLOR_BUFFER_BIT)
+114 glViewport(x = 0, y = 0, width = 800, height = 600)
+115 glUseProgram(program = 3)
+116 glActiveTexture(texture = GL_TEXTURE0)
+117 glUniform1i(location = 0, v0 = 0)
+118 glBindVertexArray(array = 1)
+119 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+120 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+121 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+122 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+123 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+124 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+125 glClear(mask = GL_COLOR_BUFFER_BIT)
+126 glViewport(x = 0, y = 0, width = 800, height = 600)
+127 glUseProgram(program = 3)
+128 glActiveTexture(texture = GL_TEXTURE0)
+129 glUniform1i(location = 0, v0 = 0)
+130 glBindVertexArray(array = 1)
+131 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+132 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+133 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+134 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+135 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+136 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+137 glClear(mask = GL_COLOR_BUFFER_BIT)
+138 glViewport(x = 0, y = 0, width = 800, height = 600)
+139 glUseProgram(program = 3)
+140 glActiveTexture(texture = GL_TEXTURE0)
+141 glUniform1i(location = 0, v0 = 0)
+142 glBindVertexArray(array = 1)
+143 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+144 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+145 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+146 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+147 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+148 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+149 glClear(mask = GL_COLOR_BUFFER_BIT)
+150 glViewport(x = 0, y = 0, width = 800, height = 600)
+151 glUseProgram(program = 3)
+152 glActiveTexture(texture = GL_TEXTURE0)
+153 glUniform1i(location = 0, v0 = 0)
+154 glBindVertexArray(array = 1)
+155 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+156 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+157 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+158 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+159 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+160 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+161 glClear(mask = GL_COLOR_BUFFER_BIT)
+162 glViewport(x = 0, y = 0, width = 800, height = 600)
+163 glUseProgram(program = 3)
+164 glActiveTexture(texture = GL_TEXTURE0)
+165 glUniform1i(location = 0, v0 = 0)
+166 glBindVertexArray(array = 1)
+167 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+168 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+169 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+170 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+171 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+172 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+173 glClear(mask = GL_COLOR_BUFFER_BIT)
+174 glViewport(x = 0, y = 0, width = 800, height = 600)
+175 glUseProgram(program = 3)
+176 glActiveTexture(texture = GL_TEXTURE0)
+177 glUniform1i(location = 0, v0 = 0)
+178 glBindVertexArray(array = 1)
+179 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+180 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+181 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+182 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+183 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+184 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+185 glClear(mask = GL_COLOR_BUFFER_BIT)
+186 glViewport(x = 0, y = 0, width = 800, height = 600)
+187 glUseProgram(program = 3)
+188 glActiveTexture(texture = GL_TEXTURE0)
+189 glUniform1i(location = 0, v0 = 0)
+190 glBindVertexArray(array = 1)
+191 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+192 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+193 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+194 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+195 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+196 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+197 glClear(mask = GL_COLOR_BUFFER_BIT)
+198 glViewport(x = 0, y = 0, width = 800, height = 600)
+199 glUseProgram(program = 3)
+200 glActiveTexture(texture = GL_TEXTURE0)
+201 glUniform1i(location = 0, v0 = 0)
+202 glBindVertexArray(array = 1)
+203 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+204 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+205 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+206 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+207 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+208 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+209 glClear(mask = GL_COLOR_BUFFER_BIT)
+210 glViewport(x = 0, y = 0, width = 800, height = 600)
+211 glUseProgram(program = 3)
+212 glActiveTexture(texture = GL_TEXTURE0)
+213 glUniform1i(location = 0, v0 = 0)
+214 glBindVertexArray(array = 1)
+215 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+216 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+217 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+218 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+219 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+220 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+221 glClear(mask = GL_COLOR_BUFFER_BIT)
+222 glViewport(x = 0, y = 0, width = 800, height = 600)
+223 glUseProgram(program = 3)
+224 glActiveTexture(texture = GL_TEXTURE0)
+225 glUniform1i(location = 0, v0 = 0)
+226 glBindVertexArray(array = 1)
+227 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+228 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+229 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+230 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+231 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+232 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+233 glClear(mask = GL_COLOR_BUFFER_BIT)
+234 glViewport(x = 0, y = 0, width = 800, height = 600)
+235 glUseProgram(program = 3)
+236 glActiveTexture(texture = GL_TEXTURE0)
+237 glUniform1i(location = 0, v0 = 0)
+238 glBindVertexArray(array = 1)
+239 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+240 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+241 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+242 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+243 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+244 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+245 glClear(mask = GL_COLOR_BUFFER_BIT)
+246 glViewport(x = 0, y = 0, width = 800, height = 600)
+247 glUseProgram(program = 3)
+248 glActiveTexture(texture = GL_TEXTURE0)
+249 glUniform1i(location = 0, v0 = 0)
+250 glBindVertexArray(array = 1)
+251 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+252 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+253 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+254 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+255 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+256 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+257 glClear(mask = GL_COLOR_BUFFER_BIT)
+258 glViewport(x = 0, y = 0, width = 800, height = 600)
+259 glUseProgram(program = 3)
+260 glActiveTexture(texture = GL_TEXTURE0)
+261 glUniform1i(location = 0, v0 = 0)
+262 glBindVertexArray(array = 1)
+263 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+264 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+265 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+266 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+267 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+268 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+269 glClear(mask = GL_COLOR_BUFFER_BIT)
+270 glViewport(x = 0, y = 0, width = 800, height = 600)
+271 glUseProgram(program = 3)
+272 glActiveTexture(texture = GL_TEXTURE0)
+273 glUniform1i(location = 0, v0 = 0)
+274 glBindVertexArray(array = 1)
+275 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+276 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+277 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+278 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+279 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+280 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+281 glClear(mask = GL_COLOR_BUFFER_BIT)
+282 glViewport(x = 0, y = 0, width = 800, height = 600)
+283 glUseProgram(program = 3)
+284 glActiveTexture(texture = GL_TEXTURE0)
+285 glUniform1i(location = 0, v0 = 0)
+286 glBindVertexArray(array = 1)
+287 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+288 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+289 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+290 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+291 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+292 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+293 glClear(mask = GL_COLOR_BUFFER_BIT)
+294 glViewport(x = 0, y = 0, width = 800, height = 600)
+295 glUseProgram(program = 3)
+296 glActiveTexture(texture = GL_TEXTURE0)
+297 glUniform1i(location = 0, v0 = 0)
+298 glBindVertexArray(array = 1)
+299 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+300 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+301 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+302 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+303 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+304 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+305 glClear(mask = GL_COLOR_BUFFER_BIT)
+306 glViewport(x = 0, y = 0, width = 800, height = 600)
+307 glUseProgram(program = 3)
+308 glActiveTexture(texture = GL_TEXTURE0)
+309 glUniform1i(location = 0, v0 = 0)
+310 glBindVertexArray(array = 1)
+311 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+312 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+313 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+314 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+315 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+316 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+317 glClear(mask = GL_COLOR_BUFFER_BIT)
+318 glViewport(x = 0, y = 0, width = 800, height = 600)
+319 glUseProgram(program = 3)
+320 glActiveTexture(texture = GL_TEXTURE0)
+321 glUniform1i(location = 0, v0 = 0)
+322 glBindVertexArray(array = 1)
+323 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+324 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+325 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+326 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+327 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+328 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+329 glClear(mask = GL_COLOR_BUFFER_BIT)
+330 glViewport(x = 0, y = 0, width = 800, height = 600)
+331 glUseProgram(program = 3)
+332 glActiveTexture(texture = GL_TEXTURE0)
+333 glUniform1i(location = 0, v0 = 0)
+334 glBindVertexArray(array = 1)
+335 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+336 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+337 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+338 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+339 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+340 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+341 glClear(mask = GL_COLOR_BUFFER_BIT)
+342 glViewport(x = 0, y = 0, width = 800, height = 600)
+343 glUseProgram(program = 3)
+344 glActiveTexture(texture = GL_TEXTURE0)
+345 glUniform1i(location = 0, v0 = 0)
+346 glBindVertexArray(array = 1)
+347 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+348 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+349 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+350 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+351 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+352 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+353 glClear(mask = GL_COLOR_BUFFER_BIT)
+354 glViewport(x = 0, y = 0, width = 800, height = 600)
+355 glUseProgram(program = 3)
+356 glActiveTexture(texture = GL_TEXTURE0)
+357 glUniform1i(location = 0, v0 = 0)
+358 glBindVertexArray(array = 1)
+359 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+360 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+361 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+362 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+363 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+364 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+365 glClear(mask = GL_COLOR_BUFFER_BIT)
+366 glViewport(x = 0, y = 0, width = 800, height = 600)
+367 glUseProgram(program = 3)
+368 glActiveTexture(texture = GL_TEXTURE0)
+369 glUniform1i(location = 0, v0 = 0)
+370 glBindVertexArray(array = 1)
+371 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+372 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+373 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+374 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+375 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+376 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+377 glClear(mask = GL_COLOR_BUFFER_BIT)
+378 glViewport(x = 0, y = 0, width = 800, height = 600)
+379 glUseProgram(program = 3)
+380 glActiveTexture(texture = GL_TEXTURE0)
+381 glUniform1i(location = 0, v0 = 0)
+382 glBindVertexArray(array = 1)
+383 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+384 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+385 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+386 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+387 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+388 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+389 glClear(mask = GL_COLOR_BUFFER_BIT)
+390 glViewport(x = 0, y = 0, width = 800, height = 600)
+391 glUseProgram(program = 3)
+392 glActiveTexture(texture = GL_TEXTURE0)
+393 glUniform1i(location = 0, v0 = 0)
+394 glBindVertexArray(array = 1)
+395 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+396 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+397 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+398 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+399 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+400 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+401 glClear(mask = GL_COLOR_BUFFER_BIT)
+402 glViewport(x = 0, y = 0, width = 800, height = 600)
+403 glUseProgram(program = 3)
+404 glActiveTexture(texture = GL_TEXTURE0)
+405 glUniform1i(location = 0, v0 = 0)
+406 glBindVertexArray(array = 1)
+407 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+408 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+409 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+410 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+411 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+412 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+413 glClear(mask = GL_COLOR_BUFFER_BIT)
+414 glViewport(x = 0, y = 0, width = 800, height = 600)
+415 glUseProgram(program = 3)
+416 glActiveTexture(texture = GL_TEXTURE0)
+417 glUniform1i(location = 0, v0 = 0)
+418 glBindVertexArray(array = 1)
+419 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+420 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+421 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+422 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+423 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+424 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+425 glClear(mask = GL_COLOR_BUFFER_BIT)
+426 glViewport(x = 0, y = 0, width = 800, height = 600)
+427 glUseProgram(program = 3)
+428 glActiveTexture(texture = GL_TEXTURE0)
+429 glUniform1i(location = 0, v0 = 0)
+430 glBindVertexArray(array = 1)
+431 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+432 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+433 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+434 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+435 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+436 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+437 glClear(mask = GL_COLOR_BUFFER_BIT)
+438 glViewport(x = 0, y = 0, width = 800, height = 600)
+439 glUseProgram(program = 3)
+440 glActiveTexture(texture = GL_TEXTURE0)
+441 glUniform1i(location = 0, v0 = 0)
+442 glBindVertexArray(array = 1)
+443 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+444 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+445 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+446 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+447 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+448 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+449 glClear(mask = GL_COLOR_BUFFER_BIT)
+450 glViewport(x = 0, y = 0, width = 800, height = 600)
+451 glUseProgram(program = 3)
+452 glActiveTexture(texture = GL_TEXTURE0)
+453 glUniform1i(location = 0, v0 = 0)
+454 glBindVertexArray(array = 1)
+455 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+456 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+457 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+458 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+459 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+460 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+461 glClear(mask = GL_COLOR_BUFFER_BIT)
+462 glViewport(x = 0, y = 0, width = 800, height = 600)
+463 glUseProgram(program = 3)
+464 glActiveTexture(texture = GL_TEXTURE0)
+465 glUniform1i(location = 0, v0 = 0)
+466 glBindVertexArray(array = 1)
+467 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+468 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+469 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+470 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+471 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+472 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+473 glClear(mask = GL_COLOR_BUFFER_BIT)
+474 glViewport(x = 0, y = 0, width = 800, height = 600)
+475 glUseProgram(program = 3)
+476 glActiveTexture(texture = GL_TEXTURE0)
+477 glUniform1i(location = 0, v0 = 0)
+478 glBindVertexArray(array = 1)
+479 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+480 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+481 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+482 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+483 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+484 CGLClearDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+485 glClearColor(red = 1, green = 0, blue = 1, alpha = 1)
+486 glClear(mask = GL_COLOR_BUFFER_BIT)
+487 glViewport(x = 0, y = 0, width = 800, height = 600)
+488 glUseProgram(program = 3)
+489 glActiveTexture(texture = GL_TEXTURE0)
+490 glUniform1i(location = 0, v0 = 0)
+491 glBindVertexArray(array = 1)
+492 glBindBuffer(target = GL_ARRAY_BUFFER, buffer = 1)
+493 glBindBuffer(target = GL_ELEMENT_ARRAY_BUFFER, buffer = 2)
+494 glBindTexture(target = GL_TEXTURE_2D, texture = 1)
+495 glDrawElements(mode = GL_TRIANGLES, count = 6, type = GL_UNSIGNED_INT, indices = NULL)
+496 CGLFlushDrawable(ctx = 0x7fee5a044800) = kCGLNoError
+
+497 glDetachShader(program = 3, shader = 1)
+498 glDetachShader(program = 3, shader = 2)
+499 glDeleteShader(shader = 1)
+500 glDeleteShader(shader = 2)
+501 glDeleteProgram(program = 3)
+502 glDeleteBuffers(n = 1, buffers = &1)
+503 glDeleteBuffers(n = 1, buffers = &2)
+504 glDeleteVertexArrays(n = 1, arrays = &1)
+505 glDeleteTextures(n = 1, textures = &1)

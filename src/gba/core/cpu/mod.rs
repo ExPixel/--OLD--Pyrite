@@ -587,7 +587,7 @@ impl ArmCpu {
 const DEBUG_STOP: bool = false; // This is actually a breakpoint.
 const DEBUG_THUMB: Option<bool> = Some(false);
 const DEBUG_ITERATIONS: u32 = 1;
-const DEBUG_ADDR: u32 = 0x03003A6C;
+const DEBUG_ADDR: u32 = 0x030000BC;
 
 // BRANCH TRACKING OPTIONS:
 const DEBUG_TRACK_BRANCHES: bool = false;
@@ -688,6 +688,10 @@ fn debug_unwind_branches() {
 
 #[allow(warnings)]
 fn before_execution(address: u32, cpu: &mut ArmCpu) {
+	if address == 0x030000BC {
+		println!("r2 = 0x{:08X} ; r3 = 0x{:08X}", cpu.rget(2), cpu.rget(3));
+	}
+
 	if DEBUG_STOP && (DEBUG_THUMB == None || DEBUG_THUMB == Some(cpu.registers.getf_t())) && address == DEBUG_ADDR {
 		unsafe { debug_current_iterations += 1; if debug_current_iterations < DEBUG_ITERATIONS { return; }}
 		println!("============BEFORE============");
