@@ -1,5 +1,5 @@
 [submodule "rust_imgui"]
-	path = cimgui
+	path = rust_imgui
 	url = https://github.com/ExPixel/rust-imgui.git
 
 [submodule "suite"]
