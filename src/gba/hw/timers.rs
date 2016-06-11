@@ -22,7 +22,7 @@ pub fn increment(cpu: &mut ArmCpu, amount: u32) {
 				timer!(cpu, t).unscaled_counter -= scaled << timer!(cpu, t).prescaler;
 			}
 
-			if timer!(cpu, t).counter > 0xffff { // Ther timer!(cpu, t) has overflowed
+			if timer!(cpu, t).counter > 0xffff { // The timer!(cpu, t) has overflowed
 				timer!(cpu, t).counter = timer!(cpu, t).reload;
 				timer!(cpu, t).unscaled_counter = 0;
 				last_timer_overflowed = true;

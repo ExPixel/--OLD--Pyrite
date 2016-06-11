@@ -155,11 +155,17 @@ pub fn render_debugger(gba: &mut Gba) {
 	if debugger.ioreg_window {
 		imgui::begin(imstr!("IO Registers"), &mut debugger.ioreg_window, imgui::ImGuiWindowFlags_None);
 		if imgui::collapsing_header(imstr!("DMA"), imstr!("dma_ioreg_clpshr"), true, false) {
-			render_dma_registers(gba, 0, ioreg::DMA0CNT_L, ioreg::DMA0CNT_H);
-			render_dma_registers(gba, 1, ioreg::DMA1CNT_L, ioreg::DMA1CNT_H);
-			render_dma_registers(gba, 2, ioreg::DMA2CNT_L, ioreg::DMA2CNT_H);
-			render_dma_registers(gba, 3, ioreg::DMA3CNT_L, ioreg::DMA3CNT_H);
-			imgui::columns(1, imstr!("dma_columns_end"), false);
+			render_dma_register(gba, 0, ioreg::DMA0CNT_L, ioreg::DMA0CNT_H);
+			render_dma_register(gba, 1, ioreg::DMA1CNT_L, ioreg::DMA1CNT_H);
+			render_dma_register(gba, 2, ioreg::DMA2CNT_L, ioreg::DMA2CNT_H);
+			render_dma_register(gba, 3, ioreg::DMA3CNT_L, ioreg::DMA3CNT_H);
+		}
+
+		if imgui::collapsing_header(imstr!("Timers"), imstr!("timer_ioreg_clpshr"), true, false) {
+			render_timer_register(gba, 0, ioreg::TM0CNT_L, ioreg::TM0CNT_H);
+			render_timer_register(gba, 1, ioreg::TM1CNT_L, ioreg::TM1CNT_H);
+			render_timer_register(gba, 2, ioreg::TM2CNT_L, ioreg::TM2CNT_H);
+			render_timer_register(gba, 3, ioreg::TM3CNT_L, ioreg::TM3CNT_H);
 		}
 
 		if imgui::collapsing_header(imstr!("Sound"), imstr!("sound_ioreg_clpshr"), true, false) {
@@ -242,7 +248,44 @@ pub fn render_debugger(gba: &mut Gba) {
 	}
 }
 
-pub fn render_dma_registers(gba: &mut Gba, channel_index: usize, low: ioreg::IORegister16, high: ioreg::IORegister16) {
+pub fn render_timer_register(gba: &mut Gba, timer_index: usize, low: ioreg::IORegister16, high: ioreg::IORegister16) {
+	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
+
+	if imgui::tree_node(imstr!("Timer {}", timer_index)) {
+		imgui::columns(2, imstr!("timer_{}_table", timer_index), true);
+		imgui::selectable_fl(imstr!("TIMER{}CNT_L", timer_index), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("TIMER{}CNT_H", timer_index), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Reload"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Prescaler"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Count-Up"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("IRQ-Enabled"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Operate"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("Counter"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("~Unscaled Counter"), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::next_column();
+		imgui::text(imstr!("{:04X}", gba.cpu.memory.get_reg(low)));
+		let high = gba.cpu.memory.get_reg(high);
+		imgui::text(imstr!("{:04X}", high));
+		{
+			let timer = &gba.cpu.memory.internal_regs.timers[timer_index];
+			imgui::text(imstr!("{:04X}", timer.reload));
+
+			let prescaler_n = high & 0x3;
+			imgui::text(imstr!("{} (1/{})", prescaler_n, 1 << timer.prescaler));
+
+			imgui::text(imstr!("{}", timer.count_up);
+			imgui::text(imstr!("{}", timer.irq_enabled));
+			imgui::text(imstr!("{}", timer.operate));
+			imgui::text(imstr!("{:04X}", timer.counter));
+			imgui::text(imstr!("{:04X}", timer.unscaled_counter));
+		}
+		imgui::columns(1, imstr!("timer_{}_table_end", timer_index), false);
+		imgui::tree_pop();
+	}
+}
+
+
+pub fn render_dma_register(gba: &mut Gba, channel_index: usize, low: ioreg::IORegister16, high: ioreg::IORegister16) {
 	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
 
 	if imgui::tree_node(imstr!("DMA{}", channel_index)) {
@@ -293,7 +336,6 @@ pub fn render_dma_registers(gba: &mut Gba, channel_index: usize, low: ioreg::IOR
 			imgui::text(imstr!("{:08X}", dma_internal_reg.source_addr));
 			imgui::text(imstr!("{} ({:04X})", dma_internal_reg.units_remaining, dma_internal_reg.units_remaining));
 		}
-		imgui::separator();
 		imgui::columns(1, imstr!("dma_{}_table_end", channel_index), false);
 		imgui::tree_pop();
 	}
