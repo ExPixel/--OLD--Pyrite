@@ -108,15 +108,6 @@ fn tick_channel(cpu: &mut ArmCpu, channel_index: usize) {
 	if dma_reg!(cpu, channel_index).transfer_word {
 		dma_reg!(cpu, channel_index).units_remaining -= 1;
 		let data = cpu.memory.read32(src);
-
-		if channel_index == 1 {
-			let debugger = ::debug::debugger::get_debugger();
-			debugger.dma_1_debug.plot((data & 0xff) as f32);
-			debugger.dma_1_debug.plot(((data >> 8) & 0xff) as f32);
-			debugger.dma_1_debug.plot(((data >> 16) & 0xff) as f32);
-			debugger.dma_1_debug.plot(((data >> 24) & 0xff) as f32);
-		}
-
 		cpu.memory.write32(dest, data);
 
 		if dma_reg!(cpu, channel_index).first_transfer {

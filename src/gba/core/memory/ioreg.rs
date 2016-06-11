@@ -421,9 +421,6 @@ impl GbaChannelFIFO {
 	}
 
 	pub fn out_push(&mut self, sample: i8) {
-		// if sample != 0 {
-		// println!("OUT <- {} [idx: {}]", sample, self.out_write_cursor);
-		// }
 		self.out_data.data[self.out_write_cursor] = sample;
 		self.out_write_cursor = (self.out_write_cursor + 1) & FIFO_OUT_BUFFER_MASK;
 		self.out_size = min!(self.out_size + 1, FIFO_OUT_BUFFER_SIZE);
@@ -437,19 +434,18 @@ impl GbaChannelFIFO {
 	pub fn out_pop(&mut self) -> i8 {
 		if self.out_remaining() > 0 {
 			let sample = self.out_data.data[self.out_read_cursor];
-			// println!("OUT -> {} [idx: {}]", sample, self.out_read_cursor);
 			self.out_read_cursor = (self.out_read_cursor + 1) & FIFO_OUT_BUFFER_MASK;
 			self.out_size -= 1;
 			return sample;
 		} else {
-			// println!("OUT -> NULL [{}]", self.size);
 			return 0;
 		}
 	}
 
-	pub fn next_sample(&mut self) {
+	pub fn next_sample(&mut self) -> i8 {
 		let sample = self.out_pop();
 		self.sample = sample;
+		return sample;
 	}
 
 	pub fn out_remaining(&self) -> usize {
@@ -467,16 +463,9 @@ impl GbaChannelFIFO {
 	//       that's needed so I can just change that to only write in 2's.
 	/// Pushes a single signed 8bit sample into the FIFO queue.
 	pub fn push(&mut self, sample: i8) {
-		let debugger = ::debug::debugger::get_debugger();
-		debugger.fifo_a_in.plot(sample as f32);
 		self.data[self.write_cursor] = sample;
 		self.write_cursor = (self.write_cursor + 1) & 0x1f;
 		self.size = min!(self.size + 1, 32);
-
-		// if sample != 0 {
-		// println!("BUF <- {} [{}]", sample, self.size);
-		// }
-
 		if self.write_cursor == self.read_cursor {
 			// If the write cursor "laps" the read cursor, just move the read
 			// cursor forward so that it will then be at the new 0 position.
@@ -486,17 +475,12 @@ impl GbaChannelFIFO {
 
 	/// Pops an 8 bit sample from the FIFO queue. 
 	pub fn pop(&mut self) -> i8 {
-		let debugger = ::debug::debugger::get_debugger();
 		if self.remaining() > 0 {
 			let sample = self.data[self.read_cursor];
 			self.read_cursor = (self.read_cursor + 1) & 0x1f;
 			self.size -= 1;
-			// println!("BUF -> {}", sample);
-			debugger.fifo_a_out.plot(sample as f32);
 			return sample;
 		} else {
-			// println!("BUF -> NULL [{}]", self.size);
-			debugger.fifo_a_out.plot(0.0);
 			return 0;
 		}
 	}
@@ -662,19 +646,11 @@ impl InternalRegisters {
 				self.audio_channel3.sound_length = value & 0xff;
 				self.audio_channel3.sound_volume = (value >> 13) & 0x3;
 				self.audio_channel3.force_volume = (value & 0x8000) != 0;
-
-				// println!("WRITE(72): {:04X} -> [LENGTH: {}]", value, self.audio_channel3.sound_length);
 			},
 			0x00000074 => {
 				self.audio_channel3.sample_rate = value & 0x7ff;
 				self.audio_channel3.length_flag = (value & 0x4000) != 0;
 				self.audio_channel3.initial = (value & 0x8000) != 0;
-
-				// println!("WRITE(74): {:04X} -> [SAMPLE RATE: {}] [LENGTH FLAG: {}] [INITIAL: {}]",
-				// 	value,
-				// 	self.audio_channel3.sample_rate,
-				// 	self.audio_channel3.length_flag,
-				// 	self.audio_channel3.initial);
 			},
 			0x00000090 ... 0x0000009E => { // Writing to Wave RAM
 				let bank = (self.audio_channel3.wav_ram_bank ^ 1) as usize;
@@ -683,14 +659,12 @@ impl InternalRegisters {
 
 			// Audio Channel 4:
 			0x00000078 => {
-				// println!("MODIFIED CHANNEL 4(78): {:04X}", value);
 				self.audio_channel4.sound_length = value & 0x3f;
 				self.audio_channel4.envelope_step_time = (value >> 8) & 0x7;
 				self.audio_channel4.envelope_inc = (value & 0x800) != 0;
 				self.audio_channel4.initial_volume = (value >> 12) & 0xf;
 			}
 			0x0000007C => {
-				// println!("MODIFIED CHANNEL 4(7C): {:04X}", value);
 				self.audio_channel4.dividing_ratio = value & 0x7;
 				self.audio_channel4.counter_width_7 = (value & 0x8) != 0;
 				self.audio_channel4.shift_clock_freq = (value >> 4) & 0xf;
@@ -701,15 +675,11 @@ impl InternalRegisters {
 			// FIFO A:
 			0x000000A0 | 0x000000A2 => {
 				self.audio_fifo_a.push16(value);
-				// if value != 0 {
-				// 	println!("FIFO A PUSH[{:08X}h] = 0x{:04X} ({}, {})", register, value,
-				// 		(value & 0xff) as i8, ((value >> 8) & 0xff) as i8);
-				// }
 			},
 
 			// FIFO B:
 			0x000000A4 | 0x000000A6 => {
-				// self.audio_fifo_b.push16(value);
+				self.audio_fifo_b.push16(value);
 			},
 
 			// SOUNDCNT_H - DMA Sound Control/Mixing (R/W)
@@ -722,11 +692,11 @@ impl InternalRegisters {
 				}
 				self.update_fifo_a_frequency(((value >> 10) & 1) as usize);
 
-				self.audio_fifo_a.enable_right = (value & 0x1000) != 0;
-				self.audio_fifo_a.enable_left = (value & 0x2000) != 0;
-				self.audio_fifo_a.timer = (value >> 14) & 1;
+				self.audio_fifo_b.enable_right = (value & 0x1000) != 0;
+				self.audio_fifo_b.enable_left = (value & 0x2000) != 0;
+				self.audio_fifo_b.timer = (value >> 14) & 1;
 				if (value & 0x8000) != 0 {
-					self.audio_fifo_a.reset();	
+					self.audio_fifo_b.reset();	
 				}
 				self.update_fifo_b_frequency(((value >> 14) & 1) as usize);
 			},

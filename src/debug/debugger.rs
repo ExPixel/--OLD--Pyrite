@@ -42,10 +42,6 @@ pub struct DebugData {
 	pub sound_channel_b_plot: DataPlot<f32>,
 	pub sound_plot: DataPlot<f32>,
 
-	pub dma_1_debug: DataPlot<f32>,
-	pub fifo_a_out: DataPlot<f32>,
-	pub fifo_a_in: DataPlot<f32>,
-
 	ioreg_window: bool,
 }
 
@@ -67,11 +63,7 @@ impl DebugData {
 			sound_channel_a_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 			sound_channel_b_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 
-			dma_1_debug: DataPlot::new(256, -5.0, 260.0),
-			fifo_a_in: DataPlot::new(256, -5.0, 260.0),
-			fifo_a_out: DataPlot::new(256, -5.0, 260.0),
-
-			ioreg_window: false
+			ioreg_window: false,
 		}
 	}
 }
@@ -82,32 +74,11 @@ pub fn render_debugger(gba: &mut Gba) {
 	let debugger = get_debugger();
 
 
-	imgui::plot_histogram(
-		imstr!("DMA 1"),
-		&debugger.dma_1_debug.data,
-		debugger.dma_1_debug.len(), debugger.dma_1_debug.offset(), 
-		imstr!("Byte"), 
-		debugger.dma_1_debug.plot_min, debugger.dma_1_debug.plot_max,
-		imgui::vec2(256.0, 128.0), 4
-	);
-
-	imgui::plot_histogram(
-		imstr!("FIFO A IN"),
-		&debugger.fifo_a_in.data,
-		debugger.fifo_a_in.len(), debugger.fifo_a_in.offset(), 
-		imstr!("Byte"), 
-		debugger.fifo_a_in.plot_min, debugger.fifo_a_in.plot_max,
-		imgui::vec2(256.0, 128.0), 4
-	);
-
-	imgui::plot_histogram(
-		imstr!("FIFO A OUT"),
-		&debugger.fifo_a_out.data,
-		debugger.fifo_a_out.len(), debugger.fifo_a_out.offset(), 
-		imstr!("Byte"), 
-		debugger.fifo_a_out.plot_min, debugger.fifo_a_out.plot_max,
-		imgui::vec2(256.0, 128.0), 4
-	);
+	// Debugging:
+	{
+		imgui::text(imstr!("A timer: {}", gba.cpu.memory.internal_regs.audio_fifo_a.timer));
+		imgui::text(imstr!("B timer: {}", gba.cpu.memory.internal_regs.audio_fifo_b.timer));
+	}
 
 	if imgui::get_io().mouse_clicked[1] != 0 {
 		imgui::open_popup(imstr!("main_menu"));
