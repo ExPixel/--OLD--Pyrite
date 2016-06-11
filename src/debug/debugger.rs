@@ -273,7 +273,7 @@ pub fn render_timer_register(gba: &mut Gba, timer_index: usize, low: ioreg::IORe
 			let prescaler_n = high & 0x3;
 			imgui::text(imstr!("{} (1/{})", prescaler_n, 1 << timer.prescaler));
 
-			imgui::text(imstr!("{}", timer.count_up);
+			imgui::text(imstr!("{}", timer.count_up));
 			imgui::text(imstr!("{}", timer.irq_enabled));
 			imgui::text(imstr!("{}", timer.operate));
 			imgui::text(imstr!("{:04X}", timer.counter));
