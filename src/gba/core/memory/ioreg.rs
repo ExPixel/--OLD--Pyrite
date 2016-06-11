@@ -588,6 +588,7 @@ impl InternalRegisters {
 
 	pub fn on_reg_write(&mut self, register: u32, value: u16) {
 		match register {
+			// Gfx:
 			0x00000028 => { self.bg2x = (((put_lo16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 			0x0000002A => { self.bg2x = (((put_hi16!(self.bg2x, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
@@ -600,6 +601,7 @@ impl InternalRegisters {
 			0x0000003C => { self.bg3y = (((put_lo16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 			0x0000003E => { self.bg3y = (((put_hi16!(self.bg3y, value) << 4) as i32) >> 4) as u32 }, // sign extension from 28bits to 32bits
 
+			// Timers:
 			0x00000100 => { self.update_timer_lo(0, value) },
 			0x00000102 => { self.update_timer_hi(0, value) },
 			0x00000104 => { self.update_timer_lo(1, value) },
@@ -609,6 +611,7 @@ impl InternalRegisters {
 			0x0000010C => { self.update_timer_lo(3, value) },
 			0x0000010E => { self.update_timer_hi(3, value) },
 
+			// DMA:
 			0x000000BA => { self.update_dma_hi(0, value); },
 			0x000000C6 => { self.update_dma_hi(1, value); },
 			0x000000D2 => { self.update_dma_hi(2, value); },
