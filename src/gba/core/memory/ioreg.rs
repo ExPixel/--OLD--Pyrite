@@ -605,7 +605,7 @@ impl InternalRegisters {
 			0x00000100 => { self.update_timer_lo(0, value) },
 			0x00000102 => { self.update_timer_hi(0, value) },
 			0x00000104 => { self.update_timer_lo(1, value) },
-			0x00000105 => { self.update_timer_hi(1, value) },
+			0x00000106 => { self.update_timer_hi(1, value) },
 			0x00000108 => { self.update_timer_lo(2, value) },
 			0x0000010A => { self.update_timer_hi(2, value) },
 			0x0000010C => { self.update_timer_lo(3, value) },
