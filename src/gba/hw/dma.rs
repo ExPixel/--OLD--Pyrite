@@ -178,6 +178,12 @@ fn is_fifo_dest(dest: u32) -> bool {
 	return dest == 0x040000A0 || dest == 0x040000A4;
 }
 
+#[inline]
+pub fn get_destination(cpu: &mut ArmCpu, channel_index: usize) -> u32 {
+	let _dest = cpu.memory.get_reg(CHANNELS[channel_index].reg_dad);
+	return _dest & CHANNELS[channel_index].dest_mask;
+}
+
 fn start(cpu: &mut ArmCpu, channel_index: usize) {
 	let channel_info = &CHANNELS[channel_index];
 

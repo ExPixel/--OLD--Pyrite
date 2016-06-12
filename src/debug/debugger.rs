@@ -78,6 +78,10 @@ pub fn render_debugger(gba: &mut Gba) {
 	{
 		imgui::text(imstr!("A timer: {}", gba.cpu.memory.internal_regs.audio_fifo_a.timer));
 		imgui::text(imstr!("B timer: {}", gba.cpu.memory.internal_regs.audio_fifo_b.timer));
+		imgui::text(imstr!("freq A: {}", gba.cpu.memory.internal_regs.audio_fifo_a.frequency));
+		imgui::text(imstr!("freq B: {}", gba.cpu.memory.internal_regs.audio_fifo_b.frequency));
+		imgui::text(imstr!("freq A inc: {}", gba.cpu.memory.internal_regs.audio_fifo_a.freq_inc));
+		imgui::text(imstr!("freq B inc: {}", gba.cpu.memory.internal_regs.audio_fifo_a.freq_inc));
 	}
 
 	if imgui::get_io().mouse_clicked[1] != 0 {

@@ -15,11 +15,6 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 		cpu.memory.internal_regs.audio_fifo_a.frequency / device.sample_rate_f;
 	cpu.memory.internal_regs.audio_fifo_b.freq_inc = 
 		cpu.memory.internal_regs.audio_fifo_b.frequency / device.sample_rate_f;
-
-	pyrite_debugging!({
-		println!("SAMPLE RATE: {}, {}", cpu.memory.internal_regs.audio_fifo_a.frequency,
-			 cpu.memory.internal_regs.audio_fifo_a.freq_inc);
-	});
 }
 
 pub fn tick_a(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
@@ -44,22 +39,32 @@ pub fn tick_b(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) ->
 	return (sample16, sample16);
 }
 
+fn start_dma_fifo_addr_check(cpu: &mut ArmCpu, fifo_addr: u32, dma_index: usize) {
+	let dest = dma::get_destination(cpu, dma_index);
+	if dest == fifo_addr {
+		dma::check_started(cpu, dma::DMA_TIMING_SPECIAL, dma_index);
+	}
+}
+
 pub fn timer_overflow(cpu: &mut ArmCpu, timer: u16) {
+	const FIFO_A_ADDR: u32 = 0x040000A0;
+	const FIFO_B_ADDR: u32 = 0x040000A4;
+
 	if cpu.memory.internal_regs.audio_fifo_a.timer == timer {
 		let sample = cpu.memory.internal_regs.audio_fifo_a.pop();
 		cpu.memory.internal_regs.audio_fifo_a.out_push(sample);
-		if cpu.memory.internal_regs.audio_fifo_a.remaining() < 16 {
-			dma::check_started(cpu, dma::DMA_TIMING_SPECIAL, 1);
-			dma::check_started(cpu, dma::DMA_TIMING_SPECIAL, 2);
+		if cpu.memory.internal_regs.audio_fifo_a.remaining() <= 16 {
+			start_dma_fifo_addr_check(cpu, FIFO_A_ADDR, 1);
+			start_dma_fifo_addr_check(cpu, FIFO_A_ADDR, 2);
 		}
 	}
 
 	if cpu.memory.internal_regs.audio_fifo_b.timer == timer {
 		let sample = cpu.memory.internal_regs.audio_fifo_b.pop();
 		cpu.memory.internal_regs.audio_fifo_b.out_push(sample);
-		if cpu.memory.internal_regs.audio_fifo_b.remaining() < 16 {
-			dma::check_started(cpu, dma::DMA_TIMING_SPECIAL, 1);
-			dma::check_started(cpu, dma::DMA_TIMING_SPECIAL, 2);
+		if cpu.memory.internal_regs.audio_fifo_b.remaining() <= 16 {
+			start_dma_fifo_addr_check(cpu, FIFO_B_ADDR, 1);
+			start_dma_fifo_addr_check(cpu, FIFO_B_ADDR, 2);
 		}
 	}
 }

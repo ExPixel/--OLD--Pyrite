@@ -688,7 +688,7 @@ impl InternalRegisters {
 				self.audio_fifo_a.enable_left = (value & 0x200) != 0;
 				self.audio_fifo_a.timer = (value >> 10) & 1;
 				if (value & 0x800) != 0 {
-					self.audio_fifo_a.reset();	
+					self.audio_fifo_a.reset();
 				}
 				self.update_fifo_a_frequency(((value >> 10) & 1) as usize);
 
@@ -696,7 +696,7 @@ impl InternalRegisters {
 				self.audio_fifo_b.enable_left = (value & 0x2000) != 0;
 				self.audio_fifo_b.timer = (value >> 14) & 1;
 				if (value & 0x8000) != 0 {
-					self.audio_fifo_b.reset();	
+					self.audio_fifo_b.reset();
 				}
 				self.update_fifo_b_frequency(((value >> 14) & 1) as usize);
 			},
