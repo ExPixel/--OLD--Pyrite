@@ -189,7 +189,7 @@ fn start(cpu: &mut ArmCpu, channel_index: usize) {
 
 	let _dest = cpu.memory.get_reg(channel_info.reg_dad);
 	let _source = cpu.memory.get_reg(channel_info.reg_sad);
-	let _units = cpu.memory.get_reg(channel_info.reg_cnt_l) as u32;
+	let _units = cpu.memory.get_reg(channel_info.reg_cnt_l) as u32 & (channel_info.max_units - 1);
 
 	if !dma_reg!(cpu, channel_index).is_repeat {
 		dma_reg!(cpu, channel_index).destination_addr = _dest & channel_info.dest_mask;
@@ -204,17 +204,13 @@ fn start(cpu: &mut ArmCpu, channel_index: usize) {
 		dma_reg!(cpu, channel_index).dest_addr_inc = 0;
 		dma_reg!(cpu, channel_index).units = 4;
 		dma_reg!(cpu, channel_index).transfer_word = true;
-
-		// if channel_index == 1 {
-		// 	println!("DMA FROM [{:08X}h] to [{:08X}h]", 
-		// 		dma_reg!(cpu, channel_index).source_addr,
-		// 		dma_reg!(cpu, channel_index).destination_addr);
-		// }
 	} else {
 		dma_reg!(cpu, channel_index).units = if _units == 0 { channel_info.max_units } else { _units };
 	}
 	dma_reg!(cpu, channel_index).units_remaining = dma_reg!(cpu, channel_index).units;
 	dma_reg!(cpu, channel_index).first_transfer = true;
+
+	dma_reg!(cpu, channel_index).is_repeat = false;
 }
 
 /// Returns an interrupt mask for the DMA register that is completed if
@@ -226,10 +222,11 @@ fn completed(cpu: &mut ArmCpu, channel_index: usize) {
 		let dma_cnt_h = cpu.memory.get_reg(CHANNELS[channel_index].reg_cnt_h);
 		cpu.memory.set_reg(CHANNELS[channel_index].reg_cnt_h, dma_cnt_h & 0x7fff);
 	} else {
+		let _dest = cpu.memory.get_reg(CHANNELS[channel_index].reg_dad);
 		dma_reg!(cpu, channel_index).is_repeat = true;
 		if dma_reg!(cpu, channel_index).reload {
 			let _end  =dma_reg!(cpu, channel_index).destination_addr;
-			dma_reg!(cpu, channel_index).destination_addr = dma_reg!(cpu, channel_index).original_destination_addr;
+			dma_reg!(cpu, channel_index).destination_addr = _dest & CHANNELS[channel_index].dest_mask;
 		}
 	}
 
