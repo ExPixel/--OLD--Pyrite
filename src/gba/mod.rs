@@ -263,6 +263,13 @@ impl Gba {
 		}
 	}
 
+	fn try_fire_vcounter_int(&mut self) {
+		let dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
+		if ((dispstat >> 5) & 1) != 0 {
+			self.hardware_interrupt(INT_VCOUNT);
+		}
+	}
+
 	fn check_dmas(&mut self, timing: u16) {
 		// We only check if the DMA registers are dirty if the timing is immediate
 		// otherwise we try to start the DMA anyway.
@@ -284,6 +291,7 @@ impl Gba {
 		let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 		if ((dispstat >> 8) & 0xf) == vcount {
 			dispstat |= 0x4; // Sets the V-Counter flag
+			self.try_fire_vcounter_int();
 		} else {
 			dispstat &= !0x4; // Clears the V-Counter flag
 		}
