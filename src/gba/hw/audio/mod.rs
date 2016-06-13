@@ -146,27 +146,27 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 					debugger.sound_channel_a_plot.plot(left as f32);
 					
 					if cpu.memory.internal_regs.audio_fifo_a.enable_left {
-						sig_left += left;
+						sig_left += left >> 2;
 					}
 
 					if cpu.memory.internal_regs.audio_fifo_a.enable_right {
-						sig_right += right;
+						sig_right += right >> 2;
 					}
 				}
 
-				// // DMA Sound B:
-				// {
-				// 	let (left, right) = channel_ab::tick_b(cpu, device, &mut state);
-				//  debugger.sound_channel_b_plot.plot(left as f32);
+				// DMA Sound B:
+				{
+					let (left, right) = channel_ab::tick_b(cpu, device, &mut state);
+					debugger.sound_channel_b_plot.plot(left as f32);
 					
-				// 	if cpu.memory.internal_regs.audio_fifo_b.enable_left {
-				// 		sig_left += left >> 2;
-				// 	}
+					if cpu.memory.internal_regs.audio_fifo_b.enable_left {
+						sig_left += left >> 2;
+					}
 
-				// 	if cpu.memory.internal_regs.audio_fifo_b.enable_right {
-				// 		sig_right += right >> 2;
-				// 	}
-				// }
+					if cpu.memory.internal_regs.audio_fifo_b.enable_right {
+						sig_right += right >> 2;
+					}
+				}
 			}
 
 			frames[idx] = (sig_left, sig_right);

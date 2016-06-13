@@ -29,8 +29,8 @@ pub fn tick_a(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) ->
 }
 
 pub fn tick_b(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
-	cpu.memory.internal_regs.audio_fifo_b.freq_acc += cpu.memory.internal_regs.audio_fifo_b.freq_inc;
 	let mut sample8 = cpu.memory.internal_regs.audio_fifo_b.sample;
+	cpu.memory.internal_regs.audio_fifo_b.freq_acc += cpu.memory.internal_regs.audio_fifo_b.freq_inc;
 	while cpu.memory.internal_regs.audio_fifo_b.freq_acc >= 1.0 {
 		sample8 = cpu.memory.internal_regs.audio_fifo_b.next_sample();
 		cpu.memory.internal_regs.audio_fifo_b.freq_acc -= 1.0
