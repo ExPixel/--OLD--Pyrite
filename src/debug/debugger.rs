@@ -130,10 +130,10 @@ pub fn render_debugger(gba: &mut Gba) {
 	if debugger.ioreg_window {
 		imgui::begin(imstr!("IO Registers"), &mut debugger.ioreg_window, imgui::ImGuiWindowFlags_None);
 		if imgui::collapsing_header(imstr!("DMA"), imstr!("dma_ioreg_clpshr"), true, false) {
-			render_dma_register(gba, 0, ioreg::DMA0CNT_L, ioreg::DMA0CNT_H);
-			render_dma_register(gba, 1, ioreg::DMA1CNT_L, ioreg::DMA1CNT_H);
-			render_dma_register(gba, 2, ioreg::DMA2CNT_L, ioreg::DMA2CNT_H);
-			render_dma_register(gba, 3, ioreg::DMA3CNT_L, ioreg::DMA3CNT_H);
+			render_dma_register(gba, 0, ioreg::DMA0CNT_L, ioreg::DMA0CNT_H, ioreg::DMA0SAD, ioreg::DMA0DAD);
+			render_dma_register(gba, 1, ioreg::DMA1CNT_L, ioreg::DMA1CNT_H, ioreg::DMA1SAD, ioreg::DMA1DAD);
+			render_dma_register(gba, 2, ioreg::DMA2CNT_L, ioreg::DMA2CNT_H, ioreg::DMA2SAD, ioreg::DMA2DAD);
+			render_dma_register(gba, 3, ioreg::DMA3CNT_L, ioreg::DMA3CNT_H, ioreg::DMA3SAD, ioreg::DMA3DAD);
 		}
 
 		if imgui::collapsing_header(imstr!("Timers"), imstr!("timer_ioreg_clpshr"), true, false) {
@@ -260,13 +260,15 @@ pub fn render_timer_register(gba: &mut Gba, timer_index: usize, low: ioreg::IORe
 }
 
 
-pub fn render_dma_register(gba: &mut Gba, channel_index: usize, low: ioreg::IORegister16, high: ioreg::IORegister16) {
+pub fn render_dma_register(gba: &mut Gba, channel_index: usize, low: ioreg::IORegister16, high: ioreg::IORegister16, sad: ioreg::IORegister32, dad: ioreg::IORegister32) {
 	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
 
 	if imgui::tree_node(imstr!("DMA{}", channel_index)) {
 		imgui::columns(2, imstr!("dma_{}_table", channel_index), true);
 		imgui::selectable_fl(imstr!("DMA{}CNT_L", channel_index), ImGuiSelectableFlags_SpanAllColumns);
 		imgui::selectable_fl(imstr!("DMA{}CNT_H", channel_index), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("DMA{}SAD", channel_index), ImGuiSelectableFlags_SpanAllColumns);
+		imgui::selectable_fl(imstr!("DMA{}DAD", channel_index), ImGuiSelectableFlags_SpanAllColumns);
 		imgui::selectable_fl(imstr!("Reload"), ImGuiSelectableFlags_SpanAllColumns);
 		imgui::selectable_fl(imstr!("Repeat"), ImGuiSelectableFlags_SpanAllColumns);
 		imgui::selectable_fl(imstr!("Transfer Len"), ImGuiSelectableFlags_SpanAllColumns);
@@ -284,6 +286,8 @@ pub fn render_dma_register(gba: &mut Gba, channel_index: usize, low: ioreg::IORe
 		imgui::next_column();
 		imgui::text(imstr!("{:04X}", gba.cpu.memory.get_reg(low)));
 		imgui::text(imstr!("{:04X}", gba.cpu.memory.get_reg(high)));
+		imgui::text(imstr!("{:08X}", gba.cpu.memory.get_reg(sad)));
+		imgui::text(imstr!("{:08X}", gba.cpu.memory.get_reg(dad)));
 		{
 			let dma_internal_reg = &gba.cpu.memory.internal_regs.dma_registers[channel_index];
 			imgui::text(imstr!("{}", dma_internal_reg.reload));
