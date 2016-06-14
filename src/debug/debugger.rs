@@ -101,10 +101,10 @@ pub fn render_debugger(gba: &mut Gba) {
 		imgui::text(imstr!("Frame Time: {:.2}ms", debugger.full_frame_time));
 		
 		imgui::plot_histogram(
-			imstr!("Frame Delay"),
+			imstr!("Delay"),
 			&debugger.emulator_delay_plot.data,
 			debugger.emulator_delay_plot.len(), debugger.emulator_delay_plot.offset(), 
-			imstr!("Delay"), 
+			imstr!("Frame Delay"), 
 			debugger.emulator_delay_plot.plot_min, debugger.emulator_delay_plot.plot_max,
 			imgui::vec2(256.0, 128.0), 4
 		);
@@ -148,63 +148,63 @@ pub fn render_debugger(gba: &mut Gba) {
 
 	if debugger.sound_info_window {
 		imgui::begin(imstr!("Emulator Sound"), &mut debugger.sound_info_window, imgui::ImGuiWindowFlags_None);
-		imgui::plot_lines(imstr!("Sound Output"),
+		imgui::plot_lines(imstr!("Signal"),
 			&debugger.sound_plot.data,
 			debugger.sound_plot.len(), debugger.sound_plot.offset(), 
-			imstr!("Signal"), 
+			imstr!("Sound Output"), 
 			debugger.sound_plot.plot_min, debugger.sound_plot.plot_max,
 			imgui::vec2(256.0, 128.0), 4);
 
 		if imgui::collapsing_header(imstr!("Channel 1"), imstr!("sc1_clpshr"), true, false) {
-			imgui::plot_lines(imstr!("Sound Channel 1"),
+			imgui::plot_lines(imstr!("Signal"),
 				&debugger.sound_channel_1_plot.data,
 				debugger.sound_channel_1_plot.len(), debugger.sound_channel_1_plot.offset(), 
-				imstr!("Signal"), 
+				imstr!("Sound Channel 1"), 
 				debugger.sound_channel_1_plot.plot_min, debugger.sound_channel_1_plot.plot_max,
 				imgui::vec2(256.0, 128.0), 4);
 		}
 
 		if imgui::collapsing_header(imstr!("Channel 2"), imstr!("sc2_clpshr"), true, false) {
-			imgui::plot_lines(imstr!("Sound Channel 2"),
+			imgui::plot_lines(imstr!("Signal"),
 				&debugger.sound_channel_2_plot.data,
 				debugger.sound_channel_2_plot.len(), debugger.sound_channel_2_plot.offset(), 
-				imstr!("Signal"), 
+				imstr!("Sound Channel 2"), 
 				debugger.sound_channel_2_plot.plot_min, debugger.sound_channel_2_plot.plot_max,
 				imgui::vec2(256.0, 128.0), 4);
 		}
 
 		if imgui::collapsing_header(imstr!("Channel 3"), imstr!("sc3_clpshr"), true, false) {
-			imgui::plot_lines(imstr!("Sound Channel 3"),
+			imgui::plot_lines(imstr!("Signal"),
 				&debugger.sound_channel_3_plot.data,
 				debugger.sound_channel_3_plot.len(), debugger.sound_channel_3_plot.offset(), 
-				imstr!("Signal"), 
+				imstr!("Sound Channel 3"), 
 				debugger.sound_channel_3_plot.plot_min, debugger.sound_channel_3_plot.plot_max,
 				imgui::vec2(256.0, 128.0), 4);
 		}
 
 		if imgui::collapsing_header(imstr!("Channel 4"), imstr!("sc4_clpshr"), true, false) {
-			imgui::plot_lines(imstr!("Sound Channel 4"),
+			imgui::plot_lines(imstr!("Signal"),
 				&debugger.sound_channel_4_plot.data,
 				debugger.sound_channel_4_plot.len(), debugger.sound_channel_4_plot.offset(), 
-				imstr!("Signal"), 
+				imstr!("Sound Channel 4"), 
 				debugger.sound_channel_4_plot.plot_min, debugger.sound_channel_4_plot.plot_max,
 				imgui::vec2(256.0, 128.0), 4);
 		}
 
 		if imgui::collapsing_header(imstr!("Channel A"), imstr!("sca_clpshr"), true, false) {
-			imgui::plot_lines(imstr!("Sound Channel A"),
+			imgui::plot_lines(imstr!("Signal"),
 				&debugger.sound_channel_a_plot.data,
 				debugger.sound_channel_a_plot.len(), debugger.sound_channel_a_plot.offset(), 
-				imstr!("Signal"), 
+				imstr!("Sound Channel A"), 
 				debugger.sound_channel_a_plot.plot_min, debugger.sound_channel_a_plot.plot_max,
 				imgui::vec2(256.0, 128.0), 4);
 		}
 
 		if imgui::collapsing_header(imstr!("Channel B"), imstr!("scb_clpshr"), true, false) {
-			imgui::plot_lines(imstr!("Sound Channel B"),
+			imgui::plot_lines(imstr!("Signal"),
 				&debugger.sound_channel_b_plot.data,
 				debugger.sound_channel_b_plot.len(), debugger.sound_channel_b_plot.offset(), 
-				imstr!("Signal"), 
+				imstr!("Sound Channel B"), 
 				debugger.sound_channel_b_plot.plot_min, debugger.sound_channel_b_plot.plot_max,
 				imgui::vec2(256.0, 128.0), 4);
 		}
