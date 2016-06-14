@@ -132,19 +132,17 @@ impl Gba {
 
 	pub fn run(&mut self) {
 		self.init();
-		let mut frame: u64 = 0;
 		'running: loop {
 			if LIMIT_FPS {
 				let start_time = time::precise_time_ns();
-				self.tick(frame);
+				self.tick();
 				let delta = time::precise_time_ns() - start_time;
 				let sleep_time_millis = if delta > FPS_60_DELTA_NS { 0 } else { FPS_60_DELTA_NS - delta } / 1000000;
 				thread::sleep(Duration::from_millis(sleep_time_millis));
 			} else { // #TODO remove debug code.
-				self.tick(frame);
+				self.tick();
 			}
 			if self.request_exit { break 'running; }
-			frame += 1;
 		}
 		self.request_exit = false; // in case we don't actually close here.
 
@@ -155,7 +153,7 @@ impl Gba {
 		debug_info!("-- Shutdown successfully.");
 	}
 
-	pub fn tick(&mut self, frame: u64) {
+	pub fn tick(&mut self) {
 		let frame_start_time = time::precise_time_ns();
 		if !self.extras.paused {
 			self.frame();

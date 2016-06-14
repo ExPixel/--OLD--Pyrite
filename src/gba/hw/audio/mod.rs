@@ -13,7 +13,6 @@ use super::super::core::cpu::ArmCpu;
 use super::super::core::memory::*;
 use super::super::device::audio::AudioDevice;
 use ::util::measure::*;
-use ::debug::debugger;
 
 
 const AMPLITUDE_OUTPUTS: [i16; 32] = [
@@ -34,7 +33,6 @@ const PSG_VOLUME_MULS: [f32; 8] = [
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 	measure_start(MEASURE_AUDIO_TICK_TIME);
 	measure_iteration(MEASURE_AUDIO_TICK_TIME);
-	let debugger = debugger::get_debugger();
 
 	device.ring_buffer.try_write(|frames| {
 		let soundcnt_l = cpu.memory.get_reg(ioreg::SOUNDCNT_L);
@@ -87,8 +85,8 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 
 			// DMA Sound:
 			if (soundcnt_x & 0x80) != 0 {
-				mixer.ca = channel_ab::tick_a(cpu, device);
-				mixer.cb = channel_ab::tick_b(cpu, device);
+				mixer.ca = channel_ab::tick_a(cpu);
+				mixer.cb = channel_ab::tick_b(cpu);
 			} else {
 				mixer.ca = 0;
 				mixer.cb = 0;
@@ -162,15 +160,17 @@ impl GbaAudioMixer {
 		psg_left >>= psg_volume_shift;
 		psg_right >>= psg_volume_shift;
 
-		let dma_a_volume_shift = 1 - ((self.soundcnt_h >> 2) & 1);
-		let dma_a = self.ca >> dma_a_volume_shift;
-		if (self.soundcnt_h & 0x100) != 0 { dma_right += dma_a; }
-		if (self.soundcnt_h & 0x200) != 0 { dma_left += dma_a; }
+		if (self.soundcnt_x & 0x80) != 0 {
+			let dma_a_volume_shift = 1 - ((self.soundcnt_h >> 2) & 1);
+			let dma_a = self.ca >> dma_a_volume_shift;
+			if (self.soundcnt_h & 0x100) != 0 { dma_right += dma_a; }
+			if (self.soundcnt_h & 0x200) != 0 { dma_left += dma_a; }
 
-		let dma_b_v_volume_shift = 1 - ((self.soundcnt_h >> 3) & 1);
-		let dma_b = self.cb >> dma_b_v_volume_shift;
-		if (self.soundcnt_h & 0x1000) != 0 { dma_right += dma_b; }
-		if (self.soundcnt_h & 0x2000) != 0 { dma_left += dma_b; }
+			let dma_b_v_volume_shift = 1 - ((self.soundcnt_h >> 3) & 1);
+			let dma_b = self.cb >> dma_b_v_volume_shift;
+			if (self.soundcnt_h & 0x1000) != 0 { dma_right += dma_b; }
+			if (self.soundcnt_h & 0x2000) != 0 { dma_left += dma_b; }
+		}
 
 		let left = psg_left + dma_left;
 		let right = psg_right + dma_right;
@@ -189,42 +189,16 @@ impl GbaAudioMixer {
 
 		(left, right)
 	}
-/*
-
-4000080h - SOUNDCNT_L (NR50, NR51) - Channel L/R Volume/Enable (R/W)
-  Bit   Expl.
-  0-2   Sound 1-4 Master Volume RIGHT (0-7)
-  3     Not used
-  4-6   Sound 1-4 Master Volume LEFT (0-7)
-  7     Not used
-  8-11  Sound 1-4 Enable Flags RIGHT (each Bit 8-11, 0=Disable, 1=Enable)
-  12-15 Sound 1-4 Enable Flags LEFT (each Bit 12-15, 0=Disable, 1=Enable)
-
-4000082h - SOUNDCNT_H (GBA only) - DMA Sound Control/Mixing (R/W)
-  Bit   Expl.
-  0-1   Sound # 1-4 Volume   (0=25%, 1=50%, 2=100%, 3=Prohibited)
-  2     DMA Sound A Volume   (0=50%, 1=100%)
-  3     DMA Sound B Volume   (0=50%, 1=100%)
-  4-7   Not used
-  8     DMA Sound A Enable RIGHT (0=Disable, 1=Enable)
-  9     DMA Sound A Enable LEFT  (0=Disable, 1=Enable)
-  10    DMA Sound A Timer Select (0=Timer 0, 1=Timer 1)
-  11    DMA Sound A Reset FIFO   (1=Reset)
-  12    DMA Sound B Enable RIGHT (0=Disable, 1=Enable)
-  13    DMA Sound B Enable LEFT  (0=Disable, 1=Enable)
-  14    DMA Sound B Timer Select (0=Timer 0, 1=Timer 1)
-  15    DMA Sound B Reset FIFO   (1=Reset)
-*/
 }
 
 fn apply_volume(sample: i16, volume: f32) -> i16 {
 	((sample as f32) * volume) as i16
 }
 
-fn apply_volume_stereo(sample: i16, volume: f32) -> (i16, i16) {
-	let r = ((sample as f32) * volume) as i16;
-	return (r, r)
-}
+// fn apply_volume_stereo(sample: i16, volume: f32) -> (i16, i16) {
+// 	let r = ((sample as f32) * volume) as i16;
+// 	return (r, r)
+// }
 
 fn get_freq_len_duty(flen: f32, duty: u16) -> f32 {
 	match duty {

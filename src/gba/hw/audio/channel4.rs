@@ -47,7 +47,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) -> usize {
 
 	if !channel.length_flag || channel.sound_length_time_acc > 0 {
 		channel.freq_acc += channel.freq_inc;
-		let mut out = channel.lfsr & 1;
+		let out = channel.lfsr & 1;
 		while channel.freq_acc >= 1.0 {
 			if (channel.lfsr & 1) != 0 {
 				channel.lfsr = ((channel.lfsr >> 1) ^ channel.lfsr_xor) & channel.lfsr_mask;

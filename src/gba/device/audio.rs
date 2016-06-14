@@ -2,7 +2,6 @@ use portaudio;
 use std::thread;
 use std::sync::Arc;
 use ::util::async_ring_buffer::AsyncRingBuffer;
-use std;
 // use std::f64::consts::PI;
 
 const CHANNELS: i32 = 2;
