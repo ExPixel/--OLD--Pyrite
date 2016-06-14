@@ -31,30 +31,6 @@ const PSG_VOLUME_MULS: [f32; 8] = [
 	0.5714285714285714, 0.7142857142857143, 0.8571428571428571, 1.0
 ];
 
-// There is a lot of stuff I don't want to be calculating
-// over and over because a lot of division is involved,
-// so I cache the results in this struct and just pass this
-// around instead.
-// #TODO these can be moved to their respective channels.
-#[derive(Default)]
-pub struct AudioState {
-	// Channel 1:
-	c1_freq_len: f32,
-	c1_freq_len_duty: f32,
-	c1_volume_multiplier: f32,
-
-	// Channel 2:
-	c2_freq_len: f32,
-	c2_freq_len_duty: f32,
-	c2_volume_multiplier: f32,
-
-	// Channel 3:
-	c3_volume_multiplier: f32,
-
-	//Channel 4:
-	c4_volume_multiplier: f32
-}
-
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 	measure_start(MEASURE_AUDIO_TICK_TIME);
 	measure_iteration(MEASURE_AUDIO_TICK_TIME);
@@ -65,22 +41,21 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 		let soundcnt_h = cpu.memory.get_reg(ioreg::SOUNDCNT_H);
 		let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
 
-		let mut state: AudioState = Default::default();
 		let mut mixer = GbaAudioMixer::new(soundcnt_l, soundcnt_h, soundcnt_x);
 		mixer.init();
 
-		channel1::init(cpu, device, &mut state);
-		channel2::init(cpu, device, &mut state);
-		channel3::init(cpu, device, &mut state);
-		channel4::init(cpu, device, &mut state);
-		channel_ab::init(cpu, device, &mut state);
+		channel1::init(cpu, device);
+		channel2::init(cpu, device);
+		channel3::init(cpu, device);
+		channel4::init(cpu, device);
+		channel_ab::init(cpu, device);
 
 		for idx in 0..frames.len() {
 			mixer.psg_count = 0;
 
 			// Sound 1:
 			if cpu.memory.internal_regs.audio_channel1.playing {
-				mixer.c1 = AMPLITUDE_OUTPUTS[channel1::tick(cpu, device, &mut state)];
+				mixer.c1 = AMPLITUDE_OUTPUTS[channel1::tick(cpu, device)];
 				mixer.psg_count += 1;
 			} else {
 				mixer.c1 = 0;
@@ -88,7 +63,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 
 			// Sound 2:
 			if cpu.memory.internal_regs.audio_channel2.playing {
-				mixer.c2 = AMPLITUDE_OUTPUTS[channel2::tick(cpu, device, &mut state)];
+				mixer.c2 = AMPLITUDE_OUTPUTS[channel2::tick(cpu, device)];
 				mixer.psg_count += 1;
 			} else {
 				mixer.c2 = 0;
@@ -96,7 +71,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 
 			// Sound 3:
 			if cpu.memory.internal_regs.audio_channel3.playing {
-				mixer.c3 = channel3::tick(cpu, device, &mut state);
+				mixer.c3 = channel3::tick(cpu, device);
 				mixer.psg_count += 1;
 			} else {
 				mixer.c3 = 0;
@@ -104,7 +79,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 
 			// Sound 4:
 			if cpu.memory.internal_regs.audio_channel4.playing {
-				mixer.c4 = AMPLITUDE_OUTPUTS[channel4::tick(cpu, device, &mut state)];
+				mixer.c4 = AMPLITUDE_OUTPUTS[channel4::tick(cpu, device)];
 				mixer.psg_count += 1;
 			} else {
 				mixer.c4 = 0;
@@ -112,8 +87,8 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 
 			// DMA Sound:
 			if (soundcnt_x & 0x80) != 0 {
-				mixer.ca = channel_ab::tick_a(cpu, device, &mut state);
-				mixer.cb = channel_ab::tick_b(cpu, device, &mut state);
+				mixer.ca = channel_ab::tick_a(cpu, device);
+				mixer.cb = channel_ab::tick_b(cpu, device);
 			} else {
 				mixer.ca = 0;
 				mixer.cb = 0;

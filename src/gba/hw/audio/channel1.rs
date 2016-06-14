@@ -2,10 +2,10 @@ use super::super::super::core::cpu::ArmCpu;
 use super::super::super::device::audio::AudioDevice;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::GbaChannel1;
-use super::{AudioState, get_freq_len_duty};
+use super::get_freq_len_duty;
 use std;
 
-pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
+pub fn init(cpu: &mut ArmCpu, device: &AudioDevice) {
 	let channel: &mut GbaChannel1 = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel1 as *mut GbaChannel1) };
 
 	if channel.initial {
@@ -13,13 +13,11 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 		channel.envelope_time_acc = 0;
 		channel.current_volume = channel.initial_volume;
 		channel.sound_length_time_acc = device.millis_to_frames(3, 9) * (64 - channel.sound_length as u32);
-		state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
 		channel.initial = false;
 	}
 
-	state.c1_freq_len = device.sample_rate_f / max!(channel.frequency_f, 1.0);
-	state.c1_freq_len_duty = get_freq_len_duty(state.c1_freq_len, channel.wave_pattern_duty);
-	state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
+	channel.freq_len = device.sample_rate_f / max!(channel.frequency_f, 1.0);
+	channel.freq_len_duty = get_freq_len_duty(channel.freq_len, channel.wave_pattern_duty);
 
 	channel.playing = !channel.length_flag || channel.sound_length_time_acc > 0;
 	if !channel.playing {
@@ -31,7 +29,7 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	}
 }
 
-pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> usize {
+pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) -> usize {
 	let channel: &mut GbaChannel1 = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel1 as *mut GbaChannel1) };
 	if !channel.length_flag || channel.sound_length_time_acc > 0 {
 		// Sweeps:
@@ -58,8 +56,8 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> u
 				channel.frequency = f;
 				channel.frequency_f = 131072.0 / (2048.0 - channel.frequency as f32);
 
-				state.c1_freq_len = device.sample_rate_f / channel.frequency_f;
-				state.c1_freq_len_duty = get_freq_len_duty(state.c1_freq_len, channel.wave_pattern_duty);
+				channel.freq_len = device.sample_rate_f / channel.frequency_f;
+				channel.freq_len_duty = get_freq_len_duty(channel.freq_len, channel.wave_pattern_duty);
 				channel.sweep_time_acc = 0;
 			}
 		}
@@ -71,17 +69,15 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> u
 			if channel.envelope_time_acc >= envelope_time_frames {
 				if channel.envelope_inc && channel.current_volume < 15 {
 					channel.current_volume += 1;
-					state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
 				} else if (!channel.envelope_inc) && channel.current_volume > 0 {
 					channel.current_volume -= 1;
-					state.c1_volume_multiplier = (channel.current_volume as f32) / 15.0;
 				}
 				channel.envelope_time_acc = 0;
 			}
 		}
 
 		channel.frequency_step += 1.0; // 0.74303854875, 1.34582519531
-		if channel.frequency_step > state.c1_freq_len {
+		if channel.frequency_step > channel.freq_len {
 			channel.frequency_step = 0.0;
 		}
 
@@ -93,7 +89,7 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> u
 			}
 		}
 
-		return if channel.frequency_step < state.c1_freq_len_duty {
+		return if channel.frequency_step < channel.freq_len_duty {
 			channel.current_volume as usize
 		} else {
 			channel.current_volume as usize + 16

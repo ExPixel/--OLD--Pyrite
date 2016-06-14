@@ -2,16 +2,14 @@ use super::super::super::core::cpu::ArmCpu;
 use super::super::super::device::audio::AudioDevice;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::GbaChannel4;
-use super::{AudioState};
 use std;
 
-pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
+pub fn init(cpu: &mut ArmCpu, device: &AudioDevice) {
 	let channel: &mut GbaChannel4  = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel4  as *mut GbaChannel4 ) };
 	
 	if channel.initial {
 		channel.envelope_time_acc = 0;
 		channel.current_volume = channel.initial_volume;
-		state.c4_volume_multiplier = (channel.current_volume as f32) / 15.0;
 
 		let r = if channel.dividing_ratio == 0 { 0.5 } else { channel.dividing_ratio as f32 };
 		channel.intermediate_freq = 524_288.0 / r;
@@ -34,8 +32,6 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	let freq = channel.intermediate_freq / ((1 << (channel.shift_clock_freq + 1)) as f32);
 	channel.freq_inc = freq / device.sample_rate_f;
 
-	state.c4_volume_multiplier = (channel.current_volume as f32) / 15.0;
-
 	cpu.memory.internal_regs.audio_channel4.playing = !channel.length_flag || channel.sound_length_time_acc > 0;
 	if !channel.playing {
 		let soundcnt_x = cpu.memory.get_reg(ioreg::SOUNDCNT_X);
@@ -46,7 +42,7 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	}
 }
 
-pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> usize {
+pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) -> usize {
 	let channel: &mut GbaChannel4  = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel4  as *mut GbaChannel4 ) };
 
 	if !channel.length_flag || channel.sound_length_time_acc > 0 {
@@ -68,10 +64,8 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> u
 			if channel.envelope_time_acc >= envelope_time_frames {
 				if channel.envelope_inc && channel.current_volume < 15 {
 					channel.current_volume += 1;
-					state.c4_volume_multiplier = (channel.current_volume as f32) / 15.0;
 				} else if (!channel.envelope_inc) && channel.current_volume > 0 {
 					channel.current_volume -= 1;
-					state.c4_volume_multiplier = (channel.current_volume as f32) / 15.0;
 				}
 				channel.envelope_time_acc = 0;
 			}
