@@ -2,7 +2,7 @@ use super::super::super::core::cpu::ArmCpu;
 use super::super::super::device::audio::AudioDevice;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::GbaChannel3;
-use super::{AudioState, apply_volume_stereo};
+use super::{AudioState, apply_volume};
 use std;
 
 pub fn convert_sample(sample4: u16) -> i16 {
@@ -51,7 +51,7 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	}
 }
 
-pub fn tick(cpu: &mut ArmCpu, _: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
+pub fn tick(cpu: &mut ArmCpu, _: &AudioDevice, state: &mut AudioState) -> i16 {
 	let channel: &mut GbaChannel3 = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel3 as *mut GbaChannel3) };
 	if channel.channel_on && (!channel.length_flag || channel.sound_length_time_acc > 0) {
 		let wav_idx = channel.current_wav_index & 0x1f;
@@ -90,7 +90,7 @@ pub fn tick(cpu: &mut ArmCpu, _: &AudioDevice, state: &mut AudioState) -> (i16, 
 			}
 		}
 
-		return apply_volume_stereo(convert_sample(sample), state.c3_volume_multiplier);
+		return apply_volume(convert_sample(sample), state.c3_volume_multiplier);
 	}
-	return apply_volume_stereo(std::i16::MIN, state.c3_volume_multiplier);
+	return apply_volume(std::i16::MIN, state.c3_volume_multiplier);
 }

@@ -25,7 +25,7 @@ pub struct AudioDevice {
 
 impl AudioDevice {
 	pub fn new() -> AudioDevice {
-		let generator_fn = || [(std::i16::MIN, std::i16::MIN); AUDIO_DATA_BUFFER_SIZE as usize];
+		let generator_fn = || [(0, 0); AUDIO_DATA_BUFFER_SIZE as usize];
 		AudioDevice {
 			ring_buffer: Arc::new(AsyncRingBuffer::new(AUDIO_DATA_BUFFER_COUNT, generator_fn)),
 			output_thread: None,

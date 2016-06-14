@@ -2,7 +2,7 @@ use super::super::super::core::cpu::ArmCpu;
 use super::super::super::device::audio::AudioDevice;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::GbaChannel1;
-use super::{AudioState, apply_volume_stereo, get_freq_len_duty};
+use super::{AudioState, get_freq_len_duty};
 use std;
 
 pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
@@ -31,7 +31,7 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	}
 }
 
-pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
+pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> usize {
 	let channel: &mut GbaChannel1 = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel1 as *mut GbaChannel1) };
 	if !channel.length_flag || channel.sound_length_time_acc > 0 {
 		// Sweeps:
@@ -94,14 +94,10 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (
 		}
 
 		return if channel.frequency_step < state.c1_freq_len_duty {
-			// Does the multiplication on a u16 and then converts back to i16
-			// so that we can get a value in the range of -32,767 to 32,767
-			// subtracts 1 because the highest number that can come out of the other end is actually
-			// 32768 which we don't want.
-			apply_volume_stereo(std::i16::MAX, state.c1_volume_multiplier)
+			channel.current_volume as usize
 		} else {
-			apply_volume_stereo(std::i16::MIN, state.c1_volume_multiplier)
+			channel.current_volume as usize + 16
 		}
 	}
-	return apply_volume_stereo(std::i16::MIN, state.c1_volume_multiplier); // Produce no sound because the channel is off.
+	return channel.current_volume as usize + 16
 }

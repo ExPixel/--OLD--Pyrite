@@ -3,7 +3,7 @@ use super::super::super::device::audio::AudioDevice;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::GbaChannel4;
 use super::super::super::hw::dma;
-use super::{AudioState, apply_volume_stereo};
+use super::{AudioState};
 use std;
 
 fn convert_sample(sample8: i8) -> i16 {
@@ -17,7 +17,7 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 		cpu.memory.internal_regs.audio_fifo_b.frequency / device.sample_rate_f;
 }
 
-pub fn tick_a(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
+pub fn tick_a(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> i16 {
 	cpu.memory.internal_regs.audio_fifo_a.freq_acc += cpu.memory.internal_regs.audio_fifo_a.freq_inc;
 	let mut sample8 = cpu.memory.internal_regs.audio_fifo_a.sample;
 	while cpu.memory.internal_regs.audio_fifo_a.freq_acc >= 1.0 {
@@ -25,10 +25,10 @@ pub fn tick_a(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) ->
 		cpu.memory.internal_regs.audio_fifo_a.freq_acc -= 1.0
 	}
 	let sample16 = convert_sample(sample8);
-	return (sample16, sample16);
+	return sample16;
 }
 
-pub fn tick_b(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
+pub fn tick_b(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> i16 {
 	let mut sample8 = cpu.memory.internal_regs.audio_fifo_b.sample;
 	cpu.memory.internal_regs.audio_fifo_b.freq_acc += cpu.memory.internal_regs.audio_fifo_b.freq_inc;
 	while cpu.memory.internal_regs.audio_fifo_b.freq_acc >= 1.0 {
@@ -36,7 +36,7 @@ pub fn tick_b(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) ->
 		cpu.memory.internal_regs.audio_fifo_b.freq_acc -= 1.0
 	}
 	let sample16 = convert_sample(sample8);
-	return (sample16, sample16);
+	return sample16;
 }
 
 fn start_dma_fifo_addr_check(cpu: &mut ArmCpu, fifo_addr: u32, dma_index: usize) {

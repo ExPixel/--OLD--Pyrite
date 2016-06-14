@@ -2,7 +2,7 @@ use super::super::super::core::cpu::ArmCpu;
 use super::super::super::device::audio::AudioDevice;
 use super::super::super::core::memory::*;
 use super::super::super::core::memory::ioreg::GbaChannel4;
-use super::{AudioState, apply_volume_stereo};
+use super::{AudioState};
 use std;
 
 pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
@@ -46,7 +46,7 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) {
 	}
 }
 
-pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (i16, i16) {
+pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> usize {
 	let channel: &mut GbaChannel4  = unsafe { std::mem::transmute(&mut cpu.memory.internal_regs.audio_channel4  as *mut GbaChannel4 ) };
 
 	if !channel.length_flag || channel.sound_length_time_acc > 0 {
@@ -86,11 +86,11 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice, state: &mut AudioState) -> (
 		}
 
 		if out != 0 {
-			apply_volume_stereo(std::i16::MAX, state.c4_volume_multiplier)
+			channel.current_volume as usize
 		} else {
-			apply_volume_stereo(std::i16::MIN, state.c4_volume_multiplier)
+			channel.current_volume as usize + 16
 		}
 	} else {
-		(std::i16::MIN, std::i16::MIN)
+		return channel.current_volume as usize + 16
 	}
 }
