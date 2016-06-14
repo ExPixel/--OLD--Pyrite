@@ -1,7 +1,56 @@
+pub mod console;
+
 use rust_imgui as imgui;
+use rust_imgui::ImVec4;
 use ::gba::Gba;
 use ::gba::core::memory::*;
 use std::cell::UnsafeCell;
+use self::console::ImGuiConsole;
+
+pub const CONSOLE_COLOR_NORMAL: ImVec4 = ImVec4 { x: 1.0, y: 1.0, z: 1.0, w: 1.0 }; // #FFFFFF
+pub const CONSOLE_COLOR_WARNING: ImVec4 = ImVec4 { x: 1.0, y: 0.922, z: 0.231, w: 1.0 }; // #FFEB3B
+pub const CONSOLE_COLOR_ERROR: ImVec4 = ImVec4 { x: 0.957, y: 0.263, z: 0.212, w: 1.0 }; // #F44336
+
+#[macro_export]
+macro_rules! console_log_with_color {
+	($color:expr, $message:expr, $($arg:tt)+) => (
+		console_log_with_color!($color, format!($message, $($arg)+));
+	);
+
+	($color:expr, $message:expr) => (
+		::debug::debugger::get_debugger().console.log($color, $message);
+	);
+}
+
+macro_rules! console_log {
+	($message:expr, $($arg:tt)+) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_NORMAL, $message, $($arg)+);
+	);
+
+	($message:expr) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_NORMAL, $message);
+	);
+}
+
+macro_rules! console_warn {
+	($message:expr, $($arg:tt)+) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_WARNING, $message, $($arg)+);
+	);
+
+	($message:expr) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_WARNING, $message);
+	);
+}
+
+macro_rules! console_error {
+	($message:expr, $($arg:tt)+) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_ERROR, $message, $($arg)+);
+	);
+
+	($message:expr) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_ERROR, $message);
+	);
+}
 
 pub struct DebugDataRuleBreaker {
 	data: UnsafeCell<DebugData>
@@ -26,6 +75,9 @@ pub fn get_debugger() -> &'static mut DebugData {
 }
 
 pub struct DebugData {
+	pub console: ImGuiConsole,
+	pub console_window_opened: bool,
+
 	pub frame_build_time: f64,
 	pub frame_render_time: f64,
 	pub full_frame_time: f64,
@@ -33,7 +85,7 @@ pub struct DebugData {
 	pub emulator_delay_plot: DataPlot<f32>,
 
 	// SOUND:
-	pub sound_info_window: bool,
+	pub sound_info_window_opened: bool,
 	pub sound_channel_1_plot: DataPlot<f32>,
 	pub sound_channel_2_plot: DataPlot<f32>,
 	pub sound_channel_3_plot: DataPlot<f32>,
@@ -42,19 +94,22 @@ pub struct DebugData {
 	pub sound_channel_b_plot: DataPlot<f32>,
 	pub sound_plot: DataPlot<f32>,
 
-	ioreg_window: bool,
+	ioreg_window_opened: bool,
 }
 
 impl DebugData {
 	pub fn new() -> DebugData {
 		DebugData {
+			console: ImGuiConsole::new(100, true),
+			console_window_opened: false,
+
 			frame_build_time: 0.0,
 			frame_render_time: 0.0,
 			full_frame_time: 0.0,
 			emulator_performance_opened: false,
 			emulator_delay_plot: DataPlot::new(64, 0.0, 100.0),
 
-			sound_info_window: false,
+			sound_info_window_opened: false,
 			sound_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 			sound_channel_1_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 			sound_channel_2_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
@@ -63,7 +118,7 @@ impl DebugData {
 			sound_channel_a_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 			sound_channel_b_plot: DataPlot::with_skip(128, -32768.0, 32767.0, 16),
 
-			ioreg_window: false,
+			ioreg_window_opened: false,
 		}
 	}
 }
@@ -72,6 +127,12 @@ pub fn render_debugger(gba: &mut Gba) {
 	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
 
 	let debugger = get_debugger();
+
+	// DEBUG:
+	{
+		imgui::text(imstr!("FIFO A FREQ: {}", gba.cpu.memory.internal_regs.audio_fifo_a.frequency));
+		imgui::text(imstr!("FIFO B FREQ: {}", gba.cpu.memory.internal_regs.audio_fifo_b.frequency));
+	}
 
 	if imgui::get_io().mouse_clicked[1] != 0 {
 		imgui::open_popup(imstr!("main_menu"));
@@ -84,14 +145,27 @@ pub fn render_debugger(gba: &mut Gba) {
 		}
 
 		if imgui::menu_item(imstr!("Sound")) {
-			debugger.sound_info_window = true;
+			debugger.sound_info_window_opened = true;
 		}
 
 		if imgui::menu_item(imstr!("IO Registers")) {
-			debugger.ioreg_window = true;
+			debugger.ioreg_window_opened = true;
+		}
+
+		if imgui::menu_item(imstr!("Console")) {
+			debugger.console_window_opened = true;
 		}
 
 		imgui::end_popup();
+	}
+
+	if debugger.console_window_opened {
+		imgui::set_next_window_size(imgui::vec2(320.0, 400.0), imgui::ImGuiSetCond::FirstUseEver);
+		imgui::begin(imstr!("Console"), &mut debugger.console_window_opened, imgui::ImGuiWindowFlags_None);
+		imgui::push_style_var_vec(imgui::ImGuiStyleVar::ItemSpacing, imgui::vec2(4.0, 1.0));
+		debugger.console.render();
+		imgui::pop_style_var(1);
+		imgui::end();
 	}
 
 	if debugger.emulator_performance_opened {
@@ -116,8 +190,8 @@ pub fn render_debugger(gba: &mut Gba) {
 		imgui::end();
 	}
 
-	if debugger.ioreg_window {
-		imgui::begin(imstr!("IO Registers"), &mut debugger.ioreg_window, imgui::ImGuiWindowFlags_None);
+	if debugger.ioreg_window_opened {
+		imgui::begin(imstr!("IO Registers"), &mut debugger.ioreg_window_opened, imgui::ImGuiWindowFlags_None);
 		if imgui::collapsing_header(imstr!("DMA"), imstr!("dma_ioreg_clpshr"), true, false) {
 			render_dma_register(gba, 0, ioreg::DMA0CNT_L, ioreg::DMA0CNT_H, ioreg::DMA0SAD, ioreg::DMA0DAD);
 			render_dma_register(gba, 1, ioreg::DMA1CNT_L, ioreg::DMA1CNT_H, ioreg::DMA1SAD, ioreg::DMA1DAD);
@@ -146,8 +220,8 @@ pub fn render_debugger(gba: &mut Gba) {
 		imgui::end();
 	}
 
-	if debugger.sound_info_window {
-		imgui::begin(imstr!("Emulator Sound"), &mut debugger.sound_info_window, imgui::ImGuiWindowFlags_None);
+	if debugger.sound_info_window_opened {
+		imgui::begin(imstr!("Emulator Sound"), &mut debugger.sound_info_window_opened, imgui::ImGuiWindowFlags_None);
 		imgui::plot_lines(imstr!("Signal"),
 			&debugger.sound_plot.data,
 			debugger.sound_plot.len(), debugger.sound_plot.offset(), 
