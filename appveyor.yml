@@ -17,6 +17,7 @@ install:
   - curl -kLO https://github.com/adfernandes/precompiled-portaudio-windows/raw/master/portaudio-r1891-build.zip
   - 7z x portaudio-r1891-build.zip
   - set PATH=%CD%\portaudio-r1891-build;%PATH%
+  - set LIB=%CD%\portaudio-r1891-build;%LIB%
   # Printing Rust Information
   - rustc -V
   - cargo -V
