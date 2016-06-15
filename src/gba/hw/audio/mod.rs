@@ -184,7 +184,9 @@ impl GbaAudioMixer {
 			debugger.sound_channel_4_plot.plot(self.c4 as f32);
 			debugger.sound_channel_a_plot.plot(self.ca as f32);
 			debugger.sound_channel_b_plot.plot(self.cb as f32);
-			debugger.sound_plot.plot(left as f32); // #TODO select right if left is 0
+			debugger.sound_plot.plot(
+				if left == 0 { right } else { left } as f32
+			);
 		}
 
 		(left, right)
