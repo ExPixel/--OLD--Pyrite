@@ -7,6 +7,7 @@ use ::gba::Gba;
 use ::gba::core::memory::*;
 use std::cell::UnsafeCell;
 use self::console::ImGuiConsole;
+use std::marker::PhantomData;
 
 pub const CONSOLE_COLOR_NORMAL: ImVec4 = ImVec4 { x: 1.0, y: 1.0, z: 1.0, w: 1.0 }; // #FFFFFF
 pub const CONSOLE_COLOR_WARNING: ImVec4 = ImVec4 { x: 1.0, y: 0.922, z: 0.231, w: 1.0 }; // #FFEB3B
@@ -128,14 +129,6 @@ pub fn render_debugger(gba: &mut Gba) {
 	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
 
 	let debugger = get_debugger();
-
-	// DEBUG:
-	{
-		imgui::text(imstr!("FIFO A FREQ: {}", gba.cpu.memory.internal_regs.audio_fifo_a.frequency));
-		imgui::text(imstr!("FIFO B FREQ: {}", gba.cpu.memory.internal_regs.audio_fifo_b.frequency));
-		imgui::text(imstr!("FIFO A TIMER: {}", gba.cpu.memory.internal_regs.audio_fifo_a.timer));
-		imgui::text(imstr!("FIFO A TIMER: {}", gba.cpu.memory.internal_regs.audio_fifo_b.timer));
-	}
 
 	if imgui::get_io().mouse_clicked[1] != 0 {
 		imgui::open_popup(imstr!("main_menu"));
@@ -344,23 +337,98 @@ pub fn render_dma_register(gba: &mut Gba, channel_index: usize, low: ioreg::IORe
 	}
 }
 
+pub trait IntoExt<T>: Sized {
+    fn into_ext(self) -> T;
+}
+impl IntoExt<f32> for i8 { fn into_ext(self) -> f32 { self as f32 } }
+impl IntoExt<f32> for u8 { fn into_ext(self) -> f32 { self as f32 } }
+impl IntoExt<f32> for i16 { fn into_ext(self) -> f32 { self as f32 } }
+impl IntoExt<f32> for u16 { fn into_ext(self) -> f32 { self as f32 } }
+impl IntoExt<f32> for i32 { fn into_ext(self) -> f32 { self as f32 } }
+impl IntoExt<f32> for u32 { fn into_ext(self) -> f32 { self as f32 } }
+impl IntoExt<f32> for f32 { fn into_ext(self) -> f32 { self } }
+impl IntoExt<f32> for f64 { fn into_ext(self) -> f32 { self as f32 } }
 
-pub struct DataPlot<T: Clone> {
+pub struct DataPlot<T: Clone + Copy + IntoExt<f32>> {
 	label: String,
 	overlay: String,
 
-	data: Vec<T>,
-	plot_max: T,
-	plot_min: T,
+	data: Vec<f32>,
+	plot_max: f32,
+	plot_min: f32,
 	max_size: usize,
 	read_cursor: usize,
 	write_cursor: usize,
 
 	skip: usize,
 	skipped: usize,
+
+	_phantom: PhantomData<T>
 }
 
-impl DataPlot<f32> {
+impl<T: Clone + Copy + IntoExt<f32>> DataPlot<T> {
+	pub fn new<A: Into<String>, B: Into<String>>(label: A, overlay: B, max_size: usize, plot_min: T, plot_max: T) -> DataPlot<T> {
+		Self::with_skip(label, overlay, max_size, plot_min, plot_max, 0)
+	}
+
+	pub fn with_skip<A: Into<String>, B: Into<String>>(label: A, overlay: B, max_size: usize, plot_min: T, plot_max: T, skip: usize) -> DataPlot<T> {
+		let mut _label = label.into();
+		let mut _overlay = overlay.into();
+
+		_label.push('\0');
+		_overlay.push('\0');
+
+		let mut ret = DataPlot {
+			label: _label,
+			overlay: _overlay,
+			data: Vec::with_capacity(max_size),
+			max_size: max_size,
+			read_cursor: 0,
+			write_cursor: 0,
+			plot_min: plot_min.into_ext(),
+			plot_max: plot_max.into_ext(),
+			skip: skip,
+			skipped: 0,
+
+			_phantom: PhantomData,
+		};
+
+		ret.skipped = ret.skip;
+		ret.plot(plot_min.clone());
+		return ret;
+	}
+
+	fn offset(&self) -> i32 {
+		self.read_cursor as i32
+	}
+
+	fn len(&self) -> i32 {
+		self.data.len() as i32
+	}
+
+	pub fn plot(&mut self, point: T) {
+		let point = point.into_ext();
+		self.skipped += 1;
+		if self.skipped >= self.skip {
+			self.skipped = 0;
+			if self.data.len() < self.max_size {
+				self.data.push(point);
+				self.write_cursor += 1;
+				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
+			} else {
+				self.data[self.write_cursor] = point;
+				self.write_cursor += 1;
+				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
+				if self.write_cursor == self.read_cursor {
+					self.read_cursor += 1;
+					if self.read_cursor >= self.max_size {
+						self.read_cursor = 0;
+					}
+				}
+			}
+		}
+	}
+
 	fn render_histogram(&self) {
 		let _label_imstr = ImStr::from_bytes_unchecked(self.label.as_bytes());
 		let _overlay_imstr = ImStr::from_bytes_unchecked(self.overlay.as_bytes());
@@ -381,67 +449,6 @@ impl DataPlot<f32> {
 			_overlay_imstr,
 			self.plot_min, self.plot_max,
 			imgui::vec2(256.0, 128.0), 4);
-	}
-}
-
-impl<T: Clone> DataPlot<T> {
-	pub fn new<A: Into<String>, B: Into<String>>(label: A, overlay: B, max_size: usize, plot_min: T, plot_max: T) -> DataPlot<T> {
-		Self::with_skip(label, overlay, max_size, plot_min, plot_max, 0)
-	}
-
-	pub fn with_skip<A: Into<String>, B: Into<String>>(label: A, overlay: B, max_size: usize, plot_min: T, plot_max: T, skip: usize) -> DataPlot<T> {
-		let mut _label = label.into();
-		let mut _overlay = overlay.into();
-
-		_label.push('\0');
-		_overlay.push('\0');
-
-		let mut ret = DataPlot {
-			label: _label,
-			overlay: _overlay,
-			data: Vec::with_capacity(max_size),
-			max_size: max_size,
-			read_cursor: 0,
-			write_cursor: 0,
-			plot_min: plot_min.clone(),
-			plot_max: plot_max,
-			skip: skip,
-			skipped: 0,
-		};
-
-		ret.skipped = ret.skip;
-		ret.plot(plot_min.clone());
-		return ret;
-	}
-
-	fn offset(&self) -> i32 {
-		self.read_cursor as i32
-	}
-
-	fn len(&self) -> i32 {
-		self.data.len() as i32
-	}
-
-	pub fn plot(&mut self, point: T) {
-		self.skipped += 1;
-		if self.skipped >= self.skip {
-			self.skipped = 0;
-			if self.data.len() < self.max_size {
-				self.data.push(point);
-				self.write_cursor += 1;
-				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
-			} else {
-				self.data[self.write_cursor] = point;
-				self.write_cursor += 1;
-				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
-				if self.write_cursor == self.read_cursor {
-					self.read_cursor += 1;
-					if self.read_cursor >= self.max_size {
-						self.read_cursor = 0;
-					}
-				}
-			}
-		}
 	}
 }
 
