@@ -14,11 +14,11 @@ pub fn init(cpu: &mut ArmCpu, device: &AudioDevice) {
 }
 
 pub fn tick_a(cpu: &mut ArmCpu) -> i16 {
-	cpu.memory.internal_regs.audio_fifo_a.freq_acc += cpu.memory.internal_regs.audio_fifo_a.freq_inc;
 	let mut sample8 = cpu.memory.internal_regs.audio_fifo_a.sample;
+	cpu.memory.internal_regs.audio_fifo_a.freq_acc += cpu.memory.internal_regs.audio_fifo_a.freq_inc;
 	while cpu.memory.internal_regs.audio_fifo_a.freq_acc >= 1.0 {
 		sample8 = cpu.memory.internal_regs.audio_fifo_a.next_sample();
-		cpu.memory.internal_regs.audio_fifo_a.freq_acc -= 1.0
+		cpu.memory.internal_regs.audio_fifo_a.freq_acc -= 1.0;
 	}
 	let sample16 = convert_sample(sample8);
 	return sample16;
@@ -47,8 +47,10 @@ pub fn timer_overflow(cpu: &mut ArmCpu, timer: u16) {
 	const FIFO_B_ADDR: u32 = 0x040000A4;
 
 	if cpu.memory.internal_regs.audio_fifo_a.timer == timer {
-		let sample = cpu.memory.internal_regs.audio_fifo_a.pop();
-		cpu.memory.internal_regs.audio_fifo_a.out_push(sample);
+		if cpu.memory.internal_regs.audio_fifo_a.remaining() > 0 {
+			let sample = cpu.memory.internal_regs.audio_fifo_a.pop();
+			cpu.memory.internal_regs.audio_fifo_a.out_push(sample);
+		}
 		if cpu.memory.internal_regs.audio_fifo_a.remaining() <= 16 {
 			start_dma_fifo_addr_check(cpu, FIFO_A_ADDR, 1);
 			start_dma_fifo_addr_check(cpu, FIFO_A_ADDR, 2);
@@ -56,8 +58,10 @@ pub fn timer_overflow(cpu: &mut ArmCpu, timer: u16) {
 	}
 
 	if cpu.memory.internal_regs.audio_fifo_b.timer == timer {
-		let sample = cpu.memory.internal_regs.audio_fifo_b.pop();
-		cpu.memory.internal_regs.audio_fifo_b.out_push(sample);
+		if cpu.memory.internal_regs.audio_fifo_b.remaining() > 0 {
+			let sample = cpu.memory.internal_regs.audio_fifo_b.pop();
+			cpu.memory.internal_regs.audio_fifo_b.out_push(sample);
+		}
 		if cpu.memory.internal_regs.audio_fifo_b.remaining() <= 16 {
 			start_dma_fifo_addr_check(cpu, FIFO_B_ADDR, 1);
 			start_dma_fifo_addr_check(cpu, FIFO_B_ADDR, 2);
