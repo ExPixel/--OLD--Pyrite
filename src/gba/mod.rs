@@ -176,8 +176,8 @@ impl Gba {
 
 		if self.extras.paused != self.extras.request_pause {
 			self.extras.paused = self.extras.request_pause;
-			if self.extras.paused { println!("Paused."); }
-			else { println!("Unpaused"); }
+			if self.extras.paused { console_warn!("Paused"); }
+			else { console_warn!("Unpaused"); }
 		}
 	}
 
