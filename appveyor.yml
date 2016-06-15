@@ -4,12 +4,20 @@ environment:
   - TARGET: i686-pc-windows-msvc
   - TARGET: i686-pc-windows-gnu
 install:
+  - git submodule update --init --recursive
+  # Installing various utilities
+  - choco install -y curl InnoSetup
+  - set PATH="C:\Program Files\7-Zip";"C:\Program Files (x86)\Inno Setup 5";%PATH%
+  # Installing Rust
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-1.9.0-${env:TARGET}.exe"
   - rust-1.9.0-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
   - SET PATH=%PATH%;C:\MinGW\bin
-  - SET PORTAUDIO_ONLY_STATIC=true
-  - git submodule update --init --recursive
+  # Installing PortAudio
+  - curl -kLO https://github.com/adfernandes/precompiled-portaudio-windows/raw/master/portaudio-r1891-build.zip
+  - 7z x portaudio-r1891-build.zip
+  - set PATH=%CD%\portaudio-r1891-build;%PATH%
+  # Printing Rust Information
   - rustc -V
   - cargo -V
 

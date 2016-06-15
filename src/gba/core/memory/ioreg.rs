@@ -231,6 +231,9 @@ pub struct TimerInternalReg {
 
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct GbaChannel1 {
+	pub freq_len: f32,
+	pub freq_len_duty: f32,
+
 	pub sweep_time_acc: u32,
 
 	// 4000060h - SOUND1CNT_L (NR10) - Channel 1 Sweep register (R/W)
@@ -279,6 +282,9 @@ pub struct GbaChannel1 {
 
 #[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct GbaChannel2 {
+	pub freq_len: f32,
+	pub freq_len_duty: f32,
+
 	// 4000062h - SOUND1CNT_H (NR11, NR12) - Channel 1 Duty/Len/Envelope (R/W)
 	pub sound_length: u16,        // 0-5   W    Sound length; units of (64-n)/256s  (0-63)
 	pub wave_pattern_duty: u16,   // 6-7   R/W  Wave Pattern Duty                   (0-3, see below)
@@ -345,7 +351,9 @@ pub struct GbaChannel3 {
 	pub freq_inc: f32,
 	pub freq_acc: f32,
 
-	pub playing: bool
+	pub c3_volume_multiplier: f32,
+
+	pub playing: bool,
 }
 
 #[derive(Default, RustcEncodable, RustcDecodable)]

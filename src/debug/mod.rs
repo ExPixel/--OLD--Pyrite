@@ -1,5 +1,5 @@
 pub mod armdis;
-pub mod debugger;
+#[macro_use] pub mod debugger;
 pub mod bitdesc;
 #[macro_use] pub mod logging;
 
