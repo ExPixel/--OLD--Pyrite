@@ -2,6 +2,7 @@ use glutin;
 use gl;
 use time;
 use rust_imgui as imgui;
+use ::gba::device::events::vkc_to_idx;
 
 pub struct ImGuiSupport {
 	pub time: u64,
@@ -351,26 +352,28 @@ pub unsafe fn imgui_create_fonts_texture(state: &mut ImGuiSupport) {
 
 /// Setup the ImGui bindings.
 pub fn imgui_init() {
+	use glutin::VirtualKeyCode;
+
 	let io = imgui::get_io();
-	io.key_map[imgui::ImGuiKey::Tab as usize] = 0;
-	io.key_map[imgui::ImGuiKey::LeftArrow as usize] = 1;
-	io.key_map[imgui::ImGuiKey::RightArrow as usize] = 2;
-	io.key_map[imgui::ImGuiKey::UpArrow as usize] = 3;
-	io.key_map[imgui::ImGuiKey::DownArrow as usize] = 4;
-	io.key_map[imgui::ImGuiKey::PageUp as usize] = 5;
-	io.key_map[imgui::ImGuiKey::PageDown as usize] = 6;
-	io.key_map[imgui::ImGuiKey::Home as usize] = 7;
-	io.key_map[imgui::ImGuiKey::End as usize] = 8;
-	io.key_map[imgui::ImGuiKey::Delete as usize] = 9;
-	io.key_map[imgui::ImGuiKey::Backspace as usize] = 10;
-	io.key_map[imgui::ImGuiKey::Enter as usize] = 11;
-	io.key_map[imgui::ImGuiKey::Escape as usize] = 12;
-	io.key_map[imgui::ImGuiKey::A as usize] = 13;
-	io.key_map[imgui::ImGuiKey::C as usize] = 14;
-	io.key_map[imgui::ImGuiKey::V as usize] = 15;
-	io.key_map[imgui::ImGuiKey::X as usize] = 16;
-	io.key_map[imgui::ImGuiKey::Y as usize] = 17;
-	io.key_map[imgui::ImGuiKey::Z as usize] = 18;
+	io.key_map[imgui::ImGuiKey::Tab as usize] = vkc_to_idx(VirtualKeyCode::Tab) as i32;
+	io.key_map[imgui::ImGuiKey::LeftArrow as usize] = vkc_to_idx(VirtualKeyCode::Left) as i32;
+	io.key_map[imgui::ImGuiKey::RightArrow as usize] = vkc_to_idx(VirtualKeyCode::Right) as i32;
+	io.key_map[imgui::ImGuiKey::UpArrow as usize] = vkc_to_idx(VirtualKeyCode::Up) as i32;
+	io.key_map[imgui::ImGuiKey::DownArrow as usize] = vkc_to_idx(VirtualKeyCode::Down) as i32;
+	io.key_map[imgui::ImGuiKey::PageUp as usize] = vkc_to_idx(VirtualKeyCode::PageUp) as i32;
+	io.key_map[imgui::ImGuiKey::PageDown as usize] = vkc_to_idx(VirtualKeyCode::PageDown) as i32;
+	io.key_map[imgui::ImGuiKey::Home as usize] = vkc_to_idx(VirtualKeyCode::Home) as i32;
+	io.key_map[imgui::ImGuiKey::End as usize] = vkc_to_idx(VirtualKeyCode::End) as i32;
+	io.key_map[imgui::ImGuiKey::Delete as usize] = vkc_to_idx(VirtualKeyCode::Delete) as i32;
+	io.key_map[imgui::ImGuiKey::Backspace as usize] = vkc_to_idx(VirtualKeyCode::Back) as i32;
+	io.key_map[imgui::ImGuiKey::Enter as usize] = vkc_to_idx(VirtualKeyCode::Return) as i32;
+	io.key_map[imgui::ImGuiKey::Escape as usize] = vkc_to_idx(VirtualKeyCode::Escape) as i32;
+	io.key_map[imgui::ImGuiKey::A as usize] = vkc_to_idx(VirtualKeyCode::A) as i32;
+	io.key_map[imgui::ImGuiKey::C as usize] = vkc_to_idx(VirtualKeyCode::C) as i32;
+	io.key_map[imgui::ImGuiKey::V as usize] = vkc_to_idx(VirtualKeyCode::V) as i32;
+	io.key_map[imgui::ImGuiKey::X as usize] = vkc_to_idx(VirtualKeyCode::X) as i32;
+	io.key_map[imgui::ImGuiKey::Y as usize] = vkc_to_idx(VirtualKeyCode::Y) as i32;
+	io.key_map[imgui::ImGuiKey::Z as usize] = vkc_to_idx(VirtualKeyCode::Z) as i32;
 }
 
 pub fn imgui_shutdown(state: &mut ImGuiSupport) {
@@ -411,44 +414,32 @@ pub fn imgui_render(state: &ImGuiSupport) {
 	unsafe { imgui_render_draw_lists(state, draw_data) };
 }
 
+pub fn is_key_down(glutin_key: glutin::VirtualKeyCode) -> bool {
+	imgui::is_key_down(vkc_to_idx(glutin_key) as i32)
+}
+
+pub fn is_key_pressed(glutin_key: glutin::VirtualKeyCode, repeat: bool) -> bool {
+	imgui::is_key_pressed(vkc_to_idx(glutin_key) as i32, repeat)
+}
+
+pub fn is_key_released(glutin_key: glutin::VirtualKeyCode) -> bool {
+	imgui::is_key_released(vkc_to_idx(glutin_key) as i32)
+}
+
 pub fn imgui_check_event(ui_state: &mut ImGuiSupport, event: &glutin::Event) {
 	use glutin::{VirtualKeyCode, Event, ElementState, 
 			MouseButton, MouseScrollDelta, TouchPhase};
 
 	let io = imgui::get_io();
 	match *event {
-		Event::KeyboardInput(state, _, code) => {
-			let pressed = imgui::cbool(state == ElementState::Pressed);
-			match code {
-				Some(VirtualKeyCode::Tab) => io.keys_down[0] = pressed,
-				Some(VirtualKeyCode::Left) => io.keys_down[1] = pressed,
-				Some(VirtualKeyCode::Right) => io.keys_down[2] = pressed,
-				Some(VirtualKeyCode::Up) => io.keys_down[3] = pressed,
-				Some(VirtualKeyCode::Down) => io.keys_down[4] = pressed,
-				Some(VirtualKeyCode::PageUp) => io.keys_down[5] = pressed,
-				Some(VirtualKeyCode::PageDown) => io.keys_down[6] = pressed,
-				Some(VirtualKeyCode::Home) => io.keys_down[7] = pressed,
-				Some(VirtualKeyCode::End) => io.keys_down[8] = pressed,
-				Some(VirtualKeyCode::Delete) => io.keys_down[9] = pressed,
-				Some(VirtualKeyCode::Back) => io.keys_down[10] = pressed,
-				Some(VirtualKeyCode::Return) => io.keys_down[11] = pressed,
-				Some(VirtualKeyCode::Escape) => io.keys_down[12] = pressed,
-				Some(VirtualKeyCode::A) => io.keys_down[13] = pressed,
-				Some(VirtualKeyCode::C) => io.keys_down[14] = pressed,
-				Some(VirtualKeyCode::V) => io.keys_down[15] = pressed,
-				Some(VirtualKeyCode::X) => io.keys_down[16] = pressed,
-				Some(VirtualKeyCode::Y) => io.keys_down[17] = pressed,
-				Some(VirtualKeyCode::Z) => io.keys_down[18] = pressed,
-				Some(VirtualKeyCode::LControl) | Some(VirtualKeyCode::RControl) => {
-					io.key_ctrl = pressed;
-				},
-				Some(VirtualKeyCode::LShift) | Some(VirtualKeyCode::RShift) => {
-					io.key_shift = pressed;
-				},
-				Some(VirtualKeyCode::LAlt) | Some(VirtualKeyCode::RAlt) => {
-					io.key_alt = pressed;
-				}, // #TODO super key.
-				_ => {}
+		Event::KeyboardInput(state, _, maybe_code) => {
+			if let Some(code) = maybe_code {
+				let pressed = imgui::cbool(state == ElementState::Pressed);
+				io.keys_down[vkc_to_idx(code)] = pressed;
+				io.key_ctrl = io.keys_down[vkc_to_idx(VirtualKeyCode::LControl)] | io.keys_down[vkc_to_idx(VirtualKeyCode::RControl)];
+				io.key_shift = io.keys_down[vkc_to_idx(VirtualKeyCode::LShift)] | io.keys_down[vkc_to_idx(VirtualKeyCode::RShift)];
+				io.key_alt = io.keys_down[vkc_to_idx(VirtualKeyCode::LAlt)] | io.keys_down[vkc_to_idx(VirtualKeyCode::RAlt)];
+				// #TODO super key.
 			}
 		},
 		Event::MouseMoved(x, y) => ui_state.mouse_position = (x, y),

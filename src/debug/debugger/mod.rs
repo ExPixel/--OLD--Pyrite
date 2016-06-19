@@ -1,18 +1,3 @@
-pub mod console;
-
-use rust_imgui as imgui;
-use rust_imgui::ImVec4;
-use rust_imgui::imstr::ImStr;
-use ::gba::Gba;
-use ::gba::core::memory::*;
-use std::cell::UnsafeCell;
-use self::console::ImGuiConsole;
-use std::marker::PhantomData;
-
-pub const CONSOLE_COLOR_NORMAL: ImVec4 = ImVec4 { x: 1.0, y: 1.0, z: 1.0, w: 1.0 }; // #FFFFFF
-pub const CONSOLE_COLOR_WARNING: ImVec4 = ImVec4 { x: 1.0, y: 0.922, z: 0.231, w: 1.0 }; // #FFEB3B
-pub const CONSOLE_COLOR_ERROR: ImVec4 = ImVec4 { x: 0.957, y: 0.263, z: 0.212, w: 1.0 }; // #F44336
-
 #[macro_export]
 macro_rules! console_log_with_color {
 	($color:expr, $message:expr, $($arg:tt)+) => (
@@ -54,6 +39,23 @@ macro_rules! console_error {
 	);
 }
 
+pub mod console;
+pub mod memory_editor;
+
+use rust_imgui as imgui;
+use rust_imgui::ImVec4;
+use rust_imgui::imstr::ImStr;
+use ::gba::Gba;
+use ::gba::core::memory::*;
+use std::cell::UnsafeCell;
+use self::console::ImGuiConsole;
+use self::memory_editor::MemoryEditor;
+use std::marker::PhantomData;
+
+pub const CONSOLE_COLOR_NORMAL: ImVec4 = ImVec4 { x: 1.0, y: 1.0, z: 1.0, w: 1.0 }; // #FFFFFF
+pub const CONSOLE_COLOR_WARNING: ImVec4 = ImVec4 { x: 1.0, y: 0.922, z: 0.231, w: 1.0 }; // #FFEB3B
+pub const CONSOLE_COLOR_ERROR: ImVec4 = ImVec4 { x: 0.957, y: 0.263, z: 0.212, w: 1.0 }; // #F44336
+
 pub struct DebugDataRuleBreaker {
 	data: UnsafeCell<DebugData>
 }
@@ -80,6 +82,9 @@ pub struct DebugData {
 	pub console: ImGuiConsole,
 	pub console_window_opened: bool,
 
+	pub memory_window: MemoryEditor,
+	pub memory_window_opened: bool,
+
 	pub frame_build_time: f64,
 	pub frame_render_time: f64,
 	pub full_frame_time: f64,
@@ -104,6 +109,9 @@ impl DebugData {
 		DebugData {
 			console: ImGuiConsole::new(100, true),
 			console_window_opened: false,
+
+			memory_window: MemoryEditor::new(),
+			memory_window_opened: false,
 
 			frame_build_time: 0.0,
 			frame_render_time: 0.0,
@@ -152,6 +160,10 @@ pub fn render_debugger(gba: &mut Gba) {
 			debugger.console_window_opened = true;
 		}
 
+		if imgui::menu_item(imstr!("Memory")) {
+			debugger.memory_window_opened = true;
+		}
+
 		imgui::end_popup();
 	}
 
@@ -161,6 +173,13 @@ pub fn render_debugger(gba: &mut Gba) {
 		imgui::push_style_var_vec(imgui::ImGuiStyleVar::ItemSpacing, imgui::vec2(4.0, 1.0));
 		debugger.console.render();
 		imgui::pop_style_var(1);
+		imgui::end();
+	}
+
+	if debugger.memory_window_opened {
+		imgui::set_next_window_size(imgui::vec2(320.0, 400.0), imgui::ImGuiSetCond::FirstUseEver);
+		imgui::begin(imstr!("Memory Viewer"), &mut debugger.memory_window_opened, imgui::ImGuiWindowFlags_None);
+		debugger.memory_window.render(&gba.cpu.memory);
 		imgui::end();
 	}
 
