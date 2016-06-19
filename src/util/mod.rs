@@ -204,6 +204,14 @@ macro_rules! pyrite_counter_get {
 	)
 }
 
+macro_rules! pyrite_counter_bool {
+	($counter:expr) => (
+		unsafe {
+			::util::PYRITE_COUNTERS[$counter] != 0
+		}
+	)
+}
+
 // Use this to track changing values and only do stuff when they change.
 macro_rules! pyrite_counter_diff {
 	($counter:expr, $value:expr) => ({
