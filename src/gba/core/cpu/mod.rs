@@ -476,7 +476,10 @@ impl ArmCpu {
 		{
 			let __e_addr = self.get_exec_address();
 			let __t_mode = self.thumb_mode();
-			debug_push_branch(self, __e_addr, __t_mode, HWI_VECTOR, false);
+
+			if DEBUG_TRACK_BRANCHES {
+				debug_push_branch(self, __e_addr, __t_mode, HWI_VECTOR, false);
+			}
 		}
 
 		self.rset(REG_LR, next_pc);
@@ -491,8 +494,13 @@ impl ArmCpu {
 	/// The CPU has hit an undefined instruction.
 	pub fn on_undefined(&mut self) {
 		self.reg_dump_pretty();
-		debug_unwind_branches();
-		debug_print_register_changes();
+		if DEBUG_TRACK_BRANCHES {
+			debug_unwind_branches();
+		}
+
+		if DEBUG_TRACK_REGISTERS {
+			debug_print_register_changes();
+		}
 		panic!("picnic -- undefined instruction");
 	}
 
