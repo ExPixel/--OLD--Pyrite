@@ -660,8 +660,13 @@ impl<'a> GbaDebugger<'a> {
 }
 
 pub fn auto_radix_parse_u32<'a>(s: &'a str) -> Option<u32> {
+	let trimmed = s.trim();
 	if s.starts_with("0x") {
 		if let Ok(ret) = u32::from_str_radix(&s[2..], 16) {
+			return Some(ret)
+		}
+	} else if s[s.len() - 1] == 'h' || s[s.len() - 1] == 'H' {
+		if let Ok(ret) = u32::from_str_radix(&s[0..s.len() - 1], 16) {
 			return Some(ret)
 		}
 	} else {

@@ -1,5 +1,6 @@
 #[macro_use] pub mod util;
 #[macro_use] pub mod debug;
+#[macro_use] pub mod pyrite;
 pub mod gba;
 
 extern crate time;

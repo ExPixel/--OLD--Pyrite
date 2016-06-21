@@ -35,7 +35,7 @@ const FPS_60_DELTA_NS: u64 = 16000000; // 16666667
 
 /// #TODO remove this debug code.
 /// true if the starting address should be 0 in SVC mode.
-const STARTUP_BIOS: bool = false;
+const STARTUP_BIOS: bool = true;
 
 /// LCD V-Blank Interrupt
 pub const INT_VBLANK: u16 = 0x01;

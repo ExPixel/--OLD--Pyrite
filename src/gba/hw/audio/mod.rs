@@ -92,7 +92,11 @@ pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 				mixer.cb = 0;
 			}
 
-			frames[idx] = mixer.mix();
+			if psetting!(sound_enabled) {
+				frames[idx] = mixer.mix();
+			} else {
+				frames[idx] = (0, 0);
+			}
 		}
 
 		return true
@@ -144,15 +148,26 @@ impl GbaAudioMixer {
 		let psg_right_vol_b = self.psg_right_vol / psg_balance_div;
 		let psg_left_vol_b = self.psg_left_vol / psg_balance_div;
 
-		if (self.soundcnt_l & 0x100) != 0 { psg_right += apply_volume(self.c1, psg_right_vol_b) }
-		if (self.soundcnt_l & 0x200) != 0 { psg_right += apply_volume(self.c2, psg_right_vol_b) }
-		if (self.soundcnt_l & 0x400) != 0 { psg_right += apply_volume(self.c3, psg_right_vol_b) }
-		if (self.soundcnt_l & 0x800) != 0 { psg_right += apply_volume(self.c4, psg_right_vol_b) }
+		if psetting!(channel1_enabled) {
+			if (self.soundcnt_l & 0x100) != 0 { psg_right += apply_volume(self.c1, psg_right_vol_b) }
+			if (self.soundcnt_l & 0x1000) != 0 { psg_left += apply_volume(self.c1, psg_left_vol_b) }
+		}
 
-		if (self.soundcnt_l & 0x1000) != 0 { psg_left += apply_volume(self.c1, psg_left_vol_b) }
-		if (self.soundcnt_l & 0x2000) != 0 { psg_left += apply_volume(self.c2, psg_left_vol_b) }
-		if (self.soundcnt_l & 0x4000) != 0 { psg_left += apply_volume(self.c3, psg_left_vol_b) }
-		if (self.soundcnt_l & 0x8000) != 0 { psg_left += apply_volume(self.c4, psg_left_vol_b) }
+		if psetting!(channel2_enabled) {
+			if (self.soundcnt_l & 0x200) != 0 { psg_right += apply_volume(self.c2, psg_right_vol_b) }
+			if (self.soundcnt_l & 0x2000) != 0 { psg_left += apply_volume(self.c2, psg_left_vol_b) }
+		}
+
+		if psetting!(channel3_enabled) {
+			if (self.soundcnt_l & 0x400) != 0 { psg_right += apply_volume(self.c3, psg_right_vol_b) }
+			if (self.soundcnt_l & 0x4000) != 0 { psg_left += apply_volume(self.c3, psg_left_vol_b) }
+		}
+
+		if psetting!(channel4_enabled) {
+			if (self.soundcnt_l & 0x800) != 0 { psg_right += apply_volume(self.c4, psg_right_vol_b) }
+			if (self.soundcnt_l & 0x8000) != 0 { psg_left += apply_volume(self.c4, psg_left_vol_b) }
+		}
+
 
 		// 0-1   Sound # 1-4 Volume   (0=25%, 1=50%, 2=100%, 3=Prohibited)
 		let psg_volume_shift = 2 - min!(2, self.soundcnt_h & 0x3);
@@ -161,15 +176,19 @@ impl GbaAudioMixer {
 		psg_right >>= psg_volume_shift;
 
 		if (self.soundcnt_x & 0x80) != 0 {
-			let dma_a_volume_shift = 1 - ((self.soundcnt_h >> 2) & 1);
-			let dma_a = self.ca >> dma_a_volume_shift;
-			if (self.soundcnt_h & 0x100) != 0 { dma_right += dma_a; }
-			if (self.soundcnt_h & 0x200) != 0 { dma_left += dma_a; }
+			if psetting!(channela_enabled) {
+				let dma_a_volume_shift = 1 - ((self.soundcnt_h >> 2) & 1);
+				let dma_a = self.ca >> dma_a_volume_shift;
+				if (self.soundcnt_h & 0x100) != 0 { dma_right += dma_a; }
+				if (self.soundcnt_h & 0x200) != 0 { dma_left += dma_a; }
+			}
 
-			let dma_b_v_volume_shift = 1 - ((self.soundcnt_h >> 3) & 1);
-			let dma_b = self.cb >> dma_b_v_volume_shift;
-			if (self.soundcnt_h & 0x1000) != 0 { dma_right += dma_b; }
-			if (self.soundcnt_h & 0x2000) != 0 { dma_left += dma_b; }
+			if psetting!(channelb_enabled) {
+				let dma_b_v_volume_shift = 1 - ((self.soundcnt_h >> 3) & 1);
+				let dma_b = self.cb >> dma_b_v_volume_shift;
+				if (self.soundcnt_h & 0x1000) != 0 { dma_right += dma_b; }
+				if (self.soundcnt_h & 0x2000) != 0 { dma_left += dma_b; }
+			}
 		}
 
 		let left = psg_left + dma_left;
