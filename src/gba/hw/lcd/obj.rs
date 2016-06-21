@@ -186,7 +186,7 @@ pub fn get_simple_obj_dot_8bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	// turning oy into tile y
 	// 64 bytes per tile
 	// 32 tiles per line (put together with the one above it)
-	let yoffset = (((oy as usize) >> 3) << 6) << 5;
+	let yoffset = ((oy as usize) >> 3) << 10;
 
 	// turning ox into tile x
 	// 64 bytes per tile
