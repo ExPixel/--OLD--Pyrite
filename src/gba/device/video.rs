@@ -33,7 +33,7 @@ pub struct VideoDevice {
 impl VideoDevice {
 	pub fn new() -> VideoDevice {
 		let mut builder = glutin::WindowBuilder::new()
-			.with_dimensions(GBA_SCREEN_WIDTH * 3, GBA_SCREEN_HEIGHT * 3);
+			.with_dimensions(GBA_SCREEN_WIDTH * 1, GBA_SCREEN_HEIGHT * 1);
 
 		if ENABLE_VSYNC {
 			builder = builder.with_vsync();

@@ -435,15 +435,15 @@ impl<T: Clone + Copy + IntoExt<f32>> DataPlot<T> {
 				self.write_cursor += 1;
 				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
 			} else {
-				self.data[self.write_cursor] = point;
-				self.write_cursor += 1;
-				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
-				if self.write_cursor == self.read_cursor {
+				if self.write_cursor == self.read_cursor && self.len() > 0 {
 					self.read_cursor += 1;
 					if self.read_cursor >= self.max_size {
 						self.read_cursor = 0;
 					}
 				}
+				self.data[self.write_cursor] = point;
+				self.write_cursor += 1;
+				if self.write_cursor >= self.max_size { self.write_cursor = 0; }
 			}
 		}
 	}
