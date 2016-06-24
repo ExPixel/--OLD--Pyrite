@@ -2,7 +2,7 @@ pub mod frame_counter;
 pub mod measure;
 pub mod io;
 pub mod async_ring_buffer;
-pub mod bipbuffer;
+pub mod circular_buffer;
 
 macro_rules! max {
 	($a:expr, $b:expr) => ({

@@ -429,14 +429,12 @@ impl GbaChannelFIFO {
 	}
 
 	pub fn out_push(&mut self, sample: i8) {
+		if self.out_write_cursor == self.out_read_cursor && self.out_remaining() > 0 {
+			self.out_read_cursor = (self.out_write_cursor + 1) & FIFO_OUT_BUFFER_MASK;
+		}
 		self.out_data.data[self.out_write_cursor] = sample;
 		self.out_write_cursor = (self.out_write_cursor + 1) & FIFO_OUT_BUFFER_MASK;
 		self.out_size = min!(self.out_size + 1, FIFO_OUT_BUFFER_SIZE);
-		if self.out_write_cursor == self.out_read_cursor {
-			// If the write cursor "laps" the read cursor, just move the read
-			// cursor forward so that it will then be at the new 0 position.
-			self.out_read_cursor = (self.out_write_cursor + 1) & FIFO_OUT_BUFFER_MASK;
-		}
 	}
 
 	pub fn out_pop(&mut self) -> i8 {
@@ -471,14 +469,12 @@ impl GbaChannelFIFO {
 	//       that's needed so I can just change that to only write in 2's.
 	/// Pushes a single signed 8bit sample into the FIFO queue.
 	pub fn push(&mut self, sample: i8) {
+		if self.write_cursor == self.read_cursor && self.remaining() > 0 {
+			self.read_cursor = (self.write_cursor + 1) & 0x1f;
+		}
 		self.data[self.write_cursor] = sample;
 		self.write_cursor = (self.write_cursor + 1) & 0x1f;
 		self.size = min!(self.size + 1, 32);
-		if self.write_cursor == self.read_cursor {
-			// If the write cursor "laps" the read cursor, just move the read
-			// cursor forward so that it will then be at the new 0 position.
-			self.read_cursor = (self.write_cursor + 1) & 0x1f;
-		}
 	}
 
 	/// Pops an 8 bit sample from the FIFO queue. 
