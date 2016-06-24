@@ -120,6 +120,8 @@ pub fn get_simple_obj_dot_4bpp_1d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	}
 }
 
+// #TODO this entire funciton is probably wrong.
+//       8bpp might also still be wrong.
 pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: u16, oy: u16, _: (u16, u16, u16)) -> GbaPixel {
 	let tile = attr2 & 0x3ff;
 	let tx = ox & 7;
@@ -128,7 +130,7 @@ pub fn get_simple_obj_dot_4bpp_2d(tiles: &[u8], palette: &[u8], attr2: u16, ox: 
 	// turning oy into tile y
 	// 32 bytes per tile
 	// 32 tiles per line (put together with the one above it)
-	let yoffset = ((oy as usize) >> 3) << 9; // #TODO this may not be correct (was << 10)
+	let yoffset = ((oy as usize) >> 3) << 10;
 
 	// turning ox into tile x
 	// 32 bytes per tile
