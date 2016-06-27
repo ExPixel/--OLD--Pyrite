@@ -47,34 +47,22 @@ use rust_imgui::ImVec4;
 use rust_imgui::imstr::ImStr;
 use ::gba::Gba;
 use ::gba::core::memory::*;
-use std::cell::UnsafeCell;
 use self::console::ImGuiConsole;
 use self::memory_editor::MemoryEditor;
 use std::marker::PhantomData;
+use ::util::sync_unsafe_cell::SyncUnsafeCell;
 
 pub const CONSOLE_COLOR_NORMAL: ImVec4 = ImVec4 { x: 1.0, y: 1.0, z: 1.0, w: 1.0 }; // #FFFFFF
 pub const CONSOLE_COLOR_WARNING: ImVec4 = ImVec4 { x: 1.0, y: 0.922, z: 0.231, w: 1.0 }; // #FFEB3B
 pub const CONSOLE_COLOR_ERROR: ImVec4 = ImVec4 { x: 0.957, y: 0.263, z: 0.212, w: 1.0 }; // #F44336
 
-pub struct DebugDataRuleBreaker {
-	data: UnsafeCell<DebugData>
-}
-impl DebugDataRuleBreaker {
-	pub fn new() -> DebugDataRuleBreaker {
-		DebugDataRuleBreaker {
-			data: UnsafeCell::new(DebugData::new())
-		}
-	}
-}
-unsafe impl Sync for DebugDataRuleBreaker {}
-
 lazy_static! {
-	pub static ref DEBUGGER: DebugDataRuleBreaker = DebugDataRuleBreaker::new();
+	pub static ref DEBUGGER: SyncUnsafeCell<DebugData> = SyncUnsafeCell::new(DebugData::new());
 }
 
 pub fn get_debugger() -> &'static mut DebugData {
 	unsafe {
-		DEBUGGER.data.get().as_mut().expect("Failed to get a reference to the debugger.")
+		DEBUGGER.get().as_mut().expect("Failed to get a reference to the debugger.")
 	}
 }
 
@@ -193,6 +181,12 @@ pub fn render_debugger(gba: &mut Gba) {
 
 		if !imgui::is_item_hovered() {
 			debugger.emulator_delay_plot.plot(debugger.frame_build_time as f32);	
+		}
+
+		if imgui::collapsing_header(imstr!("Audio Buffer"), imstr!("audio_buffer_clpshr"), true, false) {
+			use std::sync::atomic::Ordering::Relaxed;
+			imgui::label_text(imstr!("Read Misses"), imstr!("{}", gba.device.audio.ring_buffer._stat_read_misses.load(Relaxed)));
+			imgui::label_text(imstr!("Write Misses"), imstr!("{}", gba.device.audio.ring_buffer._stat_write_misses.load(Relaxed)));
 		}
 
 		imgui::end();

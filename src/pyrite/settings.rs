@@ -10,10 +10,6 @@ pub struct PyriteSettings {
 	pub channelb_enabled: bool,
 }
 
-// #TODO add volume.
-pub struct PyriteSoundSettings {
-}
-
 impl Default for PyriteSettings {
 	fn default() -> PyriteSettings {
 		PyriteSettings {

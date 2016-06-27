@@ -3,6 +3,7 @@ pub mod measure;
 pub mod io;
 pub mod async_ring_buffer;
 pub mod circular_buffer;
+pub mod sync_unsafe_cell;
 
 macro_rules! max {
 	($a:expr, $b:expr) => ({

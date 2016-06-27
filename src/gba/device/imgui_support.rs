@@ -374,6 +374,8 @@ pub fn imgui_init() {
 	io.key_map[imgui::ImGuiKey::X as usize] = vkc_to_idx(VirtualKeyCode::X) as i32;
 	io.key_map[imgui::ImGuiKey::Y as usize] = vkc_to_idx(VirtualKeyCode::Y) as i32;
 	io.key_map[imgui::ImGuiKey::Z as usize] = vkc_to_idx(VirtualKeyCode::Z) as i32;
+
+	setup_imgui_style(true, 0.9);
 }
 
 pub fn imgui_shutdown(state: &mut ImGuiSupport) {
@@ -455,66 +457,82 @@ pub fn imgui_check_event(ui_state: &mut ImGuiSupport, event: &glutin::Event) {
 	}
 }
 
-// pub fn main() {
-// 	let builder = glutin::WindowBuilder::new()
-// 		.with_dimensions(800, 600)
-// 		.with_vsync();
-// 	let window = builder.build().unwrap();
 
-// 	let mut demo_state = ImGuiSupport {
-// 		time: 0,
-// 		mouse_position: (0, 0),
-// 		mouse_pressed: [false; 3],
-// 		mouse_wheel: 0.0,
-// 		font_texture: 0,
-// 		shader_handle: 0,
-// 		vert_handle: 0,
-// 		frag_handle: 0,
-// 		attrib_location_tex: 0,
-// 		attrib_location_proj_mtx: 0,
-// 		attrib_location_position: 0,
-// 		attrib_location_uv: 0,
-// 		attrib_location_color: 0,
-// 		vbo_handle: 0,
-// 		vao_handle: 0,
-// 		elements_handle: 0
-// 	};
+pub fn setup_imgui_style(style_dark: bool, alpha_: f32) {
+	// Taken from: https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9#file-imguiutils-h-L9-L93
 
-// 	unsafe { window.make_current().unwrap() };
+	use rust_imgui::ImGuiCol;
+	let style = imgui::get_style().expect("Failed to get imgui style.");
+	style.alpha = 1.0;
+	style.frame_rounding = 3.0;
+	style.colors[ImGuiCol::Text as usize]                  = imgui::vec4(0.00, 0.00, 0.00, 1.00);
+	style.colors[ImGuiCol::TextDisabled as usize]          = imgui::vec4(0.60, 0.60, 0.60, 1.00);
+	style.colors[ImGuiCol::WindowBg as usize]              = imgui::vec4(0.94, 0.94, 0.94, 0.94);
+	style.colors[ImGuiCol::ChildWindowBg as usize]         = imgui::vec4(0.00, 0.00, 0.00, 0.00);
+	style.colors[ImGuiCol::PopupBg as usize]               = imgui::vec4(1.00, 1.00, 1.00, 0.94);
+	style.colors[ImGuiCol::Border as usize]                = imgui::vec4(0.00, 0.00, 0.00, 0.39);
+	style.colors[ImGuiCol::BorderShadow as usize]          = imgui::vec4(1.00, 1.00, 1.00, 0.10);
+	style.colors[ImGuiCol::FrameBg as usize]               = imgui::vec4(1.00, 1.00, 1.00, 0.94);
+	style.colors[ImGuiCol::FrameBgHovered as usize]        = imgui::vec4(0.26, 0.59, 0.98, 0.40);
+	style.colors[ImGuiCol::FrameBgActive as usize]         = imgui::vec4(0.26, 0.59, 0.98, 0.67);
+	style.colors[ImGuiCol::TitleBg as usize]               = imgui::vec4(0.96, 0.96, 0.96, 1.00);
+	style.colors[ImGuiCol::TitleBgCollapsed as usize]      = imgui::vec4(1.00, 1.00, 1.00, 0.51);
+	style.colors[ImGuiCol::TitleBgActive as usize]         = imgui::vec4(0.82, 0.82, 0.82, 1.00);
+	style.colors[ImGuiCol::MenuBarBg as usize]             = imgui::vec4(0.86, 0.86, 0.86, 1.00);
+	style.colors[ImGuiCol::ScrollbarBg as usize]           = imgui::vec4(0.98, 0.98, 0.98, 0.53);
+	style.colors[ImGuiCol::ScrollbarGrab as usize]         = imgui::vec4(0.69, 0.69, 0.69, 1.00);
+	style.colors[ImGuiCol::ScrollbarGrabHovered as usize]  = imgui::vec4(0.59, 0.59, 0.59, 1.00);
+	style.colors[ImGuiCol::ScrollbarGrabActive as usize]   = imgui::vec4(0.49, 0.49, 0.49, 1.00);
+	style.colors[ImGuiCol::ComboBg as usize]               = imgui::vec4(0.86, 0.86, 0.86, 0.99);
+	style.colors[ImGuiCol::CheckMark as usize]             = imgui::vec4(0.26, 0.59, 0.98, 1.00);
+	style.colors[ImGuiCol::SliderGrab as usize]            = imgui::vec4(0.24, 0.52, 0.88, 1.00);
+	style.colors[ImGuiCol::SliderGrabActive as usize]      = imgui::vec4(0.26, 0.59, 0.98, 1.00);
+	style.colors[ImGuiCol::Button as usize]                = imgui::vec4(0.26, 0.59, 0.98, 0.40);
+	style.colors[ImGuiCol::ButtonHovered as usize]         = imgui::vec4(0.26, 0.59, 0.98, 1.00);
+	style.colors[ImGuiCol::ButtonActive as usize]          = imgui::vec4(0.06, 0.53, 0.98, 1.00);
+	style.colors[ImGuiCol::Header as usize]                = imgui::vec4(0.26, 0.59, 0.98, 0.31);
+	style.colors[ImGuiCol::HeaderHovered as usize]         = imgui::vec4(0.26, 0.59, 0.98, 0.80);
+	style.colors[ImGuiCol::HeaderActive as usize]          = imgui::vec4(0.26, 0.59, 0.98, 1.00);
+	style.colors[ImGuiCol::Column as usize]                = imgui::vec4(0.39, 0.39, 0.39, 1.00);
+	style.colors[ImGuiCol::ColumnHovered as usize]         = imgui::vec4(0.26, 0.59, 0.98, 0.78);
+	style.colors[ImGuiCol::ColumnActive as usize]          = imgui::vec4(0.26, 0.59, 0.98, 1.00);
+	style.colors[ImGuiCol::ResizeGrip as usize]            = imgui::vec4(1.00, 1.00, 1.00, 0.50);
+	style.colors[ImGuiCol::ResizeGripHovered as usize]     = imgui::vec4(0.26, 0.59, 0.98, 0.67);
+	style.colors[ImGuiCol::ResizeGripActive as usize]      = imgui::vec4(0.26, 0.59, 0.98, 0.95);
+	style.colors[ImGuiCol::CloseButton as usize]           = imgui::vec4(0.59, 0.59, 0.59, 0.50);
+	style.colors[ImGuiCol::CloseButtonHovered as usize]    = imgui::vec4(0.98, 0.39, 0.36, 1.00);
+	style.colors[ImGuiCol::CloseButtonActive as usize]     = imgui::vec4(0.98, 0.39, 0.36, 1.00);
+	style.colors[ImGuiCol::PlotLines as usize]             = imgui::vec4(0.39, 0.39, 0.39, 1.00);
+	style.colors[ImGuiCol::PlotLinesHovered as usize]      = imgui::vec4(1.00, 0.43, 0.35, 1.00);
+	style.colors[ImGuiCol::PlotHistogram as usize]         = imgui::vec4(0.90, 0.70, 0.00, 1.00);
+	style.colors[ImGuiCol::PlotHistogramHovered as usize]  = imgui::vec4(1.00, 0.60, 0.00, 1.00);
+	style.colors[ImGuiCol::TextSelectedBg as usize]        = imgui::vec4(0.26, 0.59, 0.98, 0.35);
+	style.colors[ImGuiCol::ModalWindowDarkening as usize]  = imgui::vec4(0.20, 0.20, 0.20, 0.35);
 
-// 	window.set_title("ImGUI-rs Demo");
-
-// 	unsafe {
-// 		gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
-// 		gl::ClearColor(0.1, 0.08, 0.7, 1.0);
-// 	}
-
-// 	imgui_init();
-// 	'main_loop: loop {
-// 		// Poll for events first or you're going to have a bad time.
-// 		for event in window.poll_events() {
-// 			imgui_check_event(&mut demo_state, &event);
-// 			match event {
-// 				glutin::Event::Closed => break 'main_loop,
-// 				_ => ()
-// 			}
-// 		}
-
-// 		let window_size = window.get_inner_size().expect("Unable to retrieve glutin window size.");
-// 		let hidpi_factor = window.hidpi_factor();
-// 		// #WARNING calling imgui functions that try to draw widgets
-// 		// before new frame will cause a segfault.
-// 		imgui_new_frame(&mut demo_state, window_size, hidpi_factor);
-// 		imgui_example_draw();
-
-// 		let (w, h) = window.get_inner_size().expect("Unable to retrieve window dimensions.");
-// 		unsafe { gl::Viewport(0, 0, w as i32, h as i32) };
-// 		unsafe { gl::Clear(gl::COLOR_BUFFER_BIT) };
-
-// 		// #WARINING calling imgui functions that try to draw widgets
-// 		// after here (really imgui::render) will cause a segfault.
-// 		imgui_render(&demo_state);
-// 		window.swap_buffers().expect("Swapping glutin window buffers.");
-// 	}
-// 	imgui_shutdown(&mut demo_state);
-// }
+	if style_dark {
+		for i in 0..(ImGuiCol::Count as usize) {
+			let mut col = &mut style.colors[i];
+			let mut h = 0.0;
+			let mut s = 0.0;
+			let mut v = 0.0;
+			imgui::color_convert_rgb_to_hsv(col.x, col.y, col.z, &mut h, &mut s, &mut v);
+			if s < 0.1 {
+				v = 1.0 - v;
+			}
+			imgui::color_convert_hsv_to_rgb(h, s, v, &mut col.x, &mut col.y, &mut col.z);
+			if col.w < 1.0 {
+				col.w *= alpha_
+			}
+		}
+	} else {
+		for i in 0..(ImGuiCol::Count as usize) {
+			let mut col = &mut style.colors[i];
+			if col.w < 1.0 {
+				col.x *= alpha_;
+				col.y *= alpha_;
+				col.z *= alpha_;
+				col.w *= alpha_;
+			}
+		}
+	}
+}
