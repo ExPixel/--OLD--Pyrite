@@ -5,7 +5,7 @@
 
 pub mod settings;
 
-use std::cell::UnsafeCell;
+use ::util::sync_unsafe_cell::SyncUnsafeCell;
 
 lazy_static! {
 	pub static ref PYRITE_SETTINGS: SyncUnsafeCell<settings::PyriteSettings> = SyncUnsafeCell::new(Default::default());
@@ -21,26 +21,3 @@ macro_rules! psetting {
 		settings.$setting_name
 	})
 }
-
-
-pub struct SyncUnsafeCell<T> {
-	_inner: UnsafeCell<T>
-}
-
-impl<T> SyncUnsafeCell<T> {
-	pub fn new(data: T) -> SyncUnsafeCell<T> {
-		SyncUnsafeCell {
-			_inner: UnsafeCell::new(data)
-		}
-	}
-
-	pub fn get(&self) -> *mut T {
-		return self._inner.get()
-	}
-
-	pub unsafe fn into_inner(self) -> T {
-		return self._inner.into_inner()
-	}
-}
-
-unsafe impl<T> Sync for SyncUnsafeCell<T> {}
