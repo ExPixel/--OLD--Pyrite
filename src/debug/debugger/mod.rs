@@ -195,6 +195,12 @@ pub fn render_debugger(gba: &mut Gba) {
 			debugger.emulator_delay_plot.plot(debugger.frame_build_time as f32);	
 		}
 
+		if imgui::collapsing_header(imstr!("Audio Buffer"), imstr!("audio_buffer_clpshr"), true, false) {
+			use std::sync::atomic::Ordering::Relaxed;
+			imgui::label_text(imstr!("Read Misses"), imstr!("{}", gba.device.audio.ring_buffer._stat_read_misses.load(Relaxed)));
+			imgui::label_text(imstr!("Write Misses"), imstr!("{}", gba.device.audio.ring_buffer._stat_write_misses.load(Relaxed)));
+		}
+
 		imgui::end();
 	}
 
