@@ -2,6 +2,7 @@ pub mod armdis;
 #[macro_use] pub mod debugger;
 pub mod bitdesc;
 #[macro_use] pub mod logging;
+#[macro_use] pub mod profiler;
 
 // not ready.
 // pub mod armasm;

@@ -1,8 +1,3 @@
-// #TODO this entire module can use some serious optimization.
-//       moving expensive divisions everywhere to LUT and the like.
-//       First thing I can do is move channel specific volumes from the
-//       expensive apply_volume_stereo to a lookup table.
-
 mod channel1;
 mod channel2;
 mod channel3;
@@ -33,6 +28,8 @@ const PSG_VOLUME_MULS: [f32; 8] = [
 pub fn tick(cpu: &mut ArmCpu, device: &AudioDevice) {
 	measure_start(MEASURE_AUDIO_TICK_TIME);
 	measure_iteration(MEASURE_AUDIO_TICK_TIME);
+
+	// console_warn!("{} OUT REMINAING", cpu.memory.internal_regs.audio_fifo_a.out_remaining());
 
 	device.ring_buffer.try_write(|frames| {
 		let soundcnt_l = cpu.memory.get_reg(ioreg::SOUNDCNT_L);

@@ -11,13 +11,54 @@ lazy_static! {
 	pub static ref PYRITE_SETTINGS: SyncUnsafeCell<settings::PyriteSettings> = SyncUnsafeCell::new(Default::default());
 }
 
+pub fn load_settings() {
+	unsafe {
+		let mut settings = settings::PyriteSettings::load();
+		settings.init();
+		PYRITE_SETTINGS.replace(settings);
+	}
+}
+
+pub fn unsaved_changes() -> bool {
+	unsafe {
+		let settings = ::pyrite::PYRITE_SETTINGS.get().as_mut().expect("Failed to get an instance of pyrite settings.");
+		settings.changed
+	}
+}
+
+pub fn settings_changed() {
+	unsafe {
+		let mut settings = ::pyrite::PYRITE_SETTINGS.get().as_mut().expect("Failed to get an instance of pyrite settings.");
+		settings.changed = true;
+	}
+}
+
+pub fn get_settings() -> &'static mut settings::PyriteSettings {
+	unsafe {
+		PYRITE_SETTINGS.get().as_mut().expect("Failed to get an instance of pyrite settings.")
+	}
+}
 
 #[macro_export]
 macro_rules! psetting {
+	($setting_name:ident, $setting_value:expr) => ({
+		let mut settings = unsafe { ::pyrite::PYRITE_SETTINGS.get().as_mut().expect("Failed to get an instance of pyrite settings.") };
+		settings.$setting_name = $setting_value;
+		settings.changed = true;
+	});
+
 	($setting_name:ident) => ({
-		let settings = unsafe {
+		let settings = unsafe { ::pyrite::PYRITE_SETTINGS.get().as_mut().expect("Failed to get an instance of pyrite settings.") };
+		settings.$setting_name
+	});
+}
+
+#[macro_export]
+macro_rules! psetting_ptr {
+	($setting_name:ident) => ({
+		let mut settings = unsafe {
 			::pyrite::PYRITE_SETTINGS.get().as_mut().expect("Failed to get an instance of pyrite settings.")
 		};
-		settings.$setting_name
+		&mut settings.$setting_name
 	})
 }

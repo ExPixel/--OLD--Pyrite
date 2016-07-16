@@ -418,7 +418,6 @@ pub struct GbaChannelFIFO {
 
 impl GbaChannelFIFO {
 	pub fn reset(&mut self) {
-		// println!("RESET");
 		self.out_write_cursor = 0;
 		self.out_read_cursor = 0;
 		self.out_size = 0;
@@ -692,6 +691,7 @@ impl InternalRegisters {
 				self.audio_fifo_a.enable_left = (value & 0x200) != 0;
 				self.audio_fifo_a.timer = (value >> 10) & 1;
 				if (value & 0x800) != 0 {
+					console_log!("Reset FIFO A.");
 					self.audio_fifo_a.reset();
 				}
 				self.update_fifo_a_frequency(((value >> 10) & 1) as usize);
@@ -700,6 +700,7 @@ impl InternalRegisters {
 				self.audio_fifo_b.enable_left = (value & 0x2000) != 0;
 				self.audio_fifo_b.timer = (value >> 14) & 1;
 				if (value & 0x8000) != 0 {
+					console_log!("Reset FIFO B.");
 					self.audio_fifo_b.reset();
 				}
 				self.update_fifo_b_frequency(((value >> 14) & 1) as usize);

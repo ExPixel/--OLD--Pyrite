@@ -4,6 +4,7 @@ pub mod io;
 pub mod async_ring_buffer;
 pub mod circular_buffer;
 pub mod sync_unsafe_cell;
+pub mod atomic;
 
 macro_rules! max {
 	($a:expr, $b:expr) => ({
@@ -19,6 +20,23 @@ macro_rules! min {
 		let b = $b;
 		if a < b { a } else { b }
 	})
+}
+
+macro_rules! percentage {
+	($total:expr, $part:expr, $in_type:ty, $out_type:ty) => ({
+		let total = $total as $in_type;
+		let part = $part as $in_type;
+		if part == (0i32 as $in_type) { 0i32 as $out_type }
+		else { ((part / total) * (100i32 as $in_type)) as $out_type }
+	});
+
+	($total:expr, $part:expr, $in_type:ty) => (
+		percentage!($total, $part, $in_type, $in_type)
+	);
+
+	($total:expr, $part:expr) => (
+		percentage!($total, $part, f64, f64)
+	);
 }
 
 // These should be in the debug module, but whatever (I'll take time out to refactor this one day):
@@ -273,5 +291,134 @@ macro_rules! debug_turn_on_all_layers {
 macro_rules! debug_layer_on {
 	($layer: expr) => (
 		unsafe { ::util::debug_visible_layers[$layer] }
+	)
+}
+
+// DEBUGGER LOGGING:
+#[macro_export]
+macro_rules! console_log_with_color {
+	($color:expr, $message:expr, $($arg:tt)+) => (
+		console_log_with_color!($color, format!($message, $($arg)+));
+	);
+
+	($color:expr, $message:expr) => (
+		::debug::debugger::get_debugger().console.log($color, $message.into());
+	);
+}
+
+#[macro_export]
+macro_rules! console_log {
+	($message:expr, $($arg:tt)+) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_NORMAL, $message, $($arg)+);
+	);
+
+	($message:expr) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_NORMAL, $message);
+	);
+}
+
+#[macro_export]
+macro_rules! console_warn {
+	($message:expr, $($arg:tt)+) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_WARNING, $message, $($arg)+);
+	);
+
+	($message:expr) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_WARNING, $message);
+	);
+}
+
+#[macro_export]
+macro_rules! console_error {
+	($message:expr, $($arg:tt)+) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_ERROR, $message, $($arg)+);
+	);
+
+	($message:expr) => (
+		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_ERROR, $message);
+	);
+}
+
+// PROFILER MACROS:
+macro_rules! profiler_w_nounsafe {
+	() => (
+		::debug::profiler::get_write_profiler()
+	)
+}
+macro_rules! profiler_begin {
+	($name:expr) => (
+		unsafe {
+			profiler_w_nounsafe!().begin($name)
+		}
+	)
+}
+
+macro_rules! profiler_end {
+	() => (
+		unsafe {
+			profiler_w_nounsafe!().end()
+		}
+	)
+}
+
+macro_rules! profiler_swap {
+	() => (
+		unsafe {
+			::debug::profiler::swap_profilers()
+		}
+	)
+}
+
+macro_rules! profiler_w {
+	() => (
+		unsafe {
+			::debug::profiler::get_write_profiler()
+		}
+	)
+}
+
+macro_rules! profiler_r {
+	() => (
+		unsafe {
+			::debug::profiler::get_read_profiler()
+		}
+	)
+}
+
+macro_rules! profiler_clear {
+	() => (
+		unsafe {
+			profiler_w_nounsafe!().clear()
+		}
+	)
+}
+
+macro_rules! profiler_map {
+	($id:expr, $name:expr) => (
+		let profiler = unsafe {
+			profiler_w_nounsafe!()
+		};
+		profiler.create_mapped_id($id, $name);
+	);
+	($name:expr) => (
+		profiler_map!($name, $name);
+	);
+}
+
+macro_rules! profiler_begin_id {
+	($id:expr) => (
+		let profiler = unsafe {
+			profiler_w_nounsafe!()
+		};
+		profiler.begin_mapped($id)
+	)
+}
+
+macro_rules! profiler_end_id {
+	($id:expr) => (
+		let profiler = unsafe {
+			profiler_w_nounsafe!()
+		};
+		profiler.end_mapped($id)
 	)
 }

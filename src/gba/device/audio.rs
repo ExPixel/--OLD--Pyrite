@@ -78,13 +78,15 @@ pub fn volume_to_signal_multiplier(volume: f32) -> f32 {
 	return sound_pressure;
 }
 
+fn apply_volume(s: i16, v: f32) -> i16 {
+	(s as f32 * v) as i16
+}
+
 fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 	// SETUP:
 	let pa = portaudio::PortAudio::new().expect("Failed to initialize port audio.");
 	let settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)
 		.expect("Failed to get PortAudio default output stream settings.");
-	// settings.flags = portaudio::stream_flags::CLIP_OFF;
-	// let mut volume_multiplier = volume_to_signal_multiplier(0.2);
 	let mut remaining_audio_data_index = 0;
 
 	let mut last_left = 0;
@@ -94,6 +96,11 @@ fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 		let mut idx = 0;
 		let buffer_len = frames * 2;
 
+		use std::sync::atomic::Ordering;
+		let unscaled_volume = ::pyrite::settings::ATOMIC_MASTER_VOLUME
+			.load(Ordering::Relaxed)
+			.unwrap_or(1.0);
+		let volume = volume_to_signal_multiplier(unscaled_volume);
 
 		let mut continue_reading = true;
 		while continue_reading {
@@ -104,8 +111,8 @@ fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 					last_left = left;
 					last_right = right;
 
-					buffer[idx] = left;
-					buffer[idx + 1] = right;
+					buffer[idx] = apply_volume(left, volume);
+					buffer[idx + 1] = apply_volume(right, volume);
 
 					idx += 2;
 					remaining_audio_data_index += 1;
@@ -131,8 +138,8 @@ fn start_port_audio(ring_buffer: Arc<AsyncRingBuffer<AudioBufferType>>) {
 		}
 
 		while idx < buffer_len {
-			buffer[idx] = last_left;
-			buffer[idx + 1] = last_right;
+			buffer[idx] = apply_volume(last_left, volume);
+			buffer[idx + 1] = apply_volume(last_right, volume);
 			idx += 2;
 		}
 

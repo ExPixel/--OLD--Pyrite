@@ -1,46 +1,6 @@
-#[macro_export]
-macro_rules! console_log_with_color {
-	($color:expr, $message:expr, $($arg:tt)+) => (
-		console_log_with_color!($color, format!($message, $($arg)+));
-	);
-
-	($color:expr, $message:expr) => (
-		::debug::debugger::get_debugger().console.log($color, $message.into());
-	);
-}
-
-macro_rules! console_log {
-	($message:expr, $($arg:tt)+) => (
-		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_NORMAL, $message, $($arg)+);
-	);
-
-	($message:expr) => (
-		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_NORMAL, $message);
-	);
-}
-
-macro_rules! console_warn {
-	($message:expr, $($arg:tt)+) => (
-		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_WARNING, $message, $($arg)+);
-	);
-
-	($message:expr) => (
-		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_WARNING, $message);
-	);
-}
-
-macro_rules! console_error {
-	($message:expr, $($arg:tt)+) => (
-		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_ERROR, $message, $($arg)+);
-	);
-
-	($message:expr) => (
-		console_log_with_color!(::debug::debugger::CONSOLE_COLOR_ERROR, $message);
-	);
-}
-
 pub mod console;
 pub mod memory_editor;
+pub mod profiler;
 
 use rust_imgui as imgui;
 use rust_imgui::ImVec4;
@@ -49,6 +9,7 @@ use ::gba::Gba;
 use ::gba::core::memory::*;
 use self::console::ImGuiConsole;
 use self::memory_editor::MemoryEditor;
+use self::profiler::ProfilerGUI;
 use std::marker::PhantomData;
 use ::util::sync_unsafe_cell::SyncUnsafeCell;
 
@@ -89,7 +50,27 @@ pub struct DebugData {
 	pub sound_channel_b_plot: DataPlot<f32>,
 	pub sound_plot: DataPlot<f32>,
 
-	ioreg_window_opened: bool,
+	pub profiler_window_opened: bool,
+	pub profiler_gui: ProfilerGUI,
+
+	pub ioreg_window_opened: bool,
+	pub pyrite_settings_window_opened: bool,
+	pub delay_saving_pyrite_settings: bool,
+
+	pub second_acc: f32,
+	pub sample_counter: u32,
+	pub timer_ov_counter: u32,
+	pub dma_counter: u32,
+	pub dma_transfer_counter: u32,
+
+	pub arm_instr_count: u32,
+	pub thumb_instr_count: u32,
+	pub irq_count: u32,
+	pub swi_count: u32,
+
+	pub slowest_instr: (u32, bool),
+
+	pub unlock_profiler: bool,
 }
 
 impl DebugData {
@@ -116,13 +97,79 @@ impl DebugData {
 			sound_channel_a_plot: DataPlot::with_skip("Signal", "Channel A", 128, -32768.0, 32767.0, 16),
 			sound_channel_b_plot: DataPlot::with_skip("Signal", "Channel B", 128, -32768.0, 32767.0, 16),
 
+			profiler_window_opened: false,
+			profiler_gui: ProfilerGUI::new(),
+
 			ioreg_window_opened: false,
+			pyrite_settings_window_opened: false,
+			delay_saving_pyrite_settings: false,
+
+			second_acc: 0.0,
+			sample_counter: 0,
+			timer_ov_counter: 0,
+			dma_counter: 0,
+			arm_instr_count: 0,
+			thumb_instr_count: 0,
+			irq_count: 0,
+			swi_count: 0,
+			dma_transfer_counter: 0,
+
+			unlock_profiler: false,
 		}
 	}
 }
 
+// Helper function for when I want to do something every second.
+fn every_second(gba: &mut Gba, debugger: &mut DebugData) {
+	if !debugger.delay_saving_pyrite_settings {
+		let pyrite_settings = ::pyrite::get_settings();
+		if pyrite_settings.save_changes() {
+			console_log!("Saved Pyrite Settings.");
+		}
+	} else {
+		debugger.delay_saving_pyrite_settings = false;
+	}
+
+	if gba.extras.paused { return }
+	console_log!("FIFOA: {}sm/s | {}sm/s", debugger.sample_counter,
+		gba.cpu.memory.internal_regs.audio_fifo_a.frequency);
+	console_log!("{} tmr/s", debugger.timer_ov_counter);
+	console_log!("{} dma/s [{} trnfs/s]", debugger.dma_counter, debugger.dma_transfer_counter);
+	console_log!("{}, {}, {}, {}",
+		debugger.arm_instr_count,
+		debugger.thumb_instr_count,
+		debugger.irq_count,
+		debugger.swi_count);
+
+	let total = debugger.arm_instr_count + debugger.thumb_instr_count;
+
+	console_log!("{} instr ({:.2}% arm, {:.2}% thumb)",
+		total, percentage!(total, debugger.arm_instr_count), percentage!(total, debugger.thumb_instr_count));
+
+	console_log!("------");
+	debugger.timer_ov_counter = 0;
+	debugger.sample_counter = 0;
+	debugger.dma_counter = 0;
+	debugger.arm_instr_count = 0;
+	debugger.thumb_instr_count = 0;
+	debugger.irq_count = 0;
+	debugger.swi_count = 0;
+	debugger.dma_transfer_counter = 0;
+
+	debugger.unlock_profiler = true;
+}
+
 pub fn render_debugger(gba: &mut Gba) {
 	use rust_imgui::ImGuiSelectableFlags_SpanAllColumns;
+
+	{
+		let mut debugger = get_debugger();
+		debugger.second_acc += imgui::get_io().delta_time;
+		if debugger.second_acc >= 1.0 {
+			debugger.second_acc -= 1.0;
+			every_second(gba, debugger);
+		}
+	}
 
 	let debugger = get_debugger();
 
@@ -152,7 +199,32 @@ pub fn render_debugger(gba: &mut Gba) {
 			debugger.memory_window_opened = true;
 		}
 
+		if imgui::menu_item(imstr!("Profiler")) {
+			debugger.profiler_window_opened = true;
+		}
+
+		if imgui::menu_item(imstr!("Settings")) {
+			debugger.pyrite_settings_window_opened = true;
+		}
+
 		imgui::end_popup();
+	}
+
+	if debugger.pyrite_settings_window_opened {
+		let settings_state = if ::pyrite::unsaved_changes() {
+			" [Saving...]"
+		} else {
+			""
+		};
+		imgui::begin(imstr!("Pyrite Settings{}###PyriteSettings", settings_state), &mut debugger.pyrite_settings_window_opened, imgui::ImGuiWindowFlags_None);
+		render_pyrite_settings(debugger);
+		imgui::end();
+	}
+
+	if debugger.profiler_window_opened {
+		imgui::begin(imstr!("Profiler"), &mut debugger.profiler_window_opened, imgui::ImGuiWindowFlags_None);
+		debugger.profiler_gui.render();
+		imgui::end();
 	}
 
 	if debugger.console_window_opened {
@@ -185,8 +257,8 @@ pub fn render_debugger(gba: &mut Gba) {
 
 		if imgui::collapsing_header(imstr!("Audio Buffer"), imstr!("audio_buffer_clpshr"), true, false) {
 			use std::sync::atomic::Ordering::Relaxed;
-			imgui::label_text(imstr!("Read Misses"), imstr!("{}", gba.device.audio.ring_buffer._stat_read_misses.load(Relaxed)));
-			imgui::label_text(imstr!("Write Misses"), imstr!("{}", gba.device.audio.ring_buffer._stat_write_misses.load(Relaxed)));
+			imgui::label_text(imstr!("Read Misses (Bad)"), imstr!("{}", gba.device.audio.ring_buffer._stat_read_misses.load(Relaxed)));
+			imgui::label_text(imstr!("Write Misses (Good)"), imstr!("{}", gba.device.audio.ring_buffer._stat_write_misses.load(Relaxed)));
 		}
 
 		imgui::end();
@@ -250,6 +322,30 @@ pub fn render_debugger(gba: &mut Gba) {
 			debugger.sound_channel_b_plot.render_lines();
 		}
 		imgui::end();
+	}
+}
+
+pub fn render_pyrite_settings(debugger: &mut DebugData) {
+	let mut sc = false; // true if setting changed.
+	if imgui::collapsing_header(imstr!("Audio Settings"), imstr!("settings_sound_clpshr"), false, true) {
+		let mut volume_percentage = (psetting!(master_volume) * 100.0) as i32;
+		if imgui::slider_int(imstr!("Master Volume"), &mut volume_percentage, 0, 100, imstr!("%.0f%%")) {
+			sc |= true;
+			psetting!(master_volume, (volume_percentage as f32) / 100.0);
+			::pyrite::get_settings().commit_volume();
+		}
+
+		sc |= imgui::checkbox(imstr!("Sound Enabled"), psetting_ptr!(sound_enabled));
+		sc |= imgui::checkbox(imstr!("Channel 1 Enabled"), psetting_ptr!(channel1_enabled));
+		sc |= imgui::checkbox(imstr!("Channel 2 Enabled"), psetting_ptr!(channel2_enabled));
+		sc |= imgui::checkbox(imstr!("Channel 3 Enabled"), psetting_ptr!(channel3_enabled));
+		sc |= imgui::checkbox(imstr!("Channel 4 Enabled"), psetting_ptr!(channel4_enabled));
+		sc |= imgui::checkbox(imstr!("Channel A Enabled"), psetting_ptr!(channela_enabled));
+		sc |= imgui::checkbox(imstr!("Channel B Enabled"), psetting_ptr!(channelb_enabled));
+	}
+	if sc {
+		debugger.delay_saving_pyrite_settings = true;
+		::pyrite::settings_changed()
 	}
 }
 

@@ -23,6 +23,10 @@ pub fn increment(cpu: &mut ArmCpu, amount: u32) {
 			}
 
 			if timer!(cpu, t).counter > 0xffff { // The timer!(cpu, t) has overflowed
+				if t == 0 {
+					::debug::debugger::get_debugger().timer_ov_counter += 1;
+				}
+
 				timer!(cpu, t).counter = timer!(cpu, t).reload;
 				timer!(cpu, t).unscaled_counter = 0;
 				last_timer_overflowed = true;

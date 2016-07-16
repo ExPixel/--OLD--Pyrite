@@ -70,8 +70,8 @@ pub const INT_GAMEPAK: u16 = 0x2000;
 /// State passed to the GUI.
 #[derive(Default)]
 pub struct GbaExtras {
-	paused: bool,
-	request_pause: bool,
+	pub paused: bool,
+	pub request_pause: bool,
 }
 
 impl GbaExtras {
@@ -154,6 +154,7 @@ impl Gba {
 	}
 
 	pub fn tick(&mut self) {
+		profiler_begin!("Pyrite Frame");
 		let frame_start_time = time::precise_time_ns();
 		if !self.extras.paused {
 			self.frame();
@@ -162,11 +163,15 @@ impl Gba {
 		}
 
 		// IMGUI:
+		profiler_begin!("ImGui");
 		self.device.video.prepare_imgui();
 
 		let render_start_time = time::precise_time_ns();
 		debugger::render_debugger(self);
+		profiler_end!();
+		profiler_begin!("Render Call");
 		self.device.video.render(&self.lcd.screen_buffer);
+		profiler_end!();
 		let render_end_time = time::precise_time_ns();
 
 		let mut debugger = debugger::get_debugger();
@@ -179,23 +184,33 @@ impl Gba {
 			if self.extras.paused { console_warn!("Paused"); }
 			else { console_warn!("Unpaused"); }
 		}
+		profiler_end!();
+		profiler_swap!();
+		profiler_clear!();
 	}
 
 	fn frame(&mut self) {
+		profiler_begin!("GBA Frame");
 		// Clears the VBlank flag.
 		{
 			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
 			dispstat &= !0x1;
 			self.cpu.memory.set_reg(ioreg::DISPSTAT, dispstat);
 		}
-
 	
+		profiler_begin!("V-DRAW");
+		profiler_map!("running-cpu", "Running CPU");
+		profiler_map!("rendering-line", "Rendering Line");
+		profiler_map!("polling-events", "Polling Events");
 		for vcount in 0..160 {
 			self.cpu.memory.set_reg(ioreg::VCOUNT, vcount);
 			self.check_line_coincidence(vcount);
 			self.do_vdraw_line(vcount);
 		}
+		profiler_end!();
 
+		profiler_begin!("V-BLANK");
+		profiler_map!("running-cpu", "Running CPU");
 		// Sets the VBlank flag.
 		{
 			let mut dispstat = self.cpu.memory.get_reg(ioreg::DISPSTAT);
@@ -216,8 +231,10 @@ impl Gba {
 			self.check_line_coincidence(vcount);
 			self.do_vblank_line();
 		}
+		profiler_end!();
 
 		self.on_frame_end();
+		profiler_end!();
 	}
 
 	fn on_frame_end(&mut self) {
@@ -310,10 +327,21 @@ impl Gba {
 	/// All VRAM, OAM, and Palette RAM may be accessed during V-Blanking.
 	/// Note that no H-Blank interrupts are generated within V-Blank period.
 	fn do_vdraw_line(&mut self, line: u16) {
+		profiler_begin_id!("polling-events");
 		self.poll_device_events();
+		profiler_end_id!("polling-events");
+
+		profiler_begin_id!("running-cpu");
 		self.do_hdraw();
+		profiler_end_id!("running-cpu");
+
+		profiler_begin_id!("rendering-line");
 		self.lcd.render_line(&mut self.cpu.memory, line);
+		profiler_end_id!("rendering-line");
+
+		profiler_begin_id!("running-cpu");
 		self.do_hblank();
+		profiler_end_id!("running-cpu");
 	}
 
 /*
@@ -332,7 +360,9 @@ Display status and Interrupt control. The H-Blank conditions are generated once 
 */
 
 	fn do_vblank_line(&mut self) {
+		profiler_begin_id!("running-cpu");
 		self.run_cpu_cycles(1232);
+		profiler_end_id!("running-cpu");
 	}
 
 	fn do_hdraw(&mut self) {

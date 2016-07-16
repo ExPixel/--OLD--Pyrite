@@ -1,6 +1,6 @@
 #[macro_use] pub mod util;
-#[macro_use] pub mod debug;
 #[macro_use] pub mod pyrite;
+#[macro_use] pub mod debug;
 pub mod gba;
 
 extern crate time;
@@ -150,6 +150,8 @@ fn main() {
 			// load_bios(&mut memory);
 			disasm_gba_rom(&mut memory, args.flag_thumb);
 		} else {
+			pyrite::load_settings();
+			debug_info!("Loaded pyrite settings.");
 			let mut gba = Box::new(Gba::new());
 			load_bios(&mut gba.cpu.memory);
 			load_rom(&mut gba, rom_file);

@@ -110,6 +110,10 @@ fn tick_channel(cpu: &mut ArmCpu, channel_index: usize) {
 		let data = cpu.memory.read32(src);
 		cpu.memory.write32(dest, data);
 
+		if channel_index == 1 && dest == 0x040000A0 {
+			::debug::debugger::get_debugger().dma_transfer_counter += 1;
+		}
+
 		if dma_reg!(cpu, channel_index).first_transfer {
 			dma_reg!(cpu, channel_index).first_transfer = false;
 			cpu.clock.data_access32_nonseq(src);

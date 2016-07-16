@@ -53,27 +53,6 @@ impl<T> AsyncRingBuffer<T> {
 		return ret;
 	}
 
-	// pub fn new_default<D: Default>(length: usize) -> AsyncRingBuffer<D> {
-	// 	if length < 2 {
-	// 		panic!("The async ring buffer must have a length of at least 2! length: {}", length);
-	// 	}
-
-	// 	let mut ret = AsyncRingBuffer {
-	// 		reader_cursor: AtomicUsize::new(0),
-	// 		writer_cursor: AtomicUsize::new(0),
-	// 		data: Vec::with_capacity(length),
-
-	// 		_stat_read_misses: AtomicUsize::new(0),
-	// 		_stat_write_misses: AtomicUsize::new(0)
-	// 	};
-
-	// 	for _ in 0..length {
-	// 		ret.data.push(Default::default());
-	// 	}
-
-	// 	return ret;
-	// }
-
 	pub fn try_write<F>(&self, mut write_fn: F) -> bool
 		where F: FnMut(&mut T) -> bool {
 		let cur_writer_cursor = self.writer_cursor.load(Ordering::Acquire);

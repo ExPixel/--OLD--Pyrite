@@ -375,7 +375,7 @@ pub fn imgui_init() {
 	io.key_map[imgui::ImGuiKey::Y as usize] = vkc_to_idx(VirtualKeyCode::Y) as i32;
 	io.key_map[imgui::ImGuiKey::Z as usize] = vkc_to_idx(VirtualKeyCode::Z) as i32;
 
-	setup_imgui_style(true, 0.9);
+	setup_imgui_style(true, 1.0);
 }
 
 pub fn imgui_shutdown(state: &mut ImGuiSupport) {
