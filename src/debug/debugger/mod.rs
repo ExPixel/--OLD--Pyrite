@@ -68,8 +68,6 @@ pub struct DebugData {
 	pub irq_count: u32,
 	pub swi_count: u32,
 
-	pub slowest_instr: (u32, bool),
-
 	pub unlock_profiler: bool,
 }
 
