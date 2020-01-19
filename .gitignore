@@ -13,3 +13,5 @@ data/sav/
 # No$GBA stuff
 *.sna
 imgui.ini
+
+data/settings.json

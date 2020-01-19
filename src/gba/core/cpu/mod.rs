@@ -159,6 +159,7 @@ impl ArmCpu {
 		let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 
 		if self.pipeline_ready() {
+			::debug::debugger::get_debugger().arm_instr_count += 1;
 			let e = self.get_pc() - 8;
 			let decoded = self.memory.read32(e);
 			let condition = (decoded >> 28) & 0xf;
@@ -166,6 +167,8 @@ impl ArmCpu {
 				before_execution(exec_addr, self); // #TODO remove this debug code.
 				execute_arm(self, decoded);
 				after_execution(exec_addr, self); // #TODO remove this debug code.
+			} else {
+				self.clock_prefetch_arm();
 			}
 		} else {
 			self.pipeline_next();
@@ -193,6 +196,7 @@ impl ArmCpu {
 		let exec_addr = self.get_exec_address(); // #TODO remove this debug code.
 
 		if self.pipeline_ready() {
+			::debug::debugger::get_debugger().thumb_instr_count += 1;
 			let e = self.get_pc() - 4;
 			let decoded = self.memory.read32(e);
 			before_execution(exec_addr, self); // #TODO remove this debug code.
@@ -369,11 +373,13 @@ impl ArmCpu {
 	}
 
 	pub fn thumb_swi(&mut self) {
+		::debug::debugger::get_debugger().swi_count += 1;
 		self.clock_prefetch_thumb();
 		self.handle_thumb_swi();
 	}
 
 	pub fn arm_swi(&mut self) {
+		::debug::debugger::get_debugger().swi_count += 1;
 		self.clock_prefetch_arm();
 		self.handle_arm_swi();
 	}
@@ -454,6 +460,7 @@ impl ArmCpu {
 	/// 3. Switches to ARM state, executes code in BIOS at a hardware interrupt vector 
 	///    (which you, the programmer, never see)
 	fn irq_interrupt(&mut self) {
+		::debug::debugger::get_debugger().irq_count += 1;
 		// println!("[0x{:08X} ({})] IRQ INTERRUPT: 0x{:04X}", self.get_exec_address(), debug_get_mode_char(self.thumb_mode()), self.memory.get_reg(ioreg::IF));
 		self.clock.code_access32_nonseq(SWI_VECTOR);
 		self.clock.code_access32_seq(SWI_VECTOR + 4);
@@ -515,6 +522,13 @@ impl ArmCpu {
 		}
 	}
 
+	pub fn disasm_arm_at(&self, addr: u32) -> String {
+		super::super::super::debug::armdis::disasm_arm(addr, &self.memory, 0b11111111)
+	}
+
+	pub fn disasm_thumb_at(&self, addr: u32) -> String {
+		super::super::super::debug::armdis::disasm_thumb(addr, &self.memory, 0b11111111)
+	}
 
 	/// Disasssembly of the instruction currently being executed.
 	pub fn disasm_exec(&self) -> String {

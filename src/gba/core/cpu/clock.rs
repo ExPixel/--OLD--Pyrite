@@ -48,17 +48,63 @@ impl ArmCpuClock {
 		clock
 	}
 
-	pub fn setup_default_timings(&mut self) {
-		self.memory_timings[0x8] = ((3, 3, 4), (5, 5, 8));
+	/// Sets up timings based on waitstates.
+	/// ```
+	/// 4000204h - WAITCNT - Waitstate Control (R/W)
+	/// This register is used to configure game pak access timings. The game pak ROM is mirrored to three address regions at 08000000h, 0A000000h, and 0C000000h, these areas are called Wait State 0-2. Different access timings may be assigned to each area (this might be useful in case that a game pak contains several ROM chips with different access times each).
+	///   Bit   Expl.
+	///   0-1   SRAM Wait Control          (0..3 = 4,3,2,8 cycles)
+	///   2-3   Wait State 0 First Access  (0..3 = 4,3,2,8 cycles)
+	///   4     Wait State 0 Second Access (0..1 = 2,1 cycles)
+	///   5-6   Wait State 1 First Access  (0..3 = 4,3,2,8 cycles)
+	///   7     Wait State 1 Second Access (0..1 = 4,1 cycles; unlike above WS0)
+	///   8-9   Wait State 2 First Access  (0..3 = 4,3,2,8 cycles)
+	///   10    Wait State 2 Second Access (0..1 = 8,1 cycles; unlike above WS0,WS1)
+	///   11-12 PHI Terminal Output        (0..3 = Disable, 4.19MHz, 8.38MHz, 16.78MHz)
+	///   13    Not used
+	///   14    Game Pak Prefetch Buffer (Pipe) (0=Disable, 1=Enable)
+	///   15    Game Pak Type Flag  (Read Only) (0=GBA, 1=CGB) (IN35 signal)
+	///   16-31 Not used
+	/// ```
+	pub fn setup_timings(&mut self, waitcnt: u16) {
+		fn fa_timing(x: u16) -> u8 {
+			const FIRST_ACCESS_TIMINGS: [u8; 4] = [4, 3, 2, 8];
+			FIRST_ACCESS_TIMINGS[x as usize]
+		}
+
+		let sram_timing = fa_timing(waitcnt & 0x3) + 1;
+		let sram_timing_tup = (sram_timing, sram_timing, sram_timing);
+		self.memory_timings[0xE] = (sram_timing_tup, sram_timing_tup);
+
+		let waitstate0_nseq = fa_timing((waitcnt >> 2) & 0x3);
+		let waitstate0_seq = if (waitcnt & 0x10) != 0 { 1 } else { 2 };
+		self.memory_timings[0x8] = (
+			(waitstate0_seq + 1, waitstate0_seq + 1, (waitstate0_seq * 2)),
+			(waitstate0_nseq + 1, waitstate0_nseq + 1, (waitstate0_nseq + 1) + (waitstate0_seq + 1))
+		);
+
+		let waitstate1_nseq = fa_timing((waitcnt >> 5) & 0x3);
+		let waitstate1_seq = if (waitcnt & 0x80) != 0 { 1 } else { 4 };
+		self.memory_timings[0xA] = (
+			(waitstate1_seq + 1, waitstate1_seq + 1, (waitstate1_seq * 2)),
+			(waitstate1_nseq + 1, waitstate1_nseq + 1, (waitstate1_nseq + 1) + (waitstate1_seq + 1))
+		);
+
+		let waitstate2_nseq = fa_timing((waitcnt >> 8) & 0x3);
+		let waitstate2_seq = if (waitcnt & 0x400) != 0 { 1 } else { 8 };
+		self.memory_timings[0xC] = (
+			(waitstate2_seq + 1, waitstate2_seq + 1, (waitstate2_seq * 2)),
+			(waitstate2_nseq + 1, waitstate2_nseq + 1, (waitstate2_nseq + 1) + (waitstate2_seq + 1))
+		);
+
 		self.memory_timings[0x9] = self.memory_timings[0x8];
-
-		self.memory_timings[0xA] = ((5, 5, 8), (5, 5, 8));
 		self.memory_timings[0xB] = self.memory_timings[0xA];
-
-		self.memory_timings[0xC] = ((9, 9, 16), (5, 5, 8));
 		self.memory_timings[0xD] = self.memory_timings[0xC];
+	}
 
-		self.memory_timings[0xE] = ((5, 5, 5), (5, 5, 5));
+	pub fn setup_default_timings(&mut self) {
+		// #TODO this is the default setting but I should be reading the value somehow instead.
+		self.setup_timings(0x4317);
 	}
 
 	/// Internal cycle

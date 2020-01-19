@@ -33,7 +33,7 @@ pub struct VideoDevice {
 impl VideoDevice {
 	pub fn new() -> VideoDevice {
 		let mut builder = glutin::WindowBuilder::new()
-			.with_dimensions(GBA_SCREEN_WIDTH * 1, GBA_SCREEN_HEIGHT * 1);
+			.with_dimensions(GBA_SCREEN_WIDTH * 4, GBA_SCREEN_HEIGHT * 4);
 
 		if ENABLE_VSYNC {
 			builder = builder.with_vsync();
@@ -179,6 +179,7 @@ impl VideoDevice {
 
 	/// Renders the screen texture.
 	pub fn render(&mut self, buffer: &GbaLcdScreenBuffer) {
+		profiler_begin!("Render GBA Frame");
 		unsafe {
 			gl::ClearColor(1.0, 0.0, 1.0, 1.0);
 			gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -207,9 +208,14 @@ impl VideoDevice {
 
 			gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
 		}
+		profiler_end!();
+		profiler_begin!("ImGUI Render");
 		imgui_support::imgui_render(&self.im_support);
+		profiler_end!();
 
+		profiler_begin!("Swap Buffers");
 		self.display.swap_buffers().expect("Swapping glutin window buffers.");
+		profiler_end!();
 	}
 }
 

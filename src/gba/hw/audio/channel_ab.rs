@@ -48,10 +48,12 @@ pub fn timer_overflow(cpu: &mut ArmCpu, timer: u16) {
 
 	if cpu.memory.internal_regs.audio_fifo_a.timer == timer {
 		if cpu.memory.internal_regs.audio_fifo_a.remaining() > 0 {
+			::debug::debugger::get_debugger().sample_counter += 1;
 			let sample = cpu.memory.internal_regs.audio_fifo_a.pop();
 			cpu.memory.internal_regs.audio_fifo_a.out_push(sample);
 		}
 		if cpu.memory.internal_regs.audio_fifo_a.remaining() <= 16 {
+			::debug::debugger::get_debugger().dma_counter += 1;
 			start_dma_fifo_addr_check(cpu, FIFO_A_ADDR, 1);
 			start_dma_fifo_addr_check(cpu, FIFO_A_ADDR, 2);
 		}

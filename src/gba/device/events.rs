@@ -61,6 +61,7 @@ impl GbaEventPoll for Gba {
 		if self.joypad.tick(&mut self.cpu) {
 			self.hardware_interrupt(INT_KEYPAD);
 		}
+
 	}
 }
 

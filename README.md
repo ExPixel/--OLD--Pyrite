@@ -1,4 +1,7 @@
-# Pyrite 
+# [Better Version Of Pyrite Here](https://github.com/ExPixel/Pyrite)
+
+# (Old) Pyrite 
+
 [![Build Status](https://travis-ci.org/ExPixel/pyrite.svg?branch=development)](https://travis-ci.org/ExPixel/pyrite)
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/b77f7lieol52ghjm?svg=true)](https://ci.appveyor.com/project/ExPixel/pyrite)
 
